@@ -5,7 +5,13 @@ function App() {
   return (
     <div className="min-h-screen">
       <Header />
-      <h1 className="relative h-2000"> Hello</h1>
+      <main>
+        <section>
+          <div className="py-22">
+            <h1 className="h-5000">Hello</h1>
+          </div>
+        </section>
+      </main>
     </div>
   );
 }

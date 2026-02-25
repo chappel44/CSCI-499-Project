@@ -6,7 +6,7 @@ export default function Header() {
     <header>
       <div className="hidden md:block">
         {/* Company Logo and name */}
-        <div className=" fixed top-0 z-50 py-4 px-6 flex items-center justify-between bg-gradient-to-r from-gray-300 to-gray-400 w-screen">
+        <div className=" fixed top-0 z-50 py-4 px-6 flex items-center justify-between bg-gradient-to-r from-gray-300/70 to-gray-400/70 bg-transparent backdrop-blur w-screen">
           <div className="flex gap-2 items-center">
             <Search className="text-white w-10 h-10" />
             <h2 className="text-4xl px-4 py-2 bg-gray-200 text-black rounded-lg">
