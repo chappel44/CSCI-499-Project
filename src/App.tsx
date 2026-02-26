@@ -1,12 +1,18 @@
 import { useState } from "react";
-import Header from "./Header";
-
+type Product = {
+  title: string;
+  link: string;
+  thumbnail?: string; // optional, because some items may not have it
+  price?: { symbol: string; value: number };
+  prices?: { symbol: string; value: number }[];
+  asin?: string;
+};
 function App() {
   const [keyword, setKeyword] = useState("");
-  const [products, setProducts] = useState([]);
+  const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(false);
 
-  const getPrice = (item) => {
+  const getPrice = (item: Product) => {
     if (item.price) return `${item.price.symbol}${item.price.value}`;
     if (item.prices && item.prices.length > 0)
       return `${item.prices[0].symbol}${item.prices[0].value}`;
