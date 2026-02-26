@@ -28,6 +28,7 @@ function App() {
       ? "http://localhost:5000"
       : "https://csci-499-project-nine.vercel.app";
 
+    console.log(window.location.hostname);
     try {
       const res = await fetch(
         `${host}/api/search?keyword=${encodeURIComponent(keyword)}`
