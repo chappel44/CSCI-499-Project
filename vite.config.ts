@@ -8,4 +8,9 @@ export default defineConfig({
     react(),
     tailwindcss(), // Add the plugin to the plugins array
   ],
+  server: {
+    proxy: {
+      "/api": "http://localhost:5000",
+    },
+  },
 });
