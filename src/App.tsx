@@ -3,8 +3,9 @@ type Product = {
   title: string;
   link: string;
   thumbnail?: string; // optional, because some items may not have it
-  price?: { symbol: string; value: number };
+  price?: { symbol: string; value: string };
   prices?: { symbol: string; value: number }[];
+  extracted_price?: number;
   asin?: string;
 };
 function App() {
@@ -13,7 +14,7 @@ function App() {
   const [loading, setLoading] = useState(false);
 
   const getPrice = (item: Product) => {
-    if (item.price) return `${item.price.symbol}${item.price.value}`;
+    if (item.price) return item.price;
     if (item.prices && item.prices.length > 0)
       return `${item.prices[0].symbol}${item.prices[0].value}`;
     return "Price not available";
@@ -36,10 +37,14 @@ function App() {
 
       const data = await res.json();
       const allProducts = [
-        ...(data.organic_results || []),
-        ...(data.featured_products || []),
+        ...(data.featured_products || []), //Highlight / Promoted / Special placements
+        ...(data.organic_results || []), //organic results from regular search
       ];
-      setProducts(allProducts);
+      const sortedProducts = allProducts.sort(
+        (a, b) =>
+          (a.extracted_price ?? Infinity) - (b.extracted_price ?? Infinity)
+      );
+      setProducts(sortedProducts);
     } catch (err) {
       console.error(err);
       alert("Error fetching products");
@@ -73,9 +78,9 @@ function App() {
             <p className="text-gray-500">No products found.</p>
           )}
 
-          {products.map((item) => (
+          {products.map((item, index) => (
             <div
-              key={item.asin || item.link}
+              key={index}
               className="flex items-center gap-4 border border-gray-300 p-3 rounded"
             >
               {item.thumbnail ? (
@@ -92,7 +97,7 @@ function App() {
 
               <div>
                 <h3 className="text-lg font-medium">{item.title}</h3>
-                <p className="text-gray-700">{getPrice(item)}</p>
+                <p className="text-gray-700">{"Price: " + getPrice(item)}</p>
                 <a
                   href={`${item.link}?tag=yourtag-20`}
                   target="_blank"
