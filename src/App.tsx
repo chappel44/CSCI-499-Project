@@ -9,6 +9,7 @@ function App() {
     <>
       <Header />
       <Routes>
+        <Route path="/" element={<Search />} />
         <Route path="/search" element={<Search />} />
         <Route path="/wish-list" element={<WishList />} />
         <Route path="/what-is-verifind" element={<WhatIsVerifind />} />

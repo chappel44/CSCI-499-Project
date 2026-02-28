@@ -12,6 +12,9 @@ function Search() {
   const [keyword, setKeyword] = useState("");
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(false);
+  const [buttonsNeeded, setButtonsNeeded] = useState(0);
+  const [openPage, setOpenPage] = useState(0);
+  const [endPage, setEndPage] = useState(10);
 
   const getPrice = (item: Product) => {
     if (item.price) return item.price;
@@ -49,6 +52,8 @@ function Search() {
           (a.extracted_price ?? Infinity) - (b.extracted_price ?? Infinity)
       );
       setProducts(sortedProducts);
+      const tabsNeeded = Math.round(sortedProducts.length / 10);
+      setButtonsNeeded(tabsNeeded);
     } catch (err) {
       console.error(err);
       alert("Error fetching products");
@@ -83,7 +88,7 @@ function Search() {
               <p className="text-gray-500">No products found.</p>
             )}
 
-            {products.map((item, index) => (
+            {products.slice(openPage, endPage).map((item, index) => (
               <div
                 key={index}
                 className="flex items-center gap-4 border border-gray-300 p-3 rounded"
@@ -114,6 +119,26 @@ function Search() {
                 </div>
               </div>
             ))}
+            {products.length > 0 &&
+              Array.from({ length: buttonsNeeded }).map((_, index) => (
+                <button
+                  className="px-6 py-2 bg-gray-400 ml-10 cursor-pointer rounded-lg hover:text-blue-400 hover:shadow-md"
+                  onClick={() => {
+                    const startIndex = index * 10;
+
+                    if (startIndex + 10 < products.length) {
+                      setOpenPage(startIndex);
+                      setEndPage(startIndex + 10);
+                    } else {
+                      const offset = products.length % 10;
+                      setOpenPage(startIndex);
+                      setEndPage(startIndex + offset);
+                    }
+                  }}
+                >
+                  {index}
+                </button>
+              ))}
           </div>
         </div>
       </section>
