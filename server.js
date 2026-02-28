@@ -36,5 +36,3 @@ app.get("/api/search", async (req, res) => {
     res.status(500).json({ error: err.response?.data || err.message });
   }
 });
-
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
