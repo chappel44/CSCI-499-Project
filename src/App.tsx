@@ -24,14 +24,10 @@ function App() {
     if (!keyword) return;
     setLoading(true);
 
-    const host = window.location.hostname.includes("localhost")
-      ? "http://localhost:5000"
-      : "https://csci-499-project-nine.vercel.app";
-
     console.log(window.location.hostname);
     try {
       const res = await fetch(
-        `${host}/api/search?keyword=${encodeURIComponent(keyword)}`
+        `/api/search?keyword=${encodeURIComponent(keyword)}`
       );
 
       if (!res.ok) {
