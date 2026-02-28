@@ -14,13 +14,13 @@ export default function Header() {
             </h2>
           </div>
           <div className="flex w-full gap-3 justify-center">
-            <Link className=" px-9 py-3 rounded-md" to="http://google.com">
+            <Link className=" px-9 py-3 rounded-md" to="/search">
               <span className="text-lg text-black">Search</span>
             </Link>
-            <Link className=" px-9 py-3 rounded-md" to="http://google.com">
+            <Link className=" px-9 py-3 rounded-md" to="/wish-list">
               <span className="text-lg text-black">Wish List</span>
             </Link>
-            <Link className=" px-9 py-3 rounded-md" to="http://google.com">
+            <Link className=" px-9 py-3 rounded-md" to="/what-is-verifind">
               <span className="text-lg text-black">What is Verifind?</span>
             </Link>
           </div>
