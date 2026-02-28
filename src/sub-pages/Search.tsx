@@ -26,6 +26,11 @@ function Search() {
 
     console.log(window.location.hostname);
     try {
+      /* 
+      const res = await fetch(
+        `/api/search?keyword=${encodeURIComponent(keyword)}`
+      );
+      */
       const res = await fetch(
         `/api/search?keyword=${encodeURIComponent(keyword)}`
       );
