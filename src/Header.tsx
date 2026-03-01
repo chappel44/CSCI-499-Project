@@ -6,7 +6,7 @@ export default function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   return (
     <header>
-      {/* DESKTOP HEADER */}
+      {/* COMPUTER HEADER */}
       <div className="hidden md:block">
         {/* Company Logo and name */}
         <div className=" fixed top-0 z-50 py-4 px-6 flex items-center justify-between bg-gradient-to-r from-gray-300/70 to-gray-400/70 bg-transparent backdrop-blur w-screen">
