@@ -84,13 +84,13 @@ function Search() {
               value={keyword}
               onChange={(e) => setKeyword(e.target.value)}
               placeholder="Search Amazon products"
-              className="p-2 w-72 focus:outline-none focus:ring-0 focus:border-transparent"
+              className="p-2 w-72 z-20 focus:outline-none focus:ring-0 focus:border-transparent"
             />
           </div>
 
           <button
             type="submit"
-            className="ml-3 p-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+            className="ml-3 p-2 bg-blue-500 z-20 text-white rounded cursor-pointer hover:bg-blue-600"
           >
             {loading ? "Searching..." : "Search"}
           </button>

@@ -27,7 +27,7 @@ function WhatIsVerifind() {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50 py-16 px-6 md:px-12">
+    <div className="min-h-screen bg-gray-50 py-25 px-6 md:px-12">
       <div className="text-center max-w-4xl mx-auto mb-16">
         <h1 className="text-5xl font-bold text-gray-900 mb-4">
           What is <span className="text-blue-600">VeriFind</span>?
