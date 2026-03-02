@@ -1,73 +1,43 @@
-# React + TypeScript + Vite
+# VeriFind
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+**VeriFind** is a centralized shopping platform that aggregates product listings from multiple online and in-store retailers into a single, unified interface. It helps users make informed purchasing decisions by providing real-time price comparisons, reviews, retailer trust scores, smart filtering, wishlist tracking, and direct purchase links.
 
-Currently, two official plugins are available:
+---
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## Features
 
-## React Compiler
+- **Instant Price Comparison:** Compare prices across multiple retailers instantly.  
+- **Product Ratings & Reviews:** Access ratings and reviews to make informed decisions.  
+- **Retailer Trust Scores:** Check retailer reliability before purchasing.  
+- **Smart Filtering & Sorting:** Filter by price, rating, or retailer; sort to find the best deals.  
+- **Wishlist Tracking:** Track products and get notified of price drops.  
+- **Direct Purchase Links:** Quickly navigate to the retailer to complete the purchase.  
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+---
 
-## Expanding the ESLint configuration
+## Team Members & Contributions
+name/role/contributions
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+| **Jack Zheng**        | Wishlist Feature         | Designed and implemented the wishlist system; integrated live pricing & Google Shopping review links; built UI for tracking price drops and availability. |
+| **Chris Happel**      | Smart Search             | Developed search functionality using SerpAPI; enabled instant product lookup with price and rating aggregation; implemented robust fallback/error handling. |
+| **Axel Mizerovskiy**  | Filtering & Sorting      | Created dynamic filtering and sorting options; enhanced usability for fast discovery of preferred products. |
+| **Bilal Bennour**     | API Integration          | Built and maintained backend server for product/search APIs; connected Supabase database; ensured seamless communication between frontend, backend, and SerpAPI. |
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+---
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+## Tech Stack
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+- **Frontend:** React, TypeScript, Tailwind CSS  
+- **Backend:** Node.js, Express, Axios  
+- **Database:** Supabase  
+- **APIs:** SerpAPI (Google Shopping & Amazon)  
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+---
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+## Getting Started
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+1. **Clone the repository:**
+
+```bash
+git clone https://github.com/yourusername/verifind.git
+cd verifind
