@@ -33,62 +33,99 @@ export default function Header() {
           >
             <span className="text-lg text-black">Login</span>
           </Link>
-        </div>
-      </div>
+          <div className="hidden md:flex fixed top-0 z-50 items-center justify-between px-4 py-2 bg-gray-200/80 backdrop-blur rounded-b-lg shadow-md max-w-[1200px] mx-auto w-full">
+            {/* Logo */}
+            <div className="flex items-center gap-2">
+              <Search className="w-6 h-6 text-black" />
+              <h2 className="text-2xl font-semibold text-black">Verifind</h2>
+            </div>
 
-      {/* MOBILE HEADER */}
-      <div className="block md:hidden">
-        {/* Company Logo and name */}
-        <div className=" fixed top-0 z-50 py-4 px-6 flex items-center justify-between bg-gradient-to-r from-gray-300/70 to-gray-400/70 bg-transparent backdrop-blur w-screen">
-          <div className="flex gap-2 items-center">
-            <Search className="text-white md:w-10 md:h-10 w-7 h-7" />
-            <h2 className="text-2xl px-2 py-1 md:px-4 md:py-2 bg-gray-200 text-black rounded-lg">
-              Verifind
-            </h2>
-          </div>
-
-          <button
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="cursor-pointer"
-          >
-            {mobileMenuOpen ? (
-              <X className="h-7 w-7" />
-            ) : (
-              <Menu className="h-7 w-7" />
-            )}
-          </button>
-        </div>
-
-        {mobileMenuOpen && (
-          <div className="fixed py-24 min-w-screen min-h-screen backdrop-blur bg-white/10">
-            <div className="flex flex-col gap-4 p-4 font-medium text-black text-xl">
+            {/* Navigation */}
+            <nav className="flex gap-4">
               <Link
-                onClick={() => setMobileMenuOpen(false)}
-                className="rounded-md"
+                className="px-3 py-1 rounded hover:bg-gray-300"
                 to="/search"
               >
-                <span>Search</span>
+                Search
               </Link>
               <Link
-                onClick={() => setMobileMenuOpen(false)}
-                className=" rounded-md"
+                className="px-3 py-1 rounded hover:bg-gray-300"
                 to="/wish-list"
               >
-                <span>Wish List</span>
+                Wish List
               </Link>
               <Link
-                onClick={() => setMobileMenuOpen(false)}
-                className="rounded-md"
+                className="px-3 py-1 rounded hover:bg-gray-300"
                 to="/what-is-verifind"
               >
-                <span>What is Verifind?</span>
+                What is Verifind?
               </Link>
-              <Link className="rounded-md mr-6" to="http://google.com">
-                <span>Login</span>
-              </Link>
-            </div>
+            </nav>
+
+            {/* Login */}
+            <Link
+              className="px-4 py-1 rounded bg-gray-400 hover:bg-gray-500 text-black"
+              to="http://google.com"
+            >
+              Login
+            </Link>
           </div>
-        )}
+
+          {/* MOBILE HEADER */}
+          <div className="block md:hidden">
+            {/* Company Logo and name */}
+            <div className=" fixed top-0 z-50 py-4 px-6 flex items-center justify-between bg-gradient-to-r from-gray-300/70 to-gray-400/70 bg-transparent backdrop-blur w-screen">
+              <div className="flex gap-2 items-center">
+                <Search className="text-white md:w-10 md:h-10 w-7 h-7" />
+                <h2 className="text-2xl px-2 py-1 md:px-4 md:py-2 bg-gray-200 text-black rounded-lg">
+                  Verifind
+                </h2>
+              </div>
+
+              <button
+                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                className="cursor-pointer"
+              >
+                {mobileMenuOpen ? (
+                  <X className="h-7 w-7" />
+                ) : (
+                  <Menu className="h-7 w-7" />
+                )}
+              </button>
+            </div>
+
+            {mobileMenuOpen && (
+              <div className="fixed py-24 min-w-screen min-h-screen backdrop-blur bg-white/10">
+                <div className="flex flex-col gap-4 p-4 font-medium text-black text-xl">
+                  <Link
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="rounded-md"
+                    to="/search"
+                  >
+                    <span>Search</span>
+                  </Link>
+                  <Link
+                    onClick={() => setMobileMenuOpen(false)}
+                    className=" rounded-md"
+                    to="/wish-list"
+                  >
+                    <span>Wish List</span>
+                  </Link>
+                  <Link
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="rounded-md"
+                    to="/what-is-verifind"
+                  >
+                    <span>What is Verifind?</span>
+                  </Link>
+                  <Link className="rounded-md mr-6" to="http://google.com">
+                    <span>Login</span>
+                  </Link>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
     </header>
   );
