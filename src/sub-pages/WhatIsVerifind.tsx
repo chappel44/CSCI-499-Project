@@ -1,5 +1,3 @@
-import React from "react";
-
 function WhatIsVerifind() {
   const teamMembers = [
     {
@@ -35,7 +33,12 @@ function WhatIsVerifind() {
           What is <span className="text-blue-600">VeriFind</span>?
         </h1>
         <p className="text-lg text-gray-700 leading-relaxed">
-          VeriFind is a centralized shopping platform that aggregates product listings from multiple online and in-store retailers into one unified interface. Users can instantly compare prices, read reviews, check retailer trust scores, and track their favorite products with advanced filtering, wishlist tracking, and direct purchase links. Our platform makes shopping smarter, faster, and more convenient.
+          VeriFind is a centralized shopping platform that aggregates product
+          listings from multiple online and in-store retailers into one unified
+          interface. Users can instantly compare prices, read reviews, check
+          retailer trust scores, and track their favorite products with advanced
+          filtering, wishlist tracking, and direct purchase links. Our platform
+          makes shopping smarter, faster, and more convenient.
         </p>
       </div>
 
@@ -46,7 +49,10 @@ function WhatIsVerifind() {
             className="bg-white rounded-2xl shadow-lg p-6 flex flex-col hover:scale-105 transition-transform duration-300 hover:shadow-2xl"
           >
             <div className="flex items-center justify-center h-24 w-24 rounded-full bg-blue-100 text-blue-600 font-bold text-xl mb-4 mx-auto">
-              {member.name.split(" ").map((n) => n[0]).join("")}
+              {member.name
+                .split(" ")
+                .map((n) => n[0])
+                .join("")}
             </div>
             <h3 className="text-xl font-semibold text-gray-900 mb-2 text-center">
               {member.name}
@@ -54,7 +60,9 @@ function WhatIsVerifind() {
             <p className="text-sm font-medium text-blue-600 text-center mb-2">
               {member.role}
             </p>
-            <p className="text-gray-700 text-sm text-center">{member.description}</p>
+            <p className="text-gray-700 text-sm text-center">
+              {member.description}
+            </p>
           </div>
         ))}
       </div>
@@ -62,7 +70,10 @@ function WhatIsVerifind() {
       <div className="mt-16 text-center max-w-3xl mx-auto">
         <h2 className="text-3xl font-bold text-gray-900 mb-4">Why VeriFind?</h2>
         <p className="text-gray-700 leading-relaxed">
-          VeriFind brings transparency, efficiency, and convenience to shopping. Whether online or in-store, you can find the best product at the best price, track your favorites, and make informed decisions with real-time data and intelligent tools.
+          VeriFind brings transparency, efficiency, and convenience to shopping.
+          Whether online or in-store, you can find the best product at the best
+          price, track your favorites, and make informed decisions with
+          real-time data and intelligent tools.
         </p>
       </div>
     </div>
