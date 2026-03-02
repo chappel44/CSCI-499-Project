@@ -37,7 +37,7 @@ export default function Header() {
             {/* Logo */}
             <div className="flex items-center gap-2">
               <Search className="w-6 h-6 text-black" />
-              <h2 className="text-2xl font-semibold text-black">Verifind</h2>
+              <h2 className="text-2xl font-semibold text-black"></h2>
             </div>
 
             {/* Navigation */}
