@@ -101,7 +101,7 @@ function Search() {
         {/* Show suggestions when no products */}
         {products.length === 0 && (
           <div className="mt-4">
-            <div className="relative flex flex-col items-center w-full border border-black/5 rounded-lg shadow-md px-6 pt-24 pb-8 bg-white space-y-4">
+            <div className="relative flex flex-col items-center border border-black/5 rounded-lg shadow-md px-6 md:px-10 pt-24 pb-8 bg-white space-y-4">
               {/* Floating Image (does NOT affect layout height) */}
               <img
                 className="absolute -top-20 md:-top-30 h-100 md:h-140 object-contain"
@@ -113,7 +113,7 @@ function Search() {
                 Start by searching for a product name, keyword, or ASIN.
               </p>
 
-              <div className="grid grid-cols-[auto_auto_auto] grid-cols-2 md:grid-cols-3 gap-2 w-full max-w-3xl z-10">
+              <div className="grid md:grid-cols-[auto_auto_auto] grid-cols-[auto_auto] grid-cols-2 md:grid-cols-3 gap-2 w-full max-w-3xl z-10">
                 {searches.map((item, index) => (
                   <button
                     key={item}
@@ -135,12 +135,12 @@ function Search() {
                   </button>
                 ))}
               </div>
-              <div className="border border-black/5 px-5 py-4 bg-gray-100 rounded-lg">
-                <div className="flex items-center gap-2">
+              <div className="border border-black/5 px-3 py-2 bg-gray-100 rounded-lg">
+                <div className="flex gap-2">
                   <ShieldCheck className="w-10 h-10 text-green-400" />
                   <div>
                     <h3 className="text-center font-bold text-xl">
-                      Verified Product Lookup
+                      Verified Product Data
                     </h3>
                     <p className="text-center text-gray-900/90">
                       Real-time Amazon product lookup.
