@@ -8,40 +8,44 @@ export default function Header() {
     <header>
       {/* COMPUTER HEADER */}
       <div className="hidden md:block">
-        {/* Company Logo and name */}
-        <div className="fixed top-0 left-1/2 transform -translate-x-1/2 z-50 w-6/7 px-6 py-5 bg-gray-300/80 backdrop-blur rounded-b-lg shadow-md flex items-center justify-between">
-          {" "}
+        {/* Company Logo and Navigation */}
+        <header className="fixed top-0 left-1/2 transform -translate-x-1/2 z-50 w-11/12 md:w-4/5 px-6 py-4 bg-gray-100/70 backdrop-blur-lg rounded-b-lg shadow-lg flex items-center justify-between">
           {/* Logo */}
-          <div className="flex items-center gap-2">
-            <Search className="w-6 h-6 text-black" />
-            <h2 className="text-2xl font-semibold text-black"></h2>
+          <div className="flex items-center gap-3">
+            <Search className="w-6 h-6 text-blue-600" />
+            <h2 className="text-2xl font-bold text-gray-800">Verifind</h2>
           </div>
+
           {/* Navigation */}
-          <nav className="flex gap-4">
-            <Link className="px-3 py-1 rounded hover:bg-gray-300" to="/search">
-              <span className="text-lg">Search</span>
+          <nav className="flex gap-6">
+            <Link
+              className="px-3 py-1 rounded-lg text-gray-700 hover:bg-blue-100 text-lg hover:text-blue-600 transition"
+              to="/search"
+            >
+              Search
             </Link>
             <Link
-              className="px-3 py-1 rounded hover:bg-gray-300"
+              className="px-3 py-1 rounded-lg text-gray-700 hover:bg-blue-100 text-lg hover:text-blue-600 transition"
               to="/wish-list"
             >
-              <span className="text-lg">Wish List</span>
+              Wish List
             </Link>
             <Link
-              className="px-3 py-1 rounded hover:bg-gray-300"
+              className="px-3 py-1 rounded-lg text-gray-700 hover:bg-blue-100 text-lg hover:text-blue-600 transition"
               to="/what-is-verifind"
             >
-              <span className="text-lg">What is Verifind?</span>
+              What is Verifind?
             </Link>
           </nav>
-          {/* Login */}
+
+          {/* Login Button */}
           <Link
-            className="px-4 py-1 rounded bg-gray-400 hover:bg-gray-500 text-black"
+            className="px-4 py-1 rounded-lg bg-blue-500 text-white hover:bg-blue-600 transition"
             to="http://google.com"
           >
             Login
           </Link>
-        </div>
+        </header>
       </div>
       {/* MOBILE HEADER */}
       <div className="block md:hidden">

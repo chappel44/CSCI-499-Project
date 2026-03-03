@@ -4,7 +4,7 @@ import { Search as SearchIcon, ShieldCheck } from "lucide-react";
 type Product = {
   title: string;
   link: string;
-  thumbnail?: string; // optional
+  thumbnail?: string;
   price?: string;
   prices?: { symbol: string; value: number }[];
   extracted_price?: number;
@@ -63,10 +63,12 @@ function Search() {
   };
 
   return (
-    <section className="py-20 md:py-30 min-w-screen min-h-screen bg-gray-100">
-      <div className="flex flex-col justify-center items-center w-full">
-        <h1 className="text-3xl font-semibold mb-4">Amazon Product Search</h1>
-        <p className="mb-4 text-black/50">
+    <section className="py-20 md:py-25 min-h-screen bg-gray-100 overflow-x-hidden">
+      <div className="flex flex-col items-center w-full px-4 sm:px-6 md:px-10">
+        <h1 className="text-3xl font-semibold mb-4 text-center">
+          Amazon Product Search
+        </h1>
+        <p className="mb-6 text-black/50 text-center">
           Find and verify Amazon products instantly.
         </p>
 
@@ -150,60 +152,74 @@ function Search() {
           </div>
         )}
 
-        {/* Show products */}
-        {products.slice(openPage, endPage).map((item, index) => (
-          <div
-            key={index}
-            className="flex items-center gap-4 border border-gray-300 p-3 rounded mb-3 w-full max-w-3xl"
-          >
-            {item.thumbnail ? (
-              <img
-                src={item.thumbnail}
-                alt={item.title}
-                className="w-24 h-24 object-contain"
-              />
-            ) : (
-              <div className="w-24 h-24 bg-gray-200 flex items-center justify-center text-gray-400">
-                No Image
-              </div>
-            )}
-
-            <div>
-              <h3 className="text-lg font-medium">{item.title}</h3>
-              <p className="text-gray-700">{"Price: " + getPrice(item)}</p>
-              <a
-                href={`${item.link}?tag=yourtag-20`}
-                target="_blank"
-                rel="noreferrer"
-                className="text-blue-500 hover:underline"
-              >
-                View on Amazon
-              </a>
-            </div>
-          </div>
-        ))}
-
-        {/* Pagination buttons */}
-        {products.length > 0 &&
-          Array.from({ length: buttonsNeeded }).map((_, index) => (
-            <button
+        {/* DISPLAY SEARCHED PRODUCTS */}
+        <div className="w-full max-w-3xl mx-auto">
+          {products.slice(openPage, endPage).map((item, index) => (
+            <div
               key={index}
-              className="flex px-6 py-2 bg-gray-400 ml-2 cursor-pointer rounded-lg hover:text-blue-400 hover:shadow-md"
-              onClick={() => {
-                const startIndex = index * 10;
-                if (startIndex + 10 < products.length) {
-                  setOpenPage(startIndex);
-                  setEndPage(startIndex + 10);
-                } else {
-                  const offset = products.length % 10;
-                  setOpenPage(startIndex);
-                  setEndPage(startIndex + offset);
-                }
-              }}
+              className="flex flex-row items-center mt-8 gap-4 border border-gray-300 shadow-sm hover:shadow-xl transform duration-300 hover:scale-105 ease-out p-3 rounded mb-3 w-full"
             >
-              {index + 1}
-            </button>
+              {/* IMAGE */}
+              {item.thumbnail ? (
+                <img
+                  src={item.thumbnail}
+                  alt={item.title}
+                  className="w-24 h-24 object-contain flex-shrink-0"
+                />
+              ) : (
+                <div className="w-24 h-24 bg-gray-200 flex items-center justify-center text-gray-400 flex-shrink-0">
+                  No Image
+                </div>
+              )}
+
+              {/* TEXT CONTENT */}
+              <div className="flex-1 flex flex-col">
+                <h3 className="text-lg font-medium">{item.title}</h3>
+                <p className="text-gray-700">{"Price: " + getPrice(item)}</p>
+                <a
+                  href={`${item.link}?tag=yourtag-20`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-blue-500 hover:underline"
+                >
+                  View on Amazon
+                </a>
+              </div>
+            </div>
           ))}
+        </div>
+
+        {/* PAGINATION BUTTONS */}
+        {products.length > 0 && (
+          <div className="flex flex-wrap justify-center gap-2 mt-4">
+            {Array.from({ length: buttonsNeeded }).map((_, index) => (
+              <button
+                key={index}
+                className={`px-4 py-2 rounded-md border transition cursor-pointer
+                  ${
+                    openPage === index * 10
+                      ? "bg-blue-500 text-white"
+                      : "bg-gray-200 text-gray-700"
+                  }
+                  hover:bg-blue-400 hover:text-white shadow-sm hover:shadow-md
+                `}
+                onClick={() => {
+                  const startIndex = index * 10;
+                  if (startIndex + 10 < products.length) {
+                    setOpenPage(startIndex);
+                    setEndPage(startIndex + 10);
+                  } else {
+                    const offset = products.length % 10;
+                    setOpenPage(startIndex);
+                    setEndPage(startIndex + offset);
+                  }
+                }}
+              >
+                {index + 1}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
     </section>
   );
