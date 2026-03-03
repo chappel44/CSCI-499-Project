@@ -101,7 +101,7 @@ function Search() {
         {/* Show suggestions when no products */}
         {products.length === 0 && (
           <div className="mt-4">
-            <div className="relative flex flex-col items-center w-full border border-black/5 rounded-lg shadow-md px-10 pt-24 pb-8 bg-white space-y-4">
+            <div className="relative flex flex-col items-center w-full border border-black/5 rounded-lg shadow-md px-6 pt-24 pb-8 bg-white space-y-4">
               {/* Floating Image (does NOT affect layout height) */}
               <img
                 className="absolute -top-20 md:-top-30 h-100 md:h-140 object-contain"
