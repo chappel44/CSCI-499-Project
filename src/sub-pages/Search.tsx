@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Search as SearchIcon } from "lucide-react";
+import { Search as SearchIcon, ShieldCheck } from "lucide-react";
 
 type Product = {
   title: string;
@@ -63,7 +63,7 @@ function Search() {
   };
 
   return (
-    <section className="py-30 min-w-screen min-h-screen bg-gray-100">
+    <section className="py-20 md:py-30 min-w-screen min-h-screen bg-gray-100">
       <div className="flex flex-col justify-center items-center w-full">
         <h1 className="text-3xl font-semibold mb-4">Amazon Product Search</h1>
         <p className="mb-4 text-black/50">
@@ -99,7 +99,7 @@ function Search() {
         {/* Show suggestions when no products */}
         {products.length === 0 && (
           <div className="mt-4">
-            <div className="relative flex flex-col items-center w-full border border-black/20 rounded-lg shadow-md px-10 pt-24 pb-8 bg-white space-y-4">
+            <div className="relative flex flex-col items-center w-full border border-black/5 rounded-lg shadow-md px-10 pt-24 pb-8 bg-white space-y-4">
               {/* Floating Image (does NOT affect layout height) */}
               <img
                 className="absolute -top-20 md:-top-30 h-100 md:h-140 object-contain"
@@ -111,20 +111,40 @@ function Search() {
                 Start by searching for a product name, keyword, or ASIN.
               </p>
 
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-2 w-full max-w-3xl z-10">
+              <div className="grid grid-cols-[auto_auto_auto] grid-cols-2 md:grid-cols-3 gap-2 w-full max-w-3xl z-10">
                 {searches.map((item, index) => (
                   <button
                     key={item}
-                    className={`flex cursor-pointer items-center justify-center gap-2 px-3 py-2 border border-gray-300 bg-gray-100 rounded-lg
+                    className={`flex cursor-pointer items-center justify-start gap-2 px-2 py-2 md:px-3 md:py-2 border border-gray-300 bg-gray-100 rounded-xl
               ${index === 3 ? "col-start-2" : ""}`}
                     onClick={() => setKeyword(item)}
                   >
-                    <SearchIcon className="w-5 h-5 text-black/50" />
-                    <p className="text-sm">
-                      Try: <span className="text-blue-400">{item}</span>
+                    <SearchIcon className=" w-5 h-5 text-black/50" />
+                    <p className="text-sm whitespace-nowrap">
+                      Try:{" "}
+                      <span
+                        className={
+                          index === 0 ? `text-blue-500` : "text-black/80"
+                        }
+                      >
+                        {item}
+                      </span>
                     </p>
                   </button>
                 ))}
+              </div>
+              <div className="border border-black/5 px-5 py-4 bg-gray-100 rounded-lg">
+                <div className="flex items-center gap-2">
+                  <ShieldCheck className="w-10 h-10 text-green-400" />
+                  <div>
+                    <h3 className="text-center font-bold text-xl">
+                      Verified Product Lookup
+                    </h3>
+                    <p className="text-center text-gray-900/90">
+                      Real-time Amazon product lookup.
+                    </p>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
