@@ -16,7 +16,7 @@ function App() {
         <Route path="/wish-list" element={<WishList />} />
         <Route path="/what-is-verifind" element={<WhatIsVerifind />} />
         <Route path="/login" element={<Login />} />
-        <Route path="/sign-up" element={<SignUp />} />
+        <Route path="/signup" element={<SignUp />} />
      </Routes>
     </>
   );
