@@ -94,7 +94,9 @@ export default function Header() {
               >
                 <span>What is Verifind?</span>
               </Link>
-           <Link className="rounded-md mr-6" to="/login">
+           <Link className="rounded-md mr-6" 
+               onClick={() => setMobileMenuOpen(false)}
+               to="/login">
                 <span>Login</span>
               </Link>
             </div>
