@@ -29,7 +29,7 @@ export default function SignUp() {
                value={password}
                onChange={(e) => setPassword(e.target.value)}
              />
-            <button type="submit" className="bg-green-500 text-white p-2 rounded">
+            <button type="submit" className="bg-green-500 text-white transition-transform duration-200 hover:scale-105 active:scale-95 p-2 rounded">
                Sign Up
             </button>
          </form>
