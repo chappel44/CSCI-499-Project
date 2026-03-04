@@ -23,12 +23,21 @@ export default function SignUp() {
        }
        */
 
-      alert("Sign up is waiting for dtabase keys rn.");
+      alert("Sign up is waiting for database keys rn.");
 
 
 
 
    };
+   //password requirments
+   const requirements = [
+      { label: "8+ characters", test:password.length >= 8 },
+      { label: "Contains a number", test: /\d/.test(password) },
+      { label: "Contains a special character", test: /[@$!%*?&]/.test(password) },
+   ];
+
+
+
 
    return (
       <div className="flex flex-col items-center justify-center min-h-screen">
@@ -47,7 +56,14 @@ export default function SignUp() {
                className="border p-2 rounded"
                value={password}
                onChange={(e) => setPassword(e.target.value)}
-             />
+              />
+              <div className="mt-2 text-sm test-left">
+                  {requirements.map((rendex) => (
+                     <div key={index} className={req.test ? "text-greeen-500" : "text-gray-400"}>
+                        {req.text ? "✔" : "○"} {req.label}
+                     </div>
+                  ))}
+               </div>
             <button type="submit" className="bg-green-500 text-white transition-transform duration-200 hover:scale-105 active:scale-95 p-2 rounded">
                Sign Up
             </button>
