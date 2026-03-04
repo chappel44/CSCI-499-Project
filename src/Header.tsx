@@ -1,107 +1,115 @@
-import { Link } from "react-router-dom";
-import { Search, Menu, X } from "lucide-react";
-import { useState } from "react";
+import { Link, useLocation } from "react-router-dom";
 
 export default function Header() {
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { pathname } = useLocation();
+
+  const navLinks = [
+    { to: "/search",           label: "Search"           },
+    { to: "/wish-list",        label: "Wish List"        },
+    { to: "/what-is-verifind", label: "What is Verifind?" },
+  ];
+
   return (
-    <header>
-      {/* COMPUTER HEADER */}
-      <div className="hidden md:block">
-        {/* Company Logo and Navigation */}
-        <header className="fixed top-0 left-1/2 transform -translate-x-1/2 z-50 w-11/12 md:w-4/5 px-6 py-4 bg-gray-100/70 backdrop-blur-lg rounded-b-lg shadow-lg flex items-center justify-between">
-          {/* Logo */}
-          <div className="flex items-center gap-3">
-            <Search className="w-6 h-6 text-blue-600" />
-            <Link to="/" className="text-2xl font-bold hover:opacity-80 text-gray-800 transition-opacity">Verifind</Link>
-          </div>
+    <header className="fixed top-0 left-0 right-0 z-50 flex justify-center px-4 pt-3">
+      <div className="w-full max-w-[1200px] flex items-center justify-between px-5 py-2.5 bg-white/80 backdrop-blur-xl border border-gray-200/60 rounded-2xl shadow-[0_4px_32px_rgba(0,0,0,0.07)]">
+        <Link to="/" className="flex items-center gap-2.5 group flex-shrink-0">
+          <svg width="28" height="28" viewBox="0 0 52 52" fill="none">
+            <defs>
+              <linearGradient id="hdr-lg" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stopColor="#00AAFF" />
+                <stop offset="100%" stopColor="#6B30FF" />
+              </linearGradient>
+            </defs>
+            <circle
+              cx="22" cy="22" r="14"
+              fill="rgba(0,170,255,0.1)"
+              stroke="url(#hdr-lg)"
+              strokeWidth="2.4"
+            />
+            <polyline
+              points="14,22 20,28 31,15"
+              fill="none"
+              stroke="url(#hdr-lg)"
+              strokeWidth="2.2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+            <line
+              x1="31" y1="31" x2="42" y2="42"
+              stroke="url(#hdr-lg)"
+              strokeWidth="3.4"
+              strokeLinecap="round"
+            />
+          </svg>
 
-          {/* Navigation */}
-          <nav className="flex gap-6">
-            <Link
-              className="px-3 py-1 rounded-lg text-gray-700 hover:bg-blue-100 text-lg hover:text-blue-600 transition"
-              to="/search"
-            >
-              Search
-            </Link>
-            <Link
-              className="px-3 py-1 rounded-lg text-gray-700 hover:bg-blue-100 text-lg hover:text-blue-600 transition"
-              to="/wish-list"
-            >
-              Wish List
-            </Link>
-            <Link
-              className="px-3 py-1 rounded-lg text-gray-700 hover:bg-blue-100 text-lg hover:text-blue-600 transition"
-              to="/what-is-verifind"
-            >
-              What is Verifind?
-            </Link>
-          </nav>
-
-          {/* Login Button */}
-          <Link
-            className="px-4 py-1 rounded-lg bg-blue-500 text-white hover:bg-blue-600 transition"
-            to="/login"
+          <span
+            className="text-xl font-extrabold tracking-tight"
+            style={{
+              background: "linear-gradient(90deg,#1A1A2E 43%,#0088DD 44%,#6B30FF 100%)",
+              WebkitBackgroundClip: "text",
+              WebkitTextFillColor: "transparent",
+              backgroundClip: "text",
+            }}
           >
-            Login
-          </Link>
-        </header>
+            Verifind
+          </span>
+        </Link>
+        <nav className="hidden md:flex items-center gap-1">
+          {navLinks.map(({ to, label }) => {
+            const active = pathname === to;
+            return (
+              <Link
+                key={to}
+                to={to}
+                className={`relative px-4 py-1.5 rounded-xl text-sm font-medium transition-all duration-200 ${
+                  active
+                    ? "text-indigo-600"
+                    : "text-gray-500 hover:text-gray-900 hover:bg-gray-100"
+                }`}
+              >
+                {label}
+                {active && (
+                  <span
+                    className="absolute bottom-0 left-1/2 -translate-x-1/2 h-0.5 w-5 rounded-full"
+                    style={{ background: "linear-gradient(90deg,#00AAFF,#6B30FF)" }}
+                  />
+                )}
+              </Link>
+            );
+          })}
+        </nav>
+
+        
+        <Link
+          to="http://google.com"//login
+          className="flex-shrink-0 px-5 py-2 rounded-xl text-sm font-semibold text-white transition hover:opacity-90 shadow-md"
+          style={{ background: "linear-gradient(90deg,#00AAFF,#6B30FF)" }}
+        >
+          Login
+        </Link>
       </div>
-      {/* MOBILE HEADER */}
-      <div className="block md:hidden">
-        {/* Company Logo and name */}
-        <div className=" fixed top-0 z-50 py-2 px-6 flex items-center justify-between bg-gradient-to-r from-gray-300/70 to-gray-400/70 bg-transparent backdrop-blur w-screen">
-          <div className="flex gap-2 items-center">
-            <Search className="text-white md:w-10 md:h-10 w-7 h-7" />
-            <Link to="/" className="text-2xl px-2 py-1 md:px-4 md:py-2 bg-gray-200 text-black rounded-lg hover:bg-gray-300 transition">
-              Verifind
+      <div className="md:hidden fixed bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-1 px-3 py-2 bg-white/90 backdrop-blur-xl border border-gray-200/60 rounded-2xl shadow-xl z-50">
+        {navLinks.map(({ to, label }) => {
+          const active = pathname === to;
+          return (
+            <Link
+              key={to}
+              to={to}
+              className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${
+                active
+                  ? "text-white"
+                  : "text-gray-500 hover:text-gray-900 hover:bg-gray-100"
+              }`}
+              style={
+                active
+                  ? { background: "linear-gradient(90deg,#00AAFF,#6B30FF)" }
+                  : {}
+              }
+            >
+              {label}
             </Link>
-          </div>
-
-          <button
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="cursor-pointer"
-          >
-            {mobileMenuOpen ? (
-              <X className="h-7 w-7" />
-            ) : (
-              <Menu className="h-7 w-7" />
-            )}
-          </button>
-        </div>
-
-        {mobileMenuOpen && (
-          <div className="fixed py-24 min-w-screen min-h-screen backdrop-blur bg-white z-30">
-            <div className="flex flex-col gap-4 p-4 font-medium text-black text-xl">
-              <Link
-                onClick={() => setMobileMenuOpen(false)}
-                className="rounded-md"
-                to="/search"
-              >
-                <span>Search</span>
-              </Link>
-              <Link
-                onClick={() => setMobileMenuOpen(false)}
-                className=" rounded-md"
-                to="/wish-list"
-              >
-                <span>Wish List</span>
-              </Link>
-              <Link
-                onClick={() => setMobileMenuOpen(false)}
-                className="rounded-md"
-                to="/what-is-verifind"
-              >
-                <span>What is Verifind?</span>
-              </Link>
-           <Link className="rounded-md mr-6" 
-               onClick={() => setMobileMenuOpen(false)}
-               to="/login">
-                <span>Login</span>
-              </Link>
-            </div>
-          </div>
-        )}
+          );
+        })}
       </div>
     </header>
   );
