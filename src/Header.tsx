@@ -41,7 +41,7 @@ export default function Header() {
           {/* Login Button */}
           <Link
             className="px-4 py-1 rounded-lg bg-blue-500 text-white hover:bg-blue-600 transition"
-            to="http://google.com"
+            to="/login"
           >
             Login
           </Link>
@@ -94,7 +94,7 @@ export default function Header() {
               >
                 <span>What is Verifind?</span>
               </Link>
-              <Link className="rounded-md mr-6" to="http://google.com">
+           <Link className="rounded-md mr-6" to="/login">
                 <span>Login</span>
               </Link>
             </div>
