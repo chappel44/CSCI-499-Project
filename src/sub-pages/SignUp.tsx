@@ -1,14 +1,31 @@
 import { useState } from "react";
 import { Link } from "react-router-dom"; // so that we can send to Login Page :)
-
+import { useNavigate } from "react-router-dom";
 
 export default function SignUp() {
    const [email, setEmail] = useState("");
    const [password, setPassword] = useState("");
 
-   const handleSubmit = (e: React.FormEvent) => {
+   const navigate = useNavigate();
+
+   const handleSubmit = async (e: React.FormEvent) => {
       e.preventDefault();
       console.log("Signing up with:", {email, password});
+      /* Ready for database keys
+       const { data,error } = await supabase.auth.signUp({email,password,});
+
+       if (error) {
+       alert("Sign up failed: " + error.message);
+       } else {
+         navigate("/"); // same as login, sends to main page
+       }
+       */
+
+      alert("Sign up is waiting for dtabase keys rn.");
+
+
+
+
    };
 
    return (

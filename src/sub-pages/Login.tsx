@@ -1,15 +1,26 @@
 import { useState } from "react";
 import { Link } from "react-router-dom"; // to link to the sign up page
-
+import { useNavigate } from "react-router-dom";
 
 export default function Login() {
    const [email, setEmail] = useState("");
    const [password, setPassword] = useState("");
 
-   const handleSubmit = (e: React.FormEvent) => {
+   const navigate = useNavigate();
+
+   const handleSubmit = async (e: React.FormEvent) => {
       e.preventDefault();
       console.log("Logging in with:", {email, password});
-      // supabase auth logic here
+      /* uncomment supabase auth logic here after supabase set up properly
+      const { data, error } = await supabase.auth.signInWithPassword({email,password,});
+
+      if (error) {
+         alert(error.message);
+      } else {
+         navigate("/"); // bring user to homepage on successful login can do navigate(-1) to go to last page
+      }
+       */
+      alert("Auth disabled until database keys setup.");
    };
 
    return (
@@ -18,7 +29,7 @@ export default function Login() {
          <form onSubmit={handleSubmit} className="flex flex-col gap-4 w-80">
             <input
                type="email"
-               placeholder="youremail@email.com"
+               placeholder="Email"
                className="border p-2 rounded"
                value={email}
                onChange={(e) => setEmail(e.target.value)}
