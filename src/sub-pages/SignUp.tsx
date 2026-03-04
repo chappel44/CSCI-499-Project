@@ -68,7 +68,7 @@ export default function SignUp() {
             <button 
                type="submit"
                disabled={isInvalid}
-               className={`w-full p-2 rounded text-white transition-all duration-200 ${ isInvalid ? "bg-gray-400 cursor-not-allowed" : "bg-green-500 hover:bg-green-600 hover:scale-105 active:scale-95"}`}> // was behaving weird unless on one line
+               className={`w-full p-2 rounded text-white transition-all duration-200 ${ isInvalid ? "bg-gray-400 cursor-not-allowed" : "bg-green-500 hover:bg-green-600 hover:scale-105 active:scale-95"}`}>
                Sign Up
             </button>
          </form>
