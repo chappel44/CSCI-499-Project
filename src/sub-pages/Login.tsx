@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { Search } from "lucide-react";
 
 export default function Login() {
    const [email, setEmail] = useState("");
