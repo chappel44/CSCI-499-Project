@@ -58,9 +58,9 @@ export default function SignUp() {
                onChange={(e) => setPassword(e.target.value)}
               />
               <div className="mt-2 text-sm test-left">
-                  {requirements.map((rendex) => (
+                  {requirements.map((req, index) => (
                      <div key={index} className={req.test ? "text-greeen-500" : "text-gray-400"}>
-                        {req.text ? "✔" : "○"} {req.label}
+                        {req.test ? "✔" : "○"} {req.label}
                      </div>
                   ))}
                </div>
