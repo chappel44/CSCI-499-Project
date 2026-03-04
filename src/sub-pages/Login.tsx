@@ -11,6 +11,8 @@ export default function Login() {
    const handleSubmit = async (e: React.FormEvent) => {
       e.preventDefault();
       console.log("Logging in with:", {email, password});
+      console.log("Form submitted!");
+      navigate("/");
       /* uncomment supabase auth logic here after supabase set up properly
       const { data, error } = await supabase.auth.signInWithPassword({email,password,});
 

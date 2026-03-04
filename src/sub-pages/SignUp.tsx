@@ -11,6 +11,8 @@ export default function SignUp() {
    const handleSubmit = async (e: React.FormEvent) => {
       e.preventDefault();
       console.log("Signing up with:", {email, password});
+      console.log("Form submitted!");
+      navigate("/");
       /* Ready for database keys
        const { data,error } = await supabase.auth.signUp({email,password,});
 
