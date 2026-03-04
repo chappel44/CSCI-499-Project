@@ -36,7 +36,8 @@ export default function SignUp() {
       { label: "Contains a special character", test: /[@$!%*?&]/.test(password) },
    ];
 
-
+   //password submit button logic
+   const isInvalid = password.length < 8 || !/\d/.test(password) || !/[@$!%*?&]/.test(password);
 
 
    return (
@@ -59,12 +60,15 @@ export default function SignUp() {
               />
               <div className="mt-2 text-sm test-left">
                   {requirements.map((req, index) => (
-                     <div key={index} className={req.test ? "text-greeen-500" : "text-gray-400"}>
+                     <div key={index} className={req.test ? "text-green-500" : "text-gray-400"}>
                         {req.test ? "✔" : "○"} {req.label}
                      </div>
                   ))}
                </div>
-            <button type="submit" className="bg-green-500 text-white transition-transform duration-200 hover:scale-105 active:scale-95 p-2 rounded">
+            <button 
+               type="submit"
+               disabled={isInvalid}
+               className={`w-full p-2 rounded text-white transition-all duration-200 ${ isInvalid ? "bg-gray-400 cursor-not-allowed" : "bg-green-500 hover:bg-green-600 hover:scale-105 active:scale-95"}`}> // was behaving weird unless on one line
                Sign Up
             </button>
          </form>
