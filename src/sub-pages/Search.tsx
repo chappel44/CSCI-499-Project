@@ -1,25 +1,15 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Search as SearchIcon, ShieldCheck } from "lucide-react";
-
-type Product = {
-  title: string;
-  link: string;
-  thumbnail?: string;
-  price?: string;
-  prices?: { symbol: string; value: number }[];
-  extracted_price?: number;
-  asin?: string;
-};
+import { useSearchContext } from "../Contexts/useSearchContext";
+import type { Product } from "../Contexts/SearchContext";
 
 const searches = ["Air Pods", "Gaming Laptops", "Nike", "Nike Running Shoes"];
 
 function Search() {
   const [keyword, setKeyword] = useState("");
-  const [products, setProducts] = useState<Product[]>([]);
+  const { products, setProducts, openPage, setOpenPage, endPage, setEndPage } =
+    useSearchContext();
   const [loading, setLoading] = useState(false);
-  const [buttonsNeeded, setButtonsNeeded] = useState(0);
-  const [openPage, setOpenPage] = useState(0);
-  const [endPage, setEndPage] = useState(10);
 
   const getPrice = (item: Product) => {
     if (item.price) return `${item.price}$`;
@@ -50,8 +40,6 @@ function Search() {
       );
 
       setProducts(sortedProducts);
-      const tabsNeeded = Math.ceil(sortedProducts.length / 10);
-      setButtonsNeeded(tabsNeeded);
       setOpenPage(0);
       setEndPage(10);
     } catch (err) {
@@ -62,10 +50,14 @@ function Search() {
     }
   };
 
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: "auto" });
+  }, [openPage]);
+
   return (
     <section className="py-20 md:py-25 min-h-screen bg-gray-100 overflow-x-hidden">
       <div className="flex flex-col items-center w-full px-4 sm:px-6 md:px-10">
-        <h1 className="text-3xl font-semibold mb-4 text-center">
+        <h1 id="search-bar" className="text-3xl font-semibold mb-4 text-center">
           Amazon Product Search
         </h1>
         <p className="mb-6 text-black/50 text-center">
@@ -157,6 +149,7 @@ function Search() {
           {products.slice(openPage, endPage).map((item, index) => (
             <div
               key={index}
+              id={(openPage + index).toString()}
               className="flex flex-row items-center mt-8 gap-4 border border-gray-300 shadow-sm hover:shadow-xl transform duration-300 hover:scale-105 ease-out p-3 rounded mb-3 w-full"
             >
               {/* IMAGE */}
@@ -192,10 +185,11 @@ function Search() {
         {/* PAGINATION BUTTONS */}
         {products.length > 0 && (
           <div className="flex flex-wrap justify-center gap-2 mt-4">
-            {Array.from({ length: buttonsNeeded }).map((_, index) => (
-              <button
-                key={index}
-                className={`px-4 py-2 rounded-md border transition cursor-pointer
+            {Array.from({ length: Math.ceil(products.length / 10) }).map(
+              (_, index) => (
+                <button
+                  key={index}
+                  className={`px-4 py-2 rounded-md border transition cursor-pointer
                   ${
                     openPage === index * 10
                       ? "bg-blue-500 text-white"
@@ -203,21 +197,22 @@ function Search() {
                   }
                   hover:bg-blue-400 hover:text-white shadow-sm hover:shadow-md
                 `}
-                onClick={() => {
-                  const startIndex = index * 10;
-                  if (startIndex + 10 < products.length) {
-                    setOpenPage(startIndex);
-                    setEndPage(startIndex + 10);
-                  } else {
-                    const offset = products.length % 10;
-                    setOpenPage(startIndex);
-                    setEndPage(startIndex + offset);
-                  }
-                }}
-              >
-                {index + 1}
-              </button>
-            ))}
+                  onClick={() => {
+                    const startIndex = index * 10;
+                    if (startIndex + 10 < products.length) {
+                      setOpenPage(startIndex);
+                      setEndPage(startIndex + 10);
+                    } else {
+                      const offset = products.length % 10;
+                      setOpenPage(startIndex);
+                      setEndPage(startIndex + offset);
+                    }
+                  }}
+                >
+                  {index + 1}
+                </button>
+              )
+            )}
           </div>
         )}
       </div>
