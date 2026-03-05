@@ -49,9 +49,14 @@ function Search() {
           (a.extracted_price ?? Infinity) - (b.extracted_price ?? Infinity)
       );
 
-      setProducts(sortedProducts);
+      // Filter out products without prices
+      const availableProducts = sortedProducts.filter(
+        (item) => item.price || (item.prices && item.prices.length > 0)
+      );
+
+      setProducts(availableProducts);
       setOpenPage(0);
-      setEndPage(10);
+      setEndPage(Math.min(10, availableProducts.length));
     } catch (err) {
       console.error(err);
       alert("Error fetching products");
@@ -60,6 +65,7 @@ function Search() {
     }
   };
 
+  // Close dropdown on outside click
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "auto" });
 
@@ -76,7 +82,15 @@ function Search() {
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
-  }, [openPage]);
+  }, []);
+
+  // Filtered products by retailer
+  const filteredProducts = products.filter(
+    (item) => item.price || (item.prices && item.prices.length > 0)
+  );
+
+  const totalPages = Math.ceil(filteredProducts.length / 10);
+  const itemsPerPage = 10;
 
   return (
     <section className="py-20 md:py-25 min-h-screen bg-gray-100 overflow-x-hidden">
@@ -90,9 +104,9 @@ function Search() {
 
         {/* Search Input */}
         <form
-          className="flex items-center"
+          className="flex items-center flex-wrap"
           onSubmit={(e) => {
-            e.preventDefault(); // prevents page reload
+            e.preventDefault();
             searchProducts();
           }}
         >
@@ -113,57 +127,50 @@ function Search() {
             {loading ? "Searching..." : "Search"}
           </button>
 
-          <div
-            ref={dropdownRef}
-            className="flex flex-col items-center relative z-10"
-          >
-            <div className="relative inline-block w-40 ml-3" ref={dropdownRef}>
-              <button
-                type="button"
-                className="w-full p-2 bg-blue-500 text-white rounded cursor-pointer hover:bg-blue-600"
-                onClick={() => setSearchOptionsOpen(!searchOptionsOpen)}
-              >
-                {selectedRetailer
-                  ? retailers.find((r) => r.id === selectedRetailer)?.label
-                  : "Select Retailer"}
-              </button>
+          {/* Retailer Dropdown */}
+          <div className="relative ml-3" ref={dropdownRef}>
+            <button
+              type="button"
+              className="w-40 p-2 bg-blue-500 text-white rounded cursor-pointer hover:bg-blue-600"
+              onClick={() => setSearchOptionsOpen(!searchOptionsOpen)}
+            >
+              {selectedRetailer
+                ? retailers.find((r) => r.id === selectedRetailer)?.label
+                : "Select Retailer"}
+            </button>
 
-              <div
-                className={`
-                absolute top-full left-0 mt-1 rounded-lg bg-gray-200 shadow-lg
-                flex flex-col
-                transition-all duration-300 ease-out
-                transform
-                ${
-                  searchOptionsOpen
-                    ? "translate-y-0 opacity-100 scale-100"
-                    : "translate-y-2 opacity-0 scale-95 pointer-events-none"
-                }
-                w-full
-              `}
-              >
-                {retailers.map((retailer) => (
-                  <button
-                    key={retailer.id}
-                    onClick={() => {
-                      setSelectedRetailer(retailer.id);
-                      setSearchOptionsOpen(false);
-                    }}
-                    className="w-full py-2 px-4 text-center hover:bg-blue-200 rounded-xl cursor-pointer"
-                  >
-                    {retailer.label}
-                  </button>
-                ))}
-              </div>
+            <div
+              className={`absolute top-full left-0 mt-1 rounded-lg bg-gray-200 shadow-lg
+              flex flex-col transition-all duration-300 ease-out transform
+              ${
+                searchOptionsOpen
+                  ? "translate-y-0 opacity-100 scale-100"
+                  : "translate-y-2 opacity-0 scale-95 pointer-events-none"
+              }
+              w-full`}
+            >
+              {retailers.map((retailer) => (
+                <button
+                  key={retailer.id}
+                  onClick={() => {
+                    setSelectedRetailer(retailer.id);
+                    setSearchOptionsOpen(false);
+                    setOpenPage(0);
+                    setEndPage(Math.min(itemsPerPage, filteredProducts.length));
+                  }}
+                  className="w-full py-2 px-4 text-center hover:bg-blue-200 rounded-xl cursor-pointer"
+                >
+                  {retailer.label}
+                </button>
+              ))}
             </div>
           </div>
         </form>
 
-        {/* Show suggestions when no products */}
-        {products.length === 0 && (
+        {/* Suggestions when no products */}
+        {filteredProducts.length === 0 && (
           <div className="mt-4">
             <div className="relative flex flex-col items-center border border-black/5 rounded-lg shadow-md px-6 md:px-10 pt-24 pb-8 bg-white space-y-4">
-              {/* Floating Image (does NOT affect layout height) */}
               <img
                 className="absolute -top-20 md:-top-30 h-100 md:h-140 object-contain"
                 src="https://xdzqkdoejtnthuzauewa.supabase.co/storage/v1/object/public/posts/posts/4a7729f7-7138-4eeb-a873-fd8735e6cd5c.PNG"
@@ -196,6 +203,7 @@ function Search() {
                   </button>
                 ))}
               </div>
+
               <div className="border border-black/5 px-3 py-2 bg-gray-100 rounded-lg">
                 <div className="flex gap-2">
                   <ShieldCheck className="w-10 h-10 text-green-400" />
@@ -213,9 +221,9 @@ function Search() {
           </div>
         )}
 
-        {/* DISPLAY SEARCHED PRODUCTS */}
+        {/* Display Products */}
         <div className="w-full max-w-3xl mx-auto">
-          {products.slice(openPage, endPage).map((item, index) => (
+          {filteredProducts.slice(openPage, endPage).map((item, index) => (
             <div
               key={index}
               id={(openPage + index).toString()}
@@ -251,37 +259,36 @@ function Search() {
           ))}
         </div>
 
-        {/* PAGINATION BUTTONS */}
-        {products.length > 0 && (
+        {/* Pagination */}
+        {filteredProducts.length > 0 && (
           <div className="flex flex-wrap justify-center gap-2 mt-4">
-            {Array.from({ length: Math.ceil(products.length / 10) }).map(
-              (_, index) => (
+            {Array.from({ length: totalPages }).map((_, index) => {
+              const startIndex = index * itemsPerPage;
+              const endIndexCalculated = Math.min(
+                startIndex + itemsPerPage,
+                filteredProducts.length
+              );
+
+              return (
                 <button
                   key={index}
                   className={`px-4 py-2 rounded-md border transition cursor-pointer
-                  ${
-                    openPage === index * 10
-                      ? "bg-blue-500 text-white"
-                      : "bg-gray-200 text-gray-700"
-                  }
-                  hover:bg-blue-400 hover:text-white shadow-sm hover:shadow-md
-                `}
-                  onClick={() => {
-                    const startIndex = index * 10;
-                    if (startIndex + 10 < products.length) {
-                      setOpenPage(startIndex);
-                      setEndPage(startIndex + 10);
-                    } else {
-                      const offset = products.length % 10;
-                      setOpenPage(startIndex);
-                      setEndPage(startIndex + offset);
+                    ${
+                      openPage === startIndex
+                        ? "bg-blue-500 text-white"
+                        : "bg-gray-200 text-gray-700"
                     }
+                    hover:bg-blue-400 hover:text-white shadow-sm hover:shadow-md
+                  `}
+                  onClick={() => {
+                    setOpenPage(startIndex);
+                    setEndPage(endIndexCalculated);
                   }}
                 >
                   {index + 1}
                 </button>
-              )
-            )}
+              );
+            })}
           </div>
         )}
       </div>
