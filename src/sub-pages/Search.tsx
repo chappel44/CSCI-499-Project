@@ -1,15 +1,25 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { Search as SearchIcon, ShieldCheck } from "lucide-react";
 import { useSearchContext } from "../Contexts/useSearchContext";
 import type { Product } from "../Contexts/SearchContext";
 
 const searches = ["Air Pods", "Gaming Laptops", "Nike", "Nike Running Shoes"];
 
+const retailers = [
+  { id: "walmart", label: "Walmart" },
+  { id: "ebay", label: "Ebay" },
+  { id: "amazon", label: "Amazon" },
+  { id: "google-shopping", label: "Google Shopping" },
+];
+
 function Search() {
   const [keyword, setKeyword] = useState("");
   const { products, setProducts, openPage, setOpenPage, endPage, setEndPage } =
     useSearchContext();
   const [loading, setLoading] = useState(false);
+  const [searchOptionsOpen, setSearchOptionsOpen] = useState(false);
+  const [selectedRetailer, setSelectedRetailer] = useState("");
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   const getPrice = (item: Product) => {
     if (item.price) return `${item.price}$`;
@@ -52,6 +62,20 @@ function Search() {
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "auto" });
+
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node)
+      ) {
+        setSearchOptionsOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
   }, [openPage]);
 
   return (
@@ -88,6 +112,51 @@ function Search() {
           >
             {loading ? "Searching..." : "Search"}
           </button>
+
+          <div
+            ref={dropdownRef}
+            className="flex flex-col items-center relative z-10"
+          >
+            <div className="relative inline-block w-40 ml-3" ref={dropdownRef}>
+              <button
+                type="button"
+                className="w-full p-2 bg-blue-500 text-white rounded cursor-pointer hover:bg-blue-600"
+                onClick={() => setSearchOptionsOpen(!searchOptionsOpen)}
+              >
+                {selectedRetailer
+                  ? retailers.find((r) => r.id === selectedRetailer)?.label
+                  : "Select Retailer"}
+              </button>
+
+              <div
+                className={`
+                absolute top-full left-0 mt-1 rounded-lg bg-gray-200 shadow-lg
+                flex flex-col
+                transition-all duration-300 ease-out
+                transform
+                ${
+                  searchOptionsOpen
+                    ? "translate-y-0 opacity-100 scale-100"
+                    : "translate-y-2 opacity-0 scale-95 pointer-events-none"
+                }
+                w-full
+              `}
+              >
+                {retailers.map((retailer) => (
+                  <button
+                    key={retailer.id}
+                    onClick={() => {
+                      setSelectedRetailer(retailer.id);
+                      setSearchOptionsOpen(false);
+                    }}
+                    className="w-full py-2 px-4 text-center hover:bg-blue-200 rounded-xl cursor-pointer"
+                  >
+                    {retailer.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
         </form>
 
         {/* Show suggestions when no products */}
