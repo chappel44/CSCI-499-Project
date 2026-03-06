@@ -12,51 +12,65 @@ const retailers = [
   { id: "google-shopping", label: "Google Shopping" },
 ];
 
+const itemsPerPage = 10;
+
 function Search() {
   const [keyword, setKeyword] = useState("");
-  const { products, setProducts, openPage, setOpenPage, endPage, setEndPage } =
-    useSearchContext();
+  const { products, setProducts, openPage, setOpenPage } = useSearchContext();
   const [loading, setLoading] = useState(false);
   const [searchOptionsOpen, setSearchOptionsOpen] = useState(false);
   const [selectedRetailer, setSelectedRetailer] = useState("");
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   const getPrice = (item: Product) => {
-    if (item.price) return `${item.price}$`;
-    if (item.prices && item.prices.length > 0)
-      return `${item.prices[0].symbol}${item.prices[0].value}`;
+    // direct string price
+    if (item.price) return item.price;
+
+    // numeric extracted price
+    if (item.extracted_price) return `$${item.extracted_price}`;
+
+    // prices array
+    if (item.prices?.length) {
+      const p = item.prices[0];
+      if (p?.value) return `${p.symbol ?? "$"}${p.value}`;
+    }
+
+    if (item.title) {
+      const match = item.title.match(/\$\d+(?:\.\d{1,2})?/);
+      if (match) return match[0];
+    }
+
     return "Price not available";
   };
 
   const searchProducts = async () => {
     if (!keyword) return;
+
     setLoading(true);
 
     try {
       const res = await fetch(
         `/api/search?keyword=${encodeURIComponent(keyword)}`
       );
+
       if (!res.ok) throw new Error(`Server error: ${res.status}`);
 
       const data = await res.json();
+
       const allProducts = [
         ...(data.featured_products || []),
         ...(data.organic_results || []),
       ];
+
+      console.log(allProducts);
 
       const sortedProducts = allProducts.sort(
         (a, b) =>
           (a.extracted_price ?? Infinity) - (b.extracted_price ?? Infinity)
       );
 
-      // Filter out products without prices
-      const availableProducts = sortedProducts.filter(
-        (item) => item.price || (item.prices && item.prices.length > 0)
-      );
-
-      setProducts(availableProducts);
+      setProducts(sortedProducts);
       setOpenPage(0);
-      setEndPage(Math.min(10, availableProducts.length));
     } catch (err) {
       console.error(err);
       alert("Error fetching products");
@@ -65,7 +79,6 @@ function Search() {
     }
   };
 
-  // Close dropdown on outside click
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "auto" });
 
@@ -79,32 +92,32 @@ function Search() {
     };
 
     document.addEventListener("mousedown", handleClickOutside);
+
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, []);
 
-  // Filtered products by retailer
-  const filteredProducts = products.filter(
-    (item) => item.price || (item.prices && item.prices.length > 0)
-  );
-
-  const totalPages = Math.ceil(filteredProducts.length / 10);
-  const itemsPerPage = 10;
+  // Pagination
+  const totalPages = Math.ceil(products.length / itemsPerPage);
+  const startIndex = openPage * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const currentProducts = products.slice(startIndex, endIndex);
 
   return (
     <section className="py-20 md:py-25 min-h-screen bg-gray-100 overflow-x-hidden">
       <div className="flex flex-col items-center w-full px-4 sm:px-6 md:px-10">
-        <h1 id="search-bar" className="text-3xl font-semibold mb-4 text-center">
+        <h1 className="text-3xl font-semibold mb-4 text-center">
           Amazon Product Search
         </h1>
+
         <p className="mb-6 text-black/50 text-center">
           Find and verify Amazon products instantly.
         </p>
 
-        {/* Search Input */}
+        {/* Search */}
         <form
-          className="flex items-center flex-wrap"
+          className="flex items-center flex-wrap z-20"
           onSubmit={(e) => {
             e.preventDefault();
             searchProducts();
@@ -112,53 +125,48 @@ function Search() {
         >
           <div className="flex items-center border border-gray-400 rounded px-2">
             <SearchIcon className="h-7 w-7 text-gray-400" />
+
             <input
               value={keyword}
               onChange={(e) => setKeyword(e.target.value)}
               placeholder="Search Amazon products"
-              className="p-2 w-72 z-20 focus:outline-none focus:ring-0 focus:border-transparent"
+              className="p-2 w-72 focus:outline-none"
             />
           </div>
 
           <button
             type="submit"
-            className="ml-3 p-2 bg-blue-500 z-20 text-white rounded cursor-pointer hover:bg-blue-600"
+            className="cursor-pointer ml-3 p-2 bg-blue-500 text-white rounded hover:bg-blue-600"
           >
             {loading ? "Searching..." : "Search"}
           </button>
 
           {/* Retailer Dropdown */}
-          <div className="relative ml-3" ref={dropdownRef}>
+          <div className="relative ml-3 z-10" ref={dropdownRef}>
             <button
               type="button"
-              className="w-40 p-2 bg-blue-500 text-white rounded cursor-pointer hover:bg-blue-600"
+              className="w-40 p-2 cursor-pointer bg-blue-500 text-white rounded hover:bg-blue-600"
               onClick={() => setSearchOptionsOpen(!searchOptionsOpen)}
             >
-              {selectedRetailer
-                ? retailers.find((r) => r.id === selectedRetailer)?.label
-                : "Select Retailer"}
+              {selectedRetailer || "Select Retailer"}
             </button>
 
             <div
-              className={`absolute top-full left-0 mt-1 rounded-lg bg-gray-200 shadow-lg
-              flex flex-col transition-all duration-300 ease-out transform
+              className={`absolute top-full left-0 mt-1 rounded-lg bg-gray-200 shadow-lg flex flex-col transition-all duration-300
               ${
                 searchOptionsOpen
-                  ? "translate-y-0 opacity-100 scale-100"
-                  : "translate-y-2 opacity-0 scale-95 pointer-events-none"
-              }
-              w-full`}
+                  ? "opacity-100 scale-100"
+                  : "opacity-0 scale-95 pointer-events-none"
+              } w-full`}
             >
               {retailers.map((retailer) => (
                 <button
                   key={retailer.id}
                   onClick={() => {
-                    setSelectedRetailer(retailer.id);
                     setSearchOptionsOpen(false);
-                    setOpenPage(0);
-                    setEndPage(Math.min(itemsPerPage, filteredProducts.length));
+                    setSelectedRetailer(retailer.label);
                   }}
-                  className="w-full py-2 px-4 text-center hover:bg-blue-200 rounded-xl cursor-pointer"
+                  className="w-full py-2 px-4 hover:bg-blue-200 rounded-xl cursor-pointer"
                 >
                   {retailer.label}
                 </button>
@@ -168,7 +176,7 @@ function Search() {
         </form>
 
         {/* Suggestions when no products */}
-        {filteredProducts.length === 0 && (
+        {products.length === 0 && (
           <div className="mt-4">
             <div className="relative flex flex-col items-center border border-black/5 rounded-lg shadow-md px-6 md:px-10 pt-24 pb-8 bg-white space-y-4">
               <img
@@ -221,31 +229,30 @@ function Search() {
           </div>
         )}
 
-        {/* Display Products */}
+        {/* Products */}
         <div className="w-full max-w-3xl mx-auto">
-          {filteredProducts.slice(openPage, endPage).map((item, index) => (
+          {currentProducts.map((item, index) => (
             <div
               key={index}
-              id={(openPage + index).toString()}
-              className="flex flex-row items-center mt-8 gap-4 border border-gray-300 shadow-sm hover:shadow-xl transform duration-300 hover:scale-105 ease-out p-3 rounded mb-3 w-full"
+              className="flex items-center mt-8 gap-4 border border-gray-300 shadow-sm hover:shadow-xl hover:scale-105 transition p-3 rounded"
             >
-              {/* IMAGE */}
               {item.thumbnail ? (
                 <img
                   src={item.thumbnail}
                   alt={item.title}
-                  className="w-24 h-24 object-contain flex-shrink-0"
+                  className="w-24 h-24 object-contain"
                 />
               ) : (
-                <div className="w-24 h-24 bg-gray-200 flex items-center justify-center text-gray-400 flex-shrink-0">
+                <div className="w-24 h-24 bg-gray-200 flex items-center justify-center text-gray-400">
                   No Image
                 </div>
               )}
 
-              {/* TEXT CONTENT */}
               <div className="flex-1 flex flex-col">
                 <h3 className="text-lg font-medium">{item.title}</h3>
+
                 <p className="text-gray-700">{"Price: " + getPrice(item)}</p>
+
                 <a
                   href={`${item.link}?tag=yourtag-20`}
                   target="_blank"
@@ -260,35 +267,23 @@ function Search() {
         </div>
 
         {/* Pagination */}
-        {filteredProducts.length > 0 && (
-          <div className="flex flex-wrap justify-center gap-2 mt-4">
-            {Array.from({ length: totalPages }).map((_, index) => {
-              const startIndex = index * itemsPerPage;
-              const endIndexCalculated = Math.min(
-                startIndex + itemsPerPage,
-                filteredProducts.length
-              );
-
-              return (
-                <button
-                  key={index}
-                  className={`px-4 py-2 rounded-md border transition cursor-pointer
-                    ${
-                      openPage === startIndex
-                        ? "bg-blue-500 text-white"
-                        : "bg-gray-200 text-gray-700"
-                    }
-                    hover:bg-blue-400 hover:text-white shadow-sm hover:shadow-md
-                  `}
-                  onClick={() => {
-                    setOpenPage(startIndex);
-                    setEndPage(endIndexCalculated);
-                  }}
-                >
-                  {index + 1}
-                </button>
-              );
-            })}
+        {products.length > itemsPerPage && (
+          <div className="flex flex-wrap justify-center gap-2 mt-6">
+            {Array.from({ length: totalPages }).map((_, index) => (
+              <button
+                key={index}
+                onClick={() => setOpenPage(index)}
+                className={`px-4 py-2 rounded-md border transition cursor-pointer
+                  ${
+                    openPage === index
+                      ? "bg-blue-500 text-white"
+                      : "bg-gray-200 text-gray-700"
+                  }
+                  hover:bg-blue-400 hover:text-white`}
+              >
+                {index + 1}
+              </button>
+            ))}
           </div>
         )}
       </div>
