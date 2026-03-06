@@ -2,6 +2,7 @@ import { useEffect, useState, useRef } from "react";
 import { Search as SearchIcon, ShieldCheck } from "lucide-react";
 import { useSearchContext } from "../Contexts/useSearchContext";
 import type { Product } from "../Contexts/SearchContext";
+import Rating from "./search-components/Rating";
 
 const searches = ["Air Pods", "Gaming Laptops", "Nike", "Nike Running Shoes"];
 
@@ -96,7 +97,7 @@ function Search() {
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
-  }, []);
+  }, [openPage]);
 
   // Pagination
   const totalPages = Math.ceil(products.length / itemsPerPage);
@@ -250,8 +251,22 @@ function Search() {
 
               <div className="flex-1 flex flex-col">
                 <h3 className="text-lg font-medium">{item.title}</h3>
+                <p className="text-black flex gap-2">
+                  Rating:
+                  <Rating rating={item?.rating ?? 0} size={18} />
+                </p>
 
-                <p className="text-gray-700">{"Price: " + getPrice(item)}</p>
+                <p className="text-black">
+                  {"Price: " + getPrice(item)}{" "}
+                  {item.old_price && (
+                    <span className="text-gray-700/90">
+                      List:{" "}
+                      <span className="line-through text-gray-700/60">
+                        {item.old_price}
+                      </span>
+                    </span>
+                  )}
+                </p>
 
                 <a
                   href={`${item.link}?tag=yourtag-20`}

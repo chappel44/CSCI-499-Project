@@ -6,9 +6,11 @@ export type Product = {
   link: string;
   thumbnail?: string;
   price?: string;
+  old_price?: string;
   prices?: { symbol: string; value: number }[];
   extracted_price?: number;
   asin?: string;
+  rating?: number | undefined;
 };
 
 export const SearchContext = createContext<MyContextType | null>(null);
