@@ -3,6 +3,7 @@ import { Search as SearchIcon, ShieldCheck } from "lucide-react";
 import { useSearchContext } from "../Contexts/useSearchContext";
 import type { Product } from "../Contexts/SearchContext";
 import Rating from "./search-components/Rating";
+import { supabase } from "../supabase-client";
 
 const searches = ["Air Pods", "Gaming Laptops", "Nike", "Nike Running Shoes"];
 
@@ -21,7 +22,16 @@ function Search() {
   const [loading, setLoading] = useState(false);
   const [searchOptionsOpen, setSearchOptionsOpen] = useState(false);
   const [selectedRetailer, setSelectedRetailer] = useState("");
+  const [username, setUsername] = useState<string | null>(null); // logged in username
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    // connected with supabase — get username from session
+    supabase.auth.getSession().then(({ data }) => {
+      const name = data.session?.user?.user_metadata?.username ?? null;
+      setUsername(name);
+    });
+  }, []);
 
   const getPrice = (item: Product) => {
     // direct string price
@@ -111,7 +121,11 @@ function Search() {
 
         {/* Header */}
         <div className="flex flex-col items-center text-center mb-8">
-          
+          {username && (
+            <p className="text-sm text-gray-500 mb-1">
+              Welcome back, <span className="font-semibold" style={{ background: "linear-gradient(90deg,#00AAFF,#6B30FF)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>{username}</span> 👋
+            </p>
+          )}
           <h1 className="text-3xl font-semibold text-gray-900 mb-2">
             Verifind Product Search
           </h1>

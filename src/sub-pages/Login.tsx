@@ -7,6 +7,7 @@ export default function Login() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [welcomeUsername, setWelcomeUsername] = useState<string | null>(null); // for welcome message
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -16,14 +17,35 @@ export default function Login() {
     console.log("Form submitted!");
 
     // connected with supabase
-    const { data, error } = await supabase.auth.signInWithPassword({email,password,});
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) {
-       alert(error.message);
-       setLoading(false);
+      alert(error.message);
+      setLoading(false);
     } else {
-       navigate("/"); // bring user to homepage on successful login can do navigate(-1) to go to last page
+      const username = data.user?.user_metadata?.username ?? "there";
+      setWelcomeUsername(username); // show welcome message before redirecting
+      setTimeout(() => {
+        navigate("/"); // bring user to homepage on successful login can do navigate(-1) to go to last page
+      }, 1800);
     }
   };
+
+  // welcome screen shown briefly after login
+  if (welcomeUsername) {
+    return (
+      <div className="min-h-screen bg-gray-100 flex items-center justify-center px-4">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-16 h-16 rounded-full flex items-center justify-center mb-2" style={{ background: "linear-gradient(90deg,#00AAFF,#6B30FF)" }}>
+            <svg width="32" height="32" viewBox="0 0 52 52" fill="none">
+              <polyline points="10,26 20,36 42,14" fill="none" stroke="white" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </div>
+          <h2 className="text-2xl font-extrabold text-gray-900">Welcome, {welcomeUsername}!</h2>
+          <p className="text-sm text-gray-400">Taking you to Verifind...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-100 flex items-center justify-center px-4">

@@ -25,6 +25,7 @@ function WishList() {
   const [searchQuery, setSearchQuery] = useState("");
   const [email, setEmail] = useState("");
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
+  const [username, setUsername] = useState<string | null>(null); // logged in username
   const navigate = useNavigate();
 
   const TEST_USER_ID = "00000000-0000-0000-0000-000000000000";//USING A TEST ID FOR RN
@@ -35,6 +36,8 @@ function WishList() {
       if (!data.session) {
         navigate("/login");
       } else {
+        const name = data.session?.user?.user_metadata?.username ?? null;
+        setUsername(name);
         fetchWishlist();
       }
     });
@@ -145,6 +148,13 @@ function WishList() {
         />
         <div className="absolute inset-0 shadow-inner rounded-b-3xl pointer-events-none"></div>
       </div>
+
+      {/* Welcome message */}
+      {username && (
+        <p className="text-center text-sm text-gray-500 mt-4">
+          Welcome back, <span className="font-semibold" style={{ background: "linear-gradient(90deg,#00AAFF,#6B30FF)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>{username}</span> 👋
+        </p>
+      )}
 
       {/* Search */}
       <div className="mt-4 px-6 flex justify-center items-center gap-2">

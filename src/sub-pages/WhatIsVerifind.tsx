@@ -1,3 +1,6 @@
+import { useEffect, useState } from "react";
+import { supabase } from "../supabase-client";
+
 const teamMembers = [
   {
     name: "Jack Zheng",
@@ -34,6 +37,15 @@ const teamMembers = [
 ];
 
 function WhatIsVerifind() {
+  const [username, setUsername] = useState<string | null>(null); // logged in username
+
+  useEffect(() => {
+    // connected with supabase — get username from session
+    supabase.auth.getSession().then(({ data }) => {
+      const name = data.session?.user?.user_metadata?.username ?? null;
+      setUsername(name);
+    });
+  }, []);
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-100 text-gray-900">
@@ -42,7 +54,14 @@ function WhatIsVerifind() {
           Veri<span className="text-blue-600">Find</span>
         </h1>
       </div>
+
       <div className="flex flex-col items-center text-center px-6 py-12 bg-white border-b border-gray-200">
+        {/* Welcome message */}
+        {username && (
+          <p className="text-sm text-gray-500 mb-3">
+            Welcome back, <span className="font-semibold" style={{ background: "linear-gradient(90deg,#00AAFF,#6B30FF)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>{username}</span> 👋
+          </p>
+        )}
         <h2 className="text-4xl font-bold text-gray-900 mb-4">
           What is <span className="text-blue-600">VeriFind</span>?
         </h2>
@@ -65,7 +84,6 @@ function WhatIsVerifind() {
         </div>
       </div>
 
-    
       <div className="flex-1 overflow-y-auto px-6 py-10 flex flex-col items-center">
         <h3 className="text-xs font-semibold uppercase tracking-widest text-blue-600 mb-1">The Team</h3>
         <h2 className="text-2xl font-bold text-gray-900 mb-8">Built by four, designed for all</h2>
@@ -78,7 +96,6 @@ function WhatIsVerifind() {
                 key={member.name}
                 className="bg-white rounded-2xl shadow-sm hover:shadow-lg transition-all duration-300 p-5 flex flex-col w-52 relative hover:-translate-y-1"
               >
-               
                 <div
                   className="absolute top-0 left-0 right-0 h-0.5 rounded-t-2xl opacity-0 hover:opacity-100 transition-opacity"
                   style={{ background: `linear-gradient(90deg, ${member.color}, ${member.color}80)` }}
@@ -112,6 +129,7 @@ function WhatIsVerifind() {
           })}
         </div>
       </div>
+
       <div className="w-full px-6 py-8 bg-white border-t border-gray-200 flex flex-col items-center text-center">
         <h3 className="text-xl font-bold text-gray-900 mb-3">Why VeriFind?</h3>
         <p className="text-gray-500 text-sm leading-relaxed max-w-xl">

@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom"; // so that we can send to 
 import { supabase } from "../supabase-client";
 
 export default function SignUp() {
+  const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -12,11 +13,17 @@ export default function SignUp() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    console.log("Signing up with:", { email, password });
+    console.log("Signing up with:", { username, email, password });
     console.log("Form submitted!");
 
     // connected with supabase
-    const { data,error } = await supabase.auth.signUp({email,password,});
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: { username }, // stores username in raw_user_meta_data so the trigger can pick it up
+      },
+    });
     if (error) {
       alert("Sign up failed: " + error.message);
       setLoading(false);
@@ -33,7 +40,11 @@ export default function SignUp() {
   ];
 
   //password submit button logic
-  const isInvalid = password.length < 8 || !/\d/.test(password) || !/[@$!%*?&]/.test(password);
+  const isInvalid =
+    !username.trim() ||
+    password.length < 8 ||
+    !/\d/.test(password) ||
+    !/[@$!%*?&]/.test(password);
 
   return (
     <div className="min-h-screen bg-gray-100 flex items-center justify-center px-4">
@@ -99,6 +110,21 @@ export default function SignUp() {
 
             {/* Form */}
             <form onSubmit={handleSubmit} className="w-full flex flex-col gap-4">
+
+              {/* Username */}
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-semibold text-gray-600 uppercase tracking-wide">
+                  Username
+                </label>
+                <input
+                  type="text"
+                  placeholder="yourname"
+                  required
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  className="w-full px-4 py-2.5 rounded-lg border border-gray-300 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition"
+                />
+              </div>
 
               {/* Email */}
               <div className="flex flex-col gap-1.5">
@@ -219,4 +245,3 @@ export default function SignUp() {
     </div>
   );
 }
-
