@@ -110,17 +110,42 @@ function WishList() {
   );
 
   return (
-    <div className="py-25 p-10 bg-gray-50 min-h-screen">
-      <h1 className="text-4xl font-bold mb-8 text-center">My Wishlist</h1>
+    <div className="min-h-screen flex flex-col bg-gray-100 text-gray-900">
+      <div className="sticky top-0 z-30 px-6 py-6 flex justify-center items-center bg-transparent backdrop-blur-md border-b border-gray-200/30">
+        <h1 className="text-3xl font-bold tracking-tight text-white drop-shadow-lg">
+          {/* needed to filter the header and my banner logo */}
+        </h1>
+      </div>
 
-      {loading && (
-        <p className="text-center text-gray-500">Loading wishlist...</p>
-      )}
-      {!loading && items.length === 0 && (
-        <p className="text-center text-gray-500">
-          No items yet. Add some from search!
-        </p>
-      )}
+      
+      <div className="w-full h-24 relative overflow-hidden rounded-b-3xl shadow-lg group">
+        <img
+          src="/wishlist1.png"
+          alt="Wishlist Banner"
+          className="absolute inset-0 w-full h-full object-cover filter blur-xl scale-110 transition-transform duration-500 group-hover:scale-125"
+        />
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent to-gray-300 opacity-40 pointer-events-none"></div>
+        <img
+          src="/wishlist1.png"
+          alt="Wishlist Banner"
+          className="relative w-full h-full object-contain transition-transform duration-500 group-hover:scale-105"
+        />
+        <div className="absolute inset-0 shadow-inner rounded-b-3xl pointer-events-none"></div>
+      </div>
+
+      {/* Search */}
+      <div className="mt-4 px-6 flex justify-center items-center gap-2">
+        <input
+          type="text"
+          placeholder="Search your wishlist..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="w-full max-w-md px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-400 focus:outline-none"
+        />
+        <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
+          Search
+        </button>
+      </div>
 
       {/* Wishlist Items */}
       <div className="flex-1 overflow-y-auto px-6 py-6 flex flex-wrap justify-center gap-4">
