@@ -43,10 +43,6 @@ function WhatIsVerifind() {
         </h1>
       </div>
       <div className="flex flex-col items-center text-center px-6 py-12 bg-white border-b border-gray-200">
-        <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 border border-blue-200 text-blue-600 text-xs font-medium tracking-wide uppercase mb-4">
-          <span className="w-1.5 h-1.5 rounded-full bg-blue-500 inline-block" />
-          Smart Shopping Platform
-        </span>
         <h2 className="text-4xl font-bold text-gray-900 mb-4">
           What is <span className="text-blue-600">VeriFind</span>?
         </h2>

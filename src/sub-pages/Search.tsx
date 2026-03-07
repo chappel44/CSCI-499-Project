@@ -108,57 +108,77 @@ function Search() {
   return (
     <section className="py-20 md:py-25 min-h-screen bg-gray-100 overflow-x-hidden">
       <div className="flex flex-col items-center w-full px-4 sm:px-6 md:px-10">
-        <h1 className="text-3xl font-semibold mb-4 text-center">
-          Amazon Product Search
-        </h1>
 
-        <p className="mb-6 text-black/50 text-center">
-          Find and verify Amazon products instantly.
-        </p>
+        {/* Header */}
+        <div className="flex flex-col items-center text-center mb-8">
+          
+          <h1 className="text-3xl font-semibold text-gray-900 mb-2">
+            Amazon Product Search
+          </h1>
+          <p className="text-gray-400 text-sm">
+            Find and verify Amazon products instantly.
+          </p>
+        </div>
 
-        {/* Search */}
+        {/* Search bar */}
         <form
-          className="flex items-center flex-wrap z-20"
+          className="flex items-center flex-wrap gap-2 z-20 w-full max-w-2xl"
           onSubmit={(e) => {
             e.preventDefault();
             searchProducts();
           }}
         >
-          <div className="flex items-center border border-gray-400 rounded px-2">
-            <SearchIcon className="h-7 w-7 text-gray-400" />
-
+          {/* Input */}
+          <div className="flex flex-1 items-center gap-2 bg-white border border-gray-200 rounded-xl px-4 py-2.5 shadow-sm focus-within:ring-2 focus-within:ring-blue-400 focus-within:border-transparent transition min-w-0">
+            <SearchIcon className="h-4 w-4 text-gray-400 flex-shrink-0" />
             <input
               value={keyword}
               onChange={(e) => setKeyword(e.target.value)}
               placeholder="Search Amazon products"
-              className="p-2 w-72 focus:outline-none"
+              className="flex-1 text-sm text-gray-900 placeholder-gray-400 focus:outline-none bg-transparent min-w-0"
             />
           </div>
 
+          {/* Search button */}
           <button
             type="submit"
-            className="cursor-pointer ml-3 p-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+            disabled={loading}
+            className="px-5 py-2.5 rounded-xl text-sm font-semibold text-white transition hover:opacity-90 shadow-md disabled:opacity-60 disabled:cursor-not-allowed flex items-center gap-2"
+            style={{ background: "linear-gradient(90deg,#00AAFF,#6B30FF)" }}
           >
-            {loading ? "Searching..." : "Search"}
+            {loading ? (
+              <>
+                <svg className="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
+                </svg>
+                Searching...
+              </>
+            ) : (
+              "Search"
+            )}
           </button>
 
           {/* Retailer Dropdown */}
-          <div className="relative ml-3 z-10" ref={dropdownRef}>
+          <div className="relative z-10" ref={dropdownRef}>
             <button
               type="button"
-              className="w-40 p-2 cursor-pointer bg-blue-500 text-white rounded hover:bg-blue-600"
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold text-white transition hover:opacity-90 shadow-md"
+              style={{ background: "linear-gradient(90deg,#00AAFF,#6B30FF)" }}
               onClick={() => setSearchOptionsOpen(!searchOptionsOpen)}
             >
-              {selectedRetailer || "Select Retailer"}
+              <span>{selectedRetailer || "Select Retailer"}</span>
+              <svg
+                className={`w-3.5 h-3.5 transition-transform duration-200 ${searchOptionsOpen ? "rotate-180" : ""}`}
+                fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+              </svg>
             </button>
 
             <div
-              className={`absolute top-full left-0 mt-1 rounded-lg bg-gray-200 shadow-lg flex flex-col transition-all duration-300
-              ${
-                searchOptionsOpen
-                  ? "opacity-100 scale-100"
-                  : "opacity-0 scale-95 pointer-events-none"
-              } w-full`}
+              className={`absolute top-full left-0 mt-2 rounded-xl bg-white border border-gray-200 shadow-lg flex flex-col overflow-hidden transition-all duration-200
+              ${searchOptionsOpen ? "opacity-100 scale-100" : "opacity-0 scale-95 pointer-events-none"} w-44`}
             >
               {retailers.map((retailer) => (
                 <button
@@ -167,7 +187,7 @@ function Search() {
                     setSearchOptionsOpen(false);
                     setSelectedRetailer(retailer.label);
                   }}
-                  className="w-full py-2 px-4 hover:bg-blue-200 rounded-xl cursor-pointer"
+                  className="w-full py-2.5 px-4 text-sm text-left text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition cursor-pointer"
                 >
                   {retailer.label}
                 </button>
@@ -178,34 +198,30 @@ function Search() {
 
         {/* Suggestions when no products */}
         {products.length === 0 && (
-          <div className="mt-4">
-            <div className="relative flex flex-col items-center border border-black/5 rounded-lg shadow-md px-6 md:px-10 pt-24 pb-8 bg-white space-y-4">
+          <div className="mt-6 w-full max-w-2xl">
+            <div className="relative flex flex-col items-center border border-gray-200 rounded-2xl shadow-sm px-6 md:px-10 pt-24 pb-8 bg-white space-y-4">
               <img
                 className="absolute -top-20 md:-top-30 h-100 md:h-140 object-contain"
                 src="https://xdzqkdoejtnthuzauewa.supabase.co/storage/v1/object/public/posts/posts/4a7729f7-7138-4eeb-a873-fd8735e6cd5c.PNG"
                 alt="Search illustration"
               />
 
-              <p className="max-w-xs mt-20 md:mt-40 text-center text-black/60 z-10">
+              <p className="max-w-xs mt-20 md:mt-40 text-center text-gray-400 text-sm z-10">
                 Start by searching for a product name, keyword, or ASIN.
               </p>
 
-              <div className="grid md:grid-cols-[auto_auto_auto] grid-cols-[auto_auto] grid-cols-2 md:grid-cols-3 gap-2 w-full max-w-3xl z-10">
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-2 w-full max-w-3xl z-10">
                 {searches.map((item, index) => (
                   <button
                     key={item}
-                    className={`flex cursor-pointer items-center justify-start gap-2 px-2 py-2 md:px-3 md:py-2 border border-gray-300 bg-gray-100 rounded-xl
-              ${index === 3 ? "col-start-2" : ""}`}
+                    className={`flex cursor-pointer items-center justify-start gap-2 px-3 py-2 border border-gray-200 bg-gray-50 hover:bg-blue-50 hover:border-blue-200 hover:text-blue-600 rounded-xl transition-all duration-200
+                    ${index === 3 ? "col-start-2" : ""}`}
                     onClick={() => setKeyword(item)}
                   >
-                    <SearchIcon className=" w-5 h-5 text-black/50" />
+                    <SearchIcon className="w-4 h-4 text-gray-400 flex-shrink-0" />
                     <p className="text-sm whitespace-nowrap">
                       Try:{" "}
-                      <span
-                        className={
-                          index === 0 ? `text-blue-500` : "text-black/80"
-                        }
-                      >
+                      <span className={index === 0 ? "text-blue-500" : "text-gray-600"}>
                         {item}
                       </span>
                     </p>
@@ -213,16 +229,12 @@ function Search() {
                 ))}
               </div>
 
-              <div className="border border-black/5 px-3 py-2 bg-gray-100 rounded-lg">
-                <div className="flex gap-2">
-                  <ShieldCheck className="w-10 h-10 text-green-400" />
+              <div className="border border-gray-200 px-4 py-3 bg-gray-50 rounded-xl w-full">
+                <div className="flex gap-3 items-center">
+                  <ShieldCheck className="w-8 h-8 text-green-500 flex-shrink-0" />
                   <div>
-                    <h3 className="text-center font-bold text-xl">
-                      Verified Product Data
-                    </h3>
-                    <p className="text-center text-gray-900/90">
-                      Real-time Amazon product lookup.
-                    </p>
+                    <h3 className="font-semibold text-gray-900 text-base">Verified Product Data</h3>
+                    <p className="text-gray-400 text-sm">Real-time Amazon product lookup.</p>
                   </div>
                 </div>
               </div>
@@ -231,39 +243,37 @@ function Search() {
         )}
 
         {/* Products */}
-        <div className="w-full max-w-3xl mx-auto">
+        <div className="w-full max-w-2xl mx-auto mt-4">
           {currentProducts.map((item, index) => (
             <div
               key={index}
-              className="flex items-center mt-8 gap-4 border border-gray-300 shadow-sm hover:shadow-xl hover:scale-105 transition p-3 rounded"
+              className="flex items-center mt-4 gap-4 bg-white border border-gray-200 shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 p-4 rounded-2xl"
             >
               {item.thumbnail ? (
                 <img
                   src={item.thumbnail}
                   alt={item.title}
-                  className="w-24 h-24 object-contain"
+                  className="w-20 h-20 object-contain rounded-xl bg-gray-50 flex-shrink-0"
                 />
               ) : (
-                <div className="w-24 h-24 bg-gray-200 flex items-center justify-center text-gray-400">
+                <div className="w-20 h-20 bg-gray-100 rounded-xl flex items-center justify-center text-gray-400 text-xs flex-shrink-0">
                   No Image
                 </div>
               )}
 
-              <div className="flex-1 flex flex-col">
-                <h3 className="text-lg font-medium">{item.title}</h3>
-                <p className="text-black flex gap-2">
-                  Rating:
-                  <Rating rating={item?.rating ?? 0} size={18} />
+              <div className="flex-1 flex flex-col gap-1 min-w-0">
+                <h3 className="text-sm font-semibold text-gray-900 line-clamp-2">{item.title}</h3>
+
+                <p className="text-gray-500 text-xs flex items-center gap-1.5">
+                  Rating: <Rating rating={item?.rating ?? 0} size={14} />
                 </p>
 
-                <p className="text-black">
-                  {"Price: " + getPrice(item)}{" "}
+                <p className="text-sm font-semibold text-gray-900">
+                  {getPrice(item)}{" "}
                   {item.old_price && (
-                    <span className="text-gray-700/90">
+                    <span className="text-gray-400 font-normal text-xs ml-1">
                       List:{" "}
-                      <span className="line-through text-gray-700/60">
-                        {item.old_price}
-                      </span>
+                      <span className="line-through">{item.old_price}</span>
                     </span>
                   )}
                 </p>
@@ -272,9 +282,10 @@ function Search() {
                   href={`${item.link}?tag=yourtag-20`}
                   target="_blank"
                   rel="noreferrer"
-                  className="text-blue-500 hover:underline"
+                  className="text-xs font-semibold w-fit px-3 py-1 rounded-lg text-white transition hover:opacity-90 mt-1"
+                  style={{ background: "linear-gradient(90deg,#00AAFF,#6B30FF)" }}
                 >
-                  View on Amazon
+                  View on Amazon ↗
                 </a>
               </div>
             </div>
@@ -283,18 +294,17 @@ function Search() {
 
         {/* Pagination */}
         {products.length > itemsPerPage && (
-          <div className="flex flex-wrap justify-center gap-2 mt-6">
+          <div className="flex flex-wrap justify-center gap-2 mt-8">
             {Array.from({ length: totalPages }).map((_, index) => (
               <button
                 key={index}
                 onClick={() => setOpenPage(index)}
-                className={`px-4 py-2 rounded-md border transition cursor-pointer
-                  ${
-                    openPage === index
-                      ? "bg-blue-500 text-white"
-                      : "bg-gray-200 text-gray-700"
-                  }
-                  hover:bg-blue-400 hover:text-white`}
+                className={`w-9 h-9 rounded-xl text-sm font-semibold border transition cursor-pointer
+                  ${openPage === index
+                    ? "text-white border-transparent shadow-md"
+                    : "bg-white border-gray-200 text-gray-600 hover:bg-gray-50"
+                  }`}
+                style={openPage === index ? { background: "linear-gradient(90deg,#00AAFF,#6B30FF)" } : {}}
               >
                 {index + 1}
               </button>
