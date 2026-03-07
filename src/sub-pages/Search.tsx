@@ -113,10 +113,10 @@ function Search() {
         <div className="flex flex-col items-center text-center mb-8">
           
           <h1 className="text-3xl font-semibold text-gray-900 mb-2">
-            Amazon Product Search
+            Verifind Product Search
           </h1>
           <p className="text-gray-400 text-sm">
-            Find and verify Amazon products instantly.
+            Find and verify products instantly.
           </p>
         </div>
 
@@ -134,7 +134,7 @@ function Search() {
             <input
               value={keyword}
               onChange={(e) => setKeyword(e.target.value)}
-              placeholder="Search Amazon products"
+              placeholder="Search Verifind products"
               className="flex-1 text-sm text-gray-900 placeholder-gray-400 focus:outline-none bg-transparent min-w-0"
             />
           </div>
@@ -234,7 +234,7 @@ function Search() {
                   <ShieldCheck className="w-8 h-8 text-green-500 flex-shrink-0" />
                   <div>
                     <h3 className="font-semibold text-gray-900 text-base">Verified Product Data</h3>
-                    <p className="text-gray-400 text-sm">Real-time Amazon product lookup.</p>
+                    <p className="text-gray-400 text-sm">Real-time Verifind product lookup.</p>
                   </div>
                 </div>
               </div>
@@ -285,7 +285,7 @@ function Search() {
                   className="text-xs font-semibold w-fit px-3 py-1 rounded-lg text-white transition hover:opacity-90 mt-1"
                   style={{ background: "linear-gradient(90deg,#00AAFF,#6B30FF)" }}
                 >
-                  View on Amazon ↗
+                  View on Verifind ↗
                 </a>
               </div>
             </div>

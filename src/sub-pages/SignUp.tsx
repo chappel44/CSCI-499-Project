@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom"; // so that we can send to Login Page :)
+import { supabase } from "../supabase-client";
 
 export default function SignUp() {
   const [email, setEmail] = useState("");
@@ -14,19 +15,14 @@ export default function SignUp() {
     console.log("Signing up with:", { email, password });
     console.log("Form submitted!");
 
-    /* Ready for database keys
-       const { data,error } = await supabase.auth.signUp({email,password,});
-       if (error) {
-       alert("Sign up failed: " + error.message);
-       } else {
-         navigate("/"); // same as login, sends to main page
-       }
-       */
-    alert("Sign up is waiting for database keys rn.");
-    setTimeout(() => {
+    // connected with supabase
+    const { data,error } = await supabase.auth.signUp({email,password,});
+    if (error) {
+      alert("Sign up failed: " + error.message);
       setLoading(false);
-      navigate("/");
-    }, 600);
+    } else {
+      navigate("/"); // same as login, sends to main page
+    }
   };
 
   //password requirments
@@ -223,3 +219,4 @@ export default function SignUp() {
     </div>
   );
 }
+

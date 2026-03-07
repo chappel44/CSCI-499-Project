@@ -23,6 +23,7 @@ function WishList() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [email, setEmail] = useState("");
+  const [confirmingId, setConfirmingId] = useState<string | null>(null);
 
   const TEST_USER_ID = "00000000-0000-0000-0000-000000000000";//USING A TEST ID FOR RN
 
@@ -109,6 +110,10 @@ function WishList() {
     item.product_title.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  // builds a Google Shopping search URL so users can see live ratings directly from Google
+  const getGoogleShoppingUrl = (title: string) =>
+    `https://www.google.com/search?tbm=shop&q=${encodeURIComponent(title)}`;
+
   return (
     <div className="min-h-screen flex flex-col bg-gray-100 text-gray-900">
       <div className="sticky top-0 z-30 px-6 py-6 flex justify-center items-center bg-transparent backdrop-blur-md border-b border-gray-200/30">
@@ -142,7 +147,10 @@ function WishList() {
           onChange={(e) => setSearchQuery(e.target.value)}
           className="w-full max-w-md px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-400 focus:outline-none"
         />
-        <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
+        <button
+          className="px-4 py-2 rounded-xl text-sm font-semibold text-white transition hover:opacity-90 shadow-md"
+          style={{ background: "linear-gradient(90deg,#00AAFF,#6B30FF)" }}
+        >
           Search
         </button>
       </div>
@@ -236,10 +244,17 @@ function WishList() {
                 Live: {item.live_price || "N/A"}
               </p>
 
-              <p className="text-xs text-yellow-500 mb-1">
+              {/* Rating — links to Google Shopping for live ratings */}
+              <a
+                href={item.review_url || getGoogleShoppingUrl(item.product_title)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs text-yellow-500 mb-1 hover:underline cursor-pointer"
+                title="View live ratings on Google Shopping"
+              >
                 {renderStars(item.rating)}
                 <span className="text-gray-500 ml-1">({item.reviews ?? 0})</span>
-              </p>
+              </a>
 
               <p className="text-xs text-gray-500 mb-2">
                 Seller: {item.seller ?? "N/A"}
@@ -250,21 +265,42 @@ function WishList() {
                   href={item.product_url || "#"}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className={`flex-1 text-center py-1 rounded-md text-xs font-medium transition ${
+                  className={`flex-1 text-center py-1 rounded-md text-xs font-semibold transition ${
                     item.product_url
-                      ? "bg-blue-600 hover:bg-blue-700 text-white"
+                      ? "text-white hover:opacity-90"
                       : "bg-gray-300 text-gray-500 cursor-not-allowed"
                   }`}
+                  style={item.product_url ? { background: "linear-gradient(90deg,#00AAFF,#6B30FF)" } : {}}
                 >
                   View
                 </a>
 
-                <button
-                  onClick={() => removeFromWishlist(item.id)}
-                  className="flex-1 py-1 rounded-md text-xs font-medium bg-gray-200 hover:bg-gray-300 transition"
-                >
-                  Remove
-                </button>
+                {confirmingId === item.id ? (
+                  <div className="flex-1 flex flex-col gap-1">
+                    <p className="text-xs text-center text-gray-600 font-medium">Are you sure?</p>
+                    <div className="flex gap-1">
+                      <button
+                        onClick={() => { removeFromWishlist(item.id); setConfirmingId(null); }}
+                        className="flex-1 py-1 rounded-md text-xs font-semibold text-white bg-red-500 hover:bg-red-600 transition"
+                      >
+                        Yes
+                      </button>
+                      <button
+                        onClick={() => setConfirmingId(null)}
+                        className="flex-1 py-1 rounded-md text-xs font-medium bg-gray-200 hover:bg-gray-300 transition"
+                      >
+                        No
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => setConfirmingId(item.id)}
+                    className="flex-1 py-1 rounded-md text-xs font-medium bg-gray-200 hover:bg-red-100 hover:text-red-600 hover:border hover:border-red-300 transition"
+                  >
+                    Remove
+                  </button>
+                )}
               </div>
             </div>
           );
@@ -283,7 +319,10 @@ function WishList() {
             placeholder="Last Name"
             className="flex-1 px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-400 focus:outline-none"
           />
-          <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
+          <button
+            className="px-4 py-2 rounded-xl text-sm font-semibold text-white transition hover:opacity-90 shadow-md"
+            style={{ background: "linear-gradient(90deg,#00AAFF,#6B30FF)" }}
+          >
             Search
           </button>
         </div>
@@ -299,7 +338,10 @@ function WishList() {
               onChange={(e) => setEmail(e.target.value)}
               className="flex-1 px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-400 focus:outline-none"
             />
-            <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
+            <button
+              className="px-4 py-2 rounded-xl text-sm font-semibold text-white transition hover:opacity-90 shadow-md"
+              style={{ background: "linear-gradient(90deg,#00AAFF,#6B30FF)" }}
+            >
               Sign Up
             </button>
           </div>

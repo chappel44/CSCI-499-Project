@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { supabase } from "../supabase-client";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -14,19 +15,14 @@ export default function Login() {
     console.log("Logging in with:", { email, password });
     console.log("Form submitted!");
 
-    /* uncomment supabase auth logic here after supabase set up properly
-      const { data, error } = await supabase.auth.signInWithPassword({email,password,});
-      if (error) {
-         alert(error.message);
-      } else {
-         navigate("/"); // bring user to homepage on successful login can do navigate(-1) to go to last page
-      }
-       */
-    alert("Auth disabled until database keys setup.");
-    setTimeout(() => {
-      setLoading(false);
-      navigate("/");
-    }, 600);
+    // connected with supabase
+    const { data, error } = await supabase.auth.signInWithPassword({email,password,});
+    if (error) {
+       alert(error.message);
+       setLoading(false);
+    } else {
+       navigate("/"); // bring user to homepage on successful login can do navigate(-1) to go to last page
+    }
   };
 
   return (
