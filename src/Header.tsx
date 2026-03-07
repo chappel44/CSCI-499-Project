@@ -105,13 +105,21 @@ export default function Header() {
 
         <div className="flex items-center gap-2 flex-shrink-0">
           {loggedIn ? (
-            <button
-              onClick={handleSignOut}
-              className="px-5 py-2 rounded-xl text-sm font-semibold text-white transition hover:opacity-90 shadow-md border border-white/20"
-              style={{ background: "linear-gradient(90deg,#00AAFF,#6B30FF)" }}
-            >
-              Sign Out
-            </button>
+            <>
+              <Link
+                to="/settings"
+                className="px-5 py-2 rounded-xl text-sm font-semibold transition hover:opacity-90 shadow-sm border border-gray-200 text-gray-600 hover:text-gray-900 hover:bg-gray-50"
+              >
+                Settings
+              </Link>
+              <button
+                onClick={handleSignOut}
+                className="px-5 py-2 rounded-xl text-sm font-semibold text-white transition hover:opacity-90 shadow-md border border-white/20"
+                style={{ background: "linear-gradient(90deg,#00AAFF,#6B30FF)" }}
+              >
+                Sign Out
+              </button>
+            </>
           ) : (
             <>
               <Link
