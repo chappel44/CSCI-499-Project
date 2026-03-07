@@ -1,8 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "../supabase-client";
 
-type WishlistItem = {
-  //from supabase
+type WishlistItem = {//from supabase
   id: string;
   product_id: string;
   product_title: string;
@@ -10,8 +9,7 @@ type WishlistItem = {
   target_price: number;
 };
 
-type EnrichedItem = WishlistItem & {
-  //from serpAPI
+type EnrichedItem = WishlistItem & {//from serpAPI
   live_price?: string;
   rating?: number;
   reviews?: number;
@@ -23,9 +21,10 @@ type EnrichedItem = WishlistItem & {
 function WishList() {
   const [items, setItems] = useState<EnrichedItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
   const [email, setEmail] = useState("");
 
-  const TEST_USER_ID = "00000000-0000-0000-0000-000000000000"; //USING A TEST ID FOR RN
+  const TEST_USER_ID = "00000000-0000-0000-0000-000000000000";//USING A TEST ID FOR RN
 
   useEffect(() => {
     fetchWishlist();
@@ -54,8 +53,7 @@ function WishList() {
     const enriched = await Promise.all(
       data.map(async (item: WishlistItem) => {
         try {
-          const response = await fetch(
-            //LOCAL host for testing 5173 and 3001
+          const response = await fetch(//LOCAL host for testing 5173 and 3001
             `http://localhost:3001/api/product-data?query=${encodeURIComponent(
               item.product_title
             )}`
@@ -86,18 +84,14 @@ function WishList() {
   };
 
   const removeFromWishlist = async (itemId: string) => {
-    const { error } = await supabase
-      .from("wishlists")
-      .delete()
-      .eq("id", itemId);
+    const { error } = await supabase.from("wishlists").delete().eq("id", itemId);
 
     if (!error) {
       setItems((prev) => prev.filter((item) => item.id !== itemId));
     }
   };
 
-  const renderStars = (rating?: number) => {
-    //still in working progress
+  const renderStars = (rating?: number) => {//still in working progress 
     if (!rating) return "N/A";
     const fullStars = Math.floor(rating);
     const halfStar = rating - fullStars >= 0.5 ? 1 : 0;
@@ -111,7 +105,9 @@ function WishList() {
     );
   };
 
-  const filteredItems = items;
+  const filteredItems = items.filter((item) =>
+    item.product_title.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-100 text-gray-900">
@@ -121,17 +117,39 @@ function WishList() {
         </h1>
       </div>
 
-      {!loading && items.length === 0 && (
-        <p className="text-center text-gray-500">
-          No items yet. Add some from search!
-        </p>
-      )}
+      
+      <div className="w-full h-24 relative overflow-hidden rounded-b-3xl shadow-lg group">
+        <img
+          src="/wishlist1.png"
+          alt="Wishlist Banner"
+          className="absolute inset-0 w-full h-full object-cover filter blur-xl scale-110 transition-transform duration-500 group-hover:scale-125"
+        />
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent to-gray-300 opacity-40 pointer-events-none"></div>
+        <img
+          src="/wishlist1.png"
+          alt="Wishlist Banner"
+          className="relative w-full h-full object-contain transition-transform duration-500 group-hover:scale-105"
+        />
+        <div className="absolute inset-0 shadow-inner rounded-b-3xl pointer-events-none"></div>
+      </div>
+
+      {/* Search */}
+      <div className="mt-4 px-6 flex justify-center items-center gap-2">
+        <input
+          type="text"
+          placeholder="Search your wishlist..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="w-full max-w-md px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-400 focus:outline-none"
+        />
+        <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
+          Search
+        </button>
+      </div>
 
       {/* Wishlist Items */}
       <div className="flex-1 overflow-y-auto px-6 py-6 flex flex-wrap justify-center gap-4">
-        {loading && (
-          <p className="text-gray-500 text-center">Loading wishlist...</p>
-        )}
+        {loading && <p className="text-gray-500 text-center">Loading wishlist...</p>}
         {!loading && filteredItems.length === 0 && (
           <p className="text-gray-500 text-center">No items found.</p>
         )}
@@ -207,10 +225,7 @@ function WishList() {
               </h2>
 
               <p className="text-xs text-gray-500 mb-1">
-                Target:{" "}
-                <span className="text-gray-800 font-medium">
-                  ${item.target_price}
-                </span>
+                Target: <span className="text-gray-800 font-medium">${item.target_price}</span>
               </p>
 
               <p
@@ -223,9 +238,7 @@ function WishList() {
 
               <p className="text-xs text-yellow-500 mb-1">
                 {renderStars(item.rating)}
-                <span className="text-gray-500 ml-1">
-                  ({item.reviews ?? 0})
-                </span>
+                <span className="text-gray-500 ml-1">({item.reviews ?? 0})</span>
               </p>
 
               <p className="text-xs text-gray-500 mb-2">
@@ -258,10 +271,7 @@ function WishList() {
         })}
       </div>
       <div className="w-full px-6 mt-8 flex flex-col items-center gap-2">
-        <h3 className="text-lg font-semibold">
-          Search Other People's Wishlist
-        </h3>{" "}
-        {/* Search Other People's Wishlist */}
+        <h3 className="text-lg font-semibold">Search Other People's Wishlist</h3>   {/* Search Other People's Wishlist */}
         <div className="flex gap-2 w-full max-w-md">
           <input
             type="text"
@@ -280,8 +290,7 @@ function WishList() {
       </div>
       <div className="w-full px-6 mt-8 flex flex-col items-center gap-6 pb-6 bg-gray-50">
         <div className="w-full max-w-md flex flex-col items-center gap-2">
-          <h3 className="text-lg font-semibold mb-2">Sign Up for More Deals</h3>{" "}
-          {/* Signup */}
+          <h3 className="text-lg font-semibold mb-2">Sign Up for More Deals</h3> {/* Signup */}
           <div className="flex w-full gap-2">
             <input
               type="email"
@@ -310,9 +319,7 @@ function WishList() {
           </div>
         </div>
 
-        <p className="text-xs text-gray-500 mt-4">
-          &copy; {new Date().getFullYear()} Verifind
-        </p>
+        <p className="text-xs text-gray-500 mt-4">&copy; {new Date().getFullYear()} Verifind</p>
       </div>
     </div>
   );
