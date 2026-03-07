@@ -2,6 +2,7 @@ import { createContext, useState } from "react";
 import type { ReactNode } from "react";
 
 export type Product = {
+  product_id?: string; 
   title: string;
   link: string;
   thumbnail?: string;

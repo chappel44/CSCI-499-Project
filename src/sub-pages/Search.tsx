@@ -23,13 +23,18 @@ function Search() {
   const [searchOptionsOpen, setSearchOptionsOpen] = useState(false);
   const [selectedRetailer, setSelectedRetailer] = useState("");
   const [username, setUsername] = useState<string | null>(null); // logged in username
+  const [userId, setUserId] = useState<string | null>(null); // logged in user id for wishlist inserts
+  const [addedIds, setAddedIds] = useState<Set<string>>(new Set()); // tracks which items were added to wishlist
+  const [targetPriceMap, setTargetPriceMap] = useState<Record<string, string>>({}); // target price per product
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    // connected with supabase — get username from session
+    // connected with supabase — get username and user id from session
     supabase.auth.getSession().then(({ data }) => {
       const name = data.session?.user?.user_metadata?.username ?? null;
+      const id = data.session?.user?.id ?? null;
       setUsername(name);
+      setUserId(id);
     });
   }, []);
 
@@ -52,6 +57,32 @@ function Search() {
     }
 
     return "Price not available";
+  };
+
+  const addToWishlist = async (item: Product) => {
+    if (!userId) {
+      alert("Please log in to add items to your wishlist.");
+      return;
+    }
+
+    const productKey = item.product_id ?? item.title ?? "";
+
+const targetPrice = item.extracted_price ?? 0;
+    // connected with supabase — insert item into wishlists table
+    const { error } = await supabase.from("wishlists").insert({
+      user_id: userId,
+      product_id: item.product_id ?? item.title ?? "",
+      product_title: item.title ?? "",
+      product_image: item.thumbnail ?? "",
+      target_price: targetPrice,
+    });
+
+    if (error) {
+      alert("Failed to add to wishlist: " + error.message);
+      return;
+    }
+
+    setAddedIds((prev) => new Set(prev).add(productKey));
   };
 
   const searchProducts = async () => {
@@ -258,52 +289,70 @@ function Search() {
 
         {/* Products */}
         <div className="w-full max-w-2xl mx-auto mt-4">
-          {currentProducts.map((item, index) => (
-            <div
-              key={index}
-              className="flex items-center mt-4 gap-4 bg-white border border-gray-200 shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 p-4 rounded-2xl"
-            >
-              {item.thumbnail ? (
-                <img
-                  src={item.thumbnail}
-                  alt={item.title}
-                  className="w-20 h-20 object-contain rounded-xl bg-gray-50 flex-shrink-0"
-                />
-              ) : (
-                <div className="w-20 h-20 bg-gray-100 rounded-xl flex items-center justify-center text-gray-400 text-xs flex-shrink-0">
-                  No Image
+          {currentProducts.map((item, index) => {
+            const productKey = item.product_id ?? item.title ?? "";
+            const isAdded = addedIds.has(productKey);
+
+            return (
+              <div
+                key={index}
+                className="flex items-center mt-4 gap-4 bg-white border border-gray-200 shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 p-4 rounded-2xl"
+              >
+                {item.thumbnail ? (
+                  <img
+                    src={item.thumbnail}
+                    alt={item.title}
+                    className="w-20 h-20 object-contain rounded-xl bg-gray-50 flex-shrink-0"
+                  />
+                ) : (
+                  <div className="w-20 h-20 bg-gray-100 rounded-xl flex items-center justify-center text-gray-400 text-xs flex-shrink-0">
+                    No Image
+                  </div>
+                )}
+
+                <div className="flex-1 flex flex-col gap-1 min-w-0">
+                  <h3 className="text-sm font-semibold text-gray-900 line-clamp-2">{item.title}</h3>
+
+                  <p className="text-gray-500 text-xs flex items-center gap-1.5">
+                    Rating: <Rating rating={item?.rating ?? 0} size={14} />
+                  </p>
+
+                  <p className="text-sm font-semibold text-gray-900">
+                    {getPrice(item)}{" "}
+                    {item.old_price && (
+                      <span className="text-gray-400 font-normal text-xs ml-1">
+                        List:{" "}
+                        <span className="line-through">{item.old_price}</span>
+                      </span>
+                    )}
+                  </p>
+
+                  {/* Add to Wishlist */}
+{!isAdded ? (
+  <button
+    onClick={() => addToWishlist(item)}
+    className="w-fit text-xs font-semibold px-3 py-1 rounded-lg text-white transition hover:opacity-90 mt-1"
+    style={{ background: "linear-gradient(90deg,#00AAFF,#6B30FF)" }}
+  >
+    + Wishlist
+  </button>
+) : (
+  <p className="text-xs text-green-500 font-semibold mt-1">✔ Added to Wishlist</p>
+)}
+
+                  <a
+                    href={`${item.link}?tag=yourtag-20`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-xs font-semibold w-fit px-3 py-1 rounded-lg text-white transition hover:opacity-90 mt-1"
+                    style={{ background: "linear-gradient(90deg,#00AAFF,#6B30FF)" }}
+                  >
+                    View on Verifind ↗
+                  </a>
                 </div>
-              )}
-
-              <div className="flex-1 flex flex-col gap-1 min-w-0">
-                <h3 className="text-sm font-semibold text-gray-900 line-clamp-2">{item.title}</h3>
-
-                <p className="text-gray-500 text-xs flex items-center gap-1.5">
-                  Rating: <Rating rating={item?.rating ?? 0} size={14} />
-                </p>
-
-                <p className="text-sm font-semibold text-gray-900">
-                  {getPrice(item)}{" "}
-                  {item.old_price && (
-                    <span className="text-gray-400 font-normal text-xs ml-1">
-                      List:{" "}
-                      <span className="line-through">{item.old_price}</span>
-                    </span>
-                  )}
-                </p>
-
-                <a
-                  href={`${item.link}?tag=yourtag-20`}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="text-xs font-semibold w-fit px-3 py-1 rounded-lg text-white transition hover:opacity-90 mt-1"
-                  style={{ background: "linear-gradient(90deg,#00AAFF,#6B30FF)" }}
-                >
-                  View on Verifind ↗
-                </a>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
         {/* Pagination */}

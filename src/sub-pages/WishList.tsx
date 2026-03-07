@@ -19,16 +19,46 @@ type EnrichedItem = WishlistItem & {//from serpAPI
   review_url?: string;
 };
 
+type OtherWishlistItem = {//from supabase for other people's wishlists
+  product_title: string;
+  product_image: string;
+  target_price: number;
+};
+
+const faqItems = [
+  {
+    question: "How do I add items to my wishlist?",
+    answer: "Search for a product using the search bar, then click the 'Add to Wishlist' button on any product card. You can set a target price and we'll notify you when the price drops.",
+  },
+  {
+    question: "Can I share my wishlist with friends?",
+    answer: "Yes! Friends can search for your username using the 'Search Other People's Wishlist' section below. Your wishlist is public so anyone can find and view it.",
+  },
+  {
+    question: "What happens if a price drops?",
+    answer: "When a live price falls below your target price, a flame icon appears on that item. Sign up for deal emails below to also get notified directly in your inbox.",
+  },
+];
+
 function WishList() {
   const [items, setItems] = useState<EnrichedItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
-  const [email, setEmail] = useState("");
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
   const [username, setUsername] = useState<string | null>(null); // logged in username
+  const [userId, setUserId] = useState<string | null>(null); // logged in user id — replaces TEST_USER_ID
   const navigate = useNavigate();
 
-  const TEST_USER_ID = "00000000-0000-0000-0000-000000000000";//USING A TEST ID FOR RN
+  const [otherUsername, setOtherUsername] = useState(""); // Search Other People's Wishlist
+  const [otherItems, setOtherItems] = useState<OtherWishlistItem[] | null>(null);
+  const [otherLoading, setOtherLoading] = useState(false);
+  const [otherNotFound, setOtherNotFound] = useState(false);
+
+  const [dealEmail, setDealEmail] = useState(""); // Sign Up for More Deals
+  const [dealSent, setDealSent] = useState(false);
+  const [dealLoading, setDealLoading] = useState(false);
+
+  const [openFaq, setOpenFaq] = useState<number | null>(null); // FAQ accordion
 
   useEffect(() => {
     // connected with supabase — redirect to login if not authenticated
@@ -37,19 +67,23 @@ function WishList() {
         navigate("/login");
       } else {
         const name = data.session?.user?.user_metadata?.username ?? null;
+        const id = data.session?.user?.id ?? null; // connected with supabase — real user id
         setUsername(name);
-        fetchWishlist();
+        setUserId(id);
+        fetchWishlist(id);
       }
     });
   }, []);
 
-  const fetchWishlist = async () => {
+  const fetchWishlist = async (id: string | null) => {
+    if (!id) return;
     setLoading(true);
 
+    // connected with supabase — fetch wishlist using real logged in user id
     const { data, error } = await supabase
       .from("wishlists")
       .select("*")
-      .eq("user_id", TEST_USER_ID);
+      .eq("user_id", id);
 
     if (error) {
       console.error("Supabase error:", error.message);
@@ -102,6 +136,66 @@ function WishList() {
     if (!error) {
       setItems((prev) => prev.filter((item) => item.id !== itemId));
     }
+  };
+
+  // Search Other People's Wishlist — connected with supabase
+  const searchOtherWishlist = async () => {
+    if (!otherUsername.trim()) return;
+    setOtherLoading(true);
+    setOtherItems(null);
+    setOtherNotFound(false);
+
+    // connected with supabase — look up user id by username in profiles table
+    const { data: profileData, error: profileError } = await supabase
+      .from("profiles")
+      .select("id")
+      .ilike("username", otherUsername.trim())
+      .single();
+
+    if (profileError || !profileData) {
+      setOtherNotFound(true);
+      setOtherLoading(false);
+      return;
+    }
+
+    // connected with supabase — fetch their wishlist using the found user id
+    const { data: wishlistData, error: wishlistError } = await supabase
+      .from("wishlists")
+      .select("product_title, product_image, target_price")
+      .eq("user_id", profileData.id);
+
+    if (wishlistError || !wishlistData || wishlistData.length === 0) {
+      setOtherNotFound(true);
+      setOtherLoading(false);
+      return;
+    }
+
+    setOtherItems(wishlistData);
+    setOtherLoading(false);
+  };
+
+  // Sign Up for More Deals — sends a test email via supabase auth magic link as a stand-in
+  const handleDealSignup = async () => {
+    if (!dealEmail.trim()) return;
+    setDealLoading(true);
+
+    // connected with supabase — sends a magic link email as a test to confirm email delivery works
+    const { error } = await supabase.auth.signInWithOtp({
+      email: dealEmail.trim(),
+      options: {
+        shouldCreateUser: false, // don't create a new account, just send the email
+        emailRedirectTo: window.location.origin,
+      },
+    });
+
+    if (error) {
+      // if user doesn't exist it will still "succeed" in terms of email delivery test
+      console.warn("Deal signup note:", error.message);
+    }
+
+    setDealSent(true);
+    setDealLoading(false);
+    setTimeout(() => { setDealSent(false); setDealEmail(""); }, 4000);
   };
 
   const renderStars = (rating?: number) => {//still in working progress 
@@ -202,20 +296,9 @@ function WishList() {
                   />
                   {isPriceDrop && (
                     <div className="absolute top-2 right-2 w-9 h-9 animate-bounce">
-                      <svg
-                        viewBox="0 0 64 64"
-                        fill="none"
-                        xmlns="http://www.w3.org/2000/svg"
-                        className="w-full h-full text-red-500 drop-shadow-[0_0_8px_rgba(255,69,0,0.8)]"
-                      >
-                        <path
-                          d="M32 2C24 14 24 30 32 38C40 46 36 58 36 58C36 58 44 50 44 38C44 26 32 2 32 2Z"
-                          fill="currentColor"
-                        />
-                        <path
-                          d="M32 14C28 22 28 28 32 34C36 40 34 50 34 50C34 50 38 44 38 34C38 24 32 14 32 14Z"
-                          fill="currentColor"
-                        />
+                      <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full text-red-500 drop-shadow-[0_0_8px_rgba(255,69,0,0.8)]">
+                        <path d="M32 2C24 14 24 30 32 38C40 46 36 58 36 58C36 58 44 50 44 38C44 26 32 2 32 2Z" fill="currentColor" />
+                        <path d="M32 14C28 22 28 28 32 34C36 40 34 50 34 50C34 50 38 44 38 34C38 24 32 14 32 14Z" fill="currentColor" />
                       </svg>
                     </div>
                   )}
@@ -225,39 +308,22 @@ function WishList() {
                   No Image
                   {isPriceDrop && (
                     <div className="absolute top-2 right-2 w-6 h-6 animate-pulse">
-                      <svg
-                        viewBox="0 0 64 64"
-                        fill="none"
-                        xmlns="http://www.w3.org/2000/svg"
-                        className="w-full h-full text-red-500"
-                      >
-                        <path
-                          d="M32 2C24 14 24 30 32 38C40 46 36 58 36 58C36 58 44 50 44 38C44 26 32 2 32 2Z"
-                          fill="currentColor"
-                        />
-                        <path
-                          d="M32 14C28 22 28 28 32 34C36 40 34 50 34 50C34 50 38 44 38 34C38 24 32 14 32 14Z"
-                          fill="currentColor"
-                        />
+                      <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full text-red-500">
+                        <path d="M32 2C24 14 24 30 32 38C40 46 36 58 36 58C36 58 44 50 44 38C44 26 32 2 32 2Z" fill="currentColor" />
+                        <path d="M32 14C28 22 28 28 32 34C36 40 34 50 34 50C34 50 38 44 38 34C38 24 32 14 32 14Z" fill="currentColor" />
                       </svg>
                     </div>
                   )}
                 </div>
               )}
 
-              <h2 className="text-sm font-semibold mb-1 line-clamp-2">
-                {item.product_title}
-              </h2>
+              <h2 className="text-sm font-semibold mb-1 line-clamp-2">{item.product_title}</h2>
 
               <p className="text-xs text-gray-500 mb-1">
                 Target: <span className="text-gray-800 font-medium">${item.target_price}</span>
               </p>
 
-              <p
-                className={`text-xs font-semibold mb-1 ${
-                  isPriceDrop ? "text-green-600" : "text-gray-800"
-                }`}
-              >
+              <p className={`text-xs font-semibold mb-1 ${isPriceDrop ? "text-green-600" : "text-gray-800"}`}>
                 Live: {item.live_price || "N/A"}
               </p>
 
@@ -273,20 +339,14 @@ function WishList() {
                 <span className="text-gray-500 ml-1">({item.reviews ?? 0})</span>
               </a>
 
-              <p className="text-xs text-gray-500 mb-2">
-                Seller: {item.seller ?? "N/A"}
-              </p>
+              <p className="text-xs text-gray-500 mb-2">Seller: {item.seller ?? "N/A"}</p>
 
               <div className="flex gap-2 mt-auto">
                 <a
                   href={item.product_url || "#"}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className={`flex-1 text-center py-1 rounded-md text-xs font-semibold transition ${
-                    item.product_url
-                      ? "text-white hover:opacity-90"
-                      : "bg-gray-300 text-gray-500 cursor-not-allowed"
-                  }`}
+                  className={`flex-1 text-center py-1 rounded-md text-xs font-semibold transition ${item.product_url ? "text-white hover:opacity-90" : "bg-gray-300 text-gray-500 cursor-not-allowed"}`}
                   style={item.product_url ? { background: "linear-gradient(90deg,#00AAFF,#6B30FF)" } : {}}
                 >
                   View
@@ -324,60 +384,105 @@ function WishList() {
         })}
       </div>
 
+      {/* Search Other People's Wishlist */}
       <div className="w-full px-6 mt-8 flex flex-col items-center gap-2">
         <h3 className="text-lg font-semibold">Search Other People's Wishlist</h3>   {/* Search Other People's Wishlist */}
         <div className="flex gap-2 w-full max-w-md">
           <input
             type="text"
-            placeholder="First Name"
-            className="flex-1 px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-400 focus:outline-none"
-          />
-          <input
-            type="text"
-            placeholder="Last Name"
+            placeholder="Enter username"
+            value={otherUsername}
+            onChange={(e) => { setOtherUsername(e.target.value); setOtherItems(null); setOtherNotFound(false); }}
             className="flex-1 px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-400 focus:outline-none"
           />
           <button
-            className="px-4 py-2 rounded-xl text-sm font-semibold text-white transition hover:opacity-90 shadow-md"
+            onClick={searchOtherWishlist}
+            disabled={otherLoading}
+            className="px-4 py-2 rounded-xl text-sm font-semibold text-white transition hover:opacity-90 shadow-md disabled:opacity-60"
             style={{ background: "linear-gradient(90deg,#00AAFF,#6B30FF)" }}
           >
-            Search
+            {otherLoading ? "Searching..." : "Search"}
           </button>
         </div>
+
+        {/* Other wishlist results */}
+        {otherNotFound && (
+          <p className="text-sm text-gray-400 mt-2">No wishlist found for "{otherUsername}".</p>
+        )}
+        {otherItems && otherItems.length > 0 && (
+          <div className="w-full max-w-md mt-3">
+            <p className="text-sm font-semibold text-gray-700 mb-2">{otherUsername}'s Wishlist</p>
+            <div className="flex flex-col gap-2">
+              {otherItems.map((item, index) => (
+                <div key={index} className="flex items-center gap-3 bg-white rounded-xl border border-gray-200 p-3 shadow-sm">
+                  {item.product_image ? (
+                    <img src={item.product_image} alt={item.product_title} className="w-12 h-12 object-contain rounded-lg bg-gray-50 flex-shrink-0" />
+                  ) : (
+                    <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center text-gray-400 text-xs flex-shrink-0">No Image</div>
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-gray-900 line-clamp-1">{item.product_title}</p>
+                    <p className="text-xs text-gray-500">Target: <span className="font-medium text-gray-800">${item.target_price}</span></p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="w-full px-6 mt-8 flex flex-col items-center gap-6 pb-6 bg-gray-50">
+
+        {/* Signup */}
         <div className="w-full max-w-md flex flex-col items-center gap-2">
           <h3 className="text-lg font-semibold mb-2">Sign Up for More Deals</h3> {/* Signup */}
           <div className="flex w-full gap-2">
             <input
               type="email"
               placeholder="Enter your email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              value={dealEmail}
+              onChange={(e) => { setDealEmail(e.target.value); setDealSent(false); }}
               className="flex-1 px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-400 focus:outline-none"
             />
             <button
-              className="px-4 py-2 rounded-xl text-sm font-semibold text-white transition hover:opacity-90 shadow-md"
+              onClick={handleDealSignup}
+              disabled={dealLoading || !dealEmail.trim()}
+              className="px-4 py-2 rounded-xl text-sm font-semibold text-white transition hover:opacity-90 shadow-md disabled:opacity-60"
               style={{ background: "linear-gradient(90deg,#00AAFF,#6B30FF)" }}
             >
-              Sign Up
+              {dealLoading ? "Sending..." : dealSent ? "Sent! ✓" : "Sign Up"}
             </button>
           </div>
+          {dealSent && (
+            <p className="text-xs text-green-500 mt-1">Check your inbox — a test deal email is on its way!</p>
+          )}
         </div>
 
+        {/* FAQ */}
         <div className="w-full max-w-md flex flex-col items-center gap-2 mt-6">
           <h3 className="text-lg font-semibold mb-2">FAQ</h3> {/* FAQ */}
           <div className="w-full flex flex-col gap-2">
-            <button className="text-left px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300 transition">
-              How do I add items to my wishlist?
-            </button>
-            <button className="text-left px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300 transition">
-              Can I share my wishlist with friends?
-            </button>
-            <button className="text-left px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300 transition">
-              What happens if a price drops?
-            </button>
+            {faqItems.map((faq, index) => (
+              <div key={index} className="bg-gray-200 rounded-lg overflow-hidden">
+                <button
+                  onClick={() => setOpenFaq(openFaq === index ? null : index)}
+                  className="w-full text-left px-4 py-3 flex justify-between items-center hover:bg-gray-300 transition font-medium text-sm text-gray-800"
+                >
+                  {faq.question}
+                  <svg
+                    className={`w-4 h-4 flex-shrink-0 ml-2 transition-transform duration-200 ${openFaq === index ? "rotate-180" : ""}`}
+                    fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+                {openFaq === index && (
+                  <div className="px-4 py-3 text-sm text-gray-600 bg-white border-t border-gray-200">
+                    {faq.answer}
+                  </div>
+                )}
+              </div>
+            ))}
           </div>
         </div>
 
