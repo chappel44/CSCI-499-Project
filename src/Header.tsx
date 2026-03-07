@@ -1,7 +1,30 @@
-import { Link, useLocation } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { supabase } from "./supabase-client";
 
 export default function Header() {
   const { pathname } = useLocation();
+  const navigate = useNavigate();
+  const [loggedIn, setLoggedIn] = useState(false);
+
+  useEffect(() => {
+    // connected with supabase — check session on mount
+    supabase.auth.getSession().then(({ data }) => {
+      setLoggedIn(!!data.session);
+    });
+
+    const { data: listener } = supabase.auth.onAuthStateChange((_e, session) => {
+      setLoggedIn(!!session);
+    });
+
+    return () => listener.subscription.unsubscribe();
+  }, []);
+
+  const handleSignOut = async () => {
+    // connected with supabase
+    await supabase.auth.signOut();
+    navigate("/login");
+  };
 
   const navLinks = [
     { to: "/search",           label: "Search"           },
@@ -54,6 +77,7 @@ export default function Header() {
             Verifind
           </span>
         </Link>
+
         <nav className="hidden md:flex items-center gap-1">
           {navLinks.map(({ to, label }) => {
             const active = pathname === to;
@@ -80,23 +104,35 @@ export default function Header() {
         </nav>
 
         <div className="flex items-center gap-2 flex-shrink-0">
-  <Link
-    to="/login"
-    className="px-5 py-2 rounded-xl text-sm font-semibold text-white transition hover:opacity-90 shadow-md border border-white/20"
-    style={{ background: "linear-gradient(90deg,#00AAFF,#6B30FF)" }}
-  >
-    Login
-  </Link>
-
-  <Link
-    to="/signup"
-    className="px-5 py-2 rounded-xl text-sm font-semibold text-white transition hover:opacity-90 shadow-md"
-    style={{ background: "linear-gradient(90deg,#00AAFF,#6B30FF)" }}
-  >
-    Sign Up
-  </Link>
-</div>
+          {loggedIn ? (
+            <button
+              onClick={handleSignOut}
+              className="px-5 py-2 rounded-xl text-sm font-semibold text-white transition hover:opacity-90 shadow-md border border-white/20"
+              style={{ background: "linear-gradient(90deg,#00AAFF,#6B30FF)" }}
+            >
+              Sign Out
+            </button>
+          ) : (
+            <>
+              <Link
+                to="/login"
+                className="px-5 py-2 rounded-xl text-sm font-semibold text-white transition hover:opacity-90 shadow-md border border-white/20"
+                style={{ background: "linear-gradient(90deg,#00AAFF,#6B30FF)" }}
+              >
+                Login
+              </Link>
+              <Link
+                to="/signup"
+                className="px-5 py-2 rounded-xl text-sm font-semibold text-white transition hover:opacity-90 shadow-md"
+                style={{ background: "linear-gradient(90deg,#00AAFF,#6B30FF)" }}
+              >
+                Sign Up
+              </Link>
+            </>
+          )}
+        </div>
       </div>
+
       <div className="md:hidden fixed bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-1 px-3 py-2 bg-white/90 backdrop-blur-xl border border-gray-200/60 rounded-2xl shadow-xl z-50">
         {navLinks.map(({ to, label }) => {
           const active = pathname === to;

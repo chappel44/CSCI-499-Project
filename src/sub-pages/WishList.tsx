@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "../supabase-client";
 
 type WishlistItem = {//from supabase
@@ -24,11 +25,19 @@ function WishList() {
   const [searchQuery, setSearchQuery] = useState("");
   const [email, setEmail] = useState("");
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
+  const navigate = useNavigate();
 
   const TEST_USER_ID = "00000000-0000-0000-0000-000000000000";//USING A TEST ID FOR RN
 
   useEffect(() => {
-    fetchWishlist();
+    // connected with supabase — redirect to login if not authenticated
+    supabase.auth.getSession().then(({ data }) => {
+      if (!data.session) {
+        navigate("/login");
+      } else {
+        fetchWishlist();
+      }
+    });
   }, []);
 
   const fetchWishlist = async () => {
@@ -122,7 +131,6 @@ function WishList() {
         </h1>
       </div>
 
-      
       <div className="w-full h-24 relative overflow-hidden rounded-b-3xl shadow-lg group">
         <img
           src="/wishlist1.png"
@@ -182,7 +190,6 @@ function WishList() {
                     alt={item.product_title}
                     className="rounded-xl w-full h-28 object-contain mb-2 bg-gray-50"
                   />
-
                   {isPriceDrop && (
                     <div className="absolute top-2 right-2 w-9 h-9 animate-bounce">
                       <svg
@@ -306,6 +313,7 @@ function WishList() {
           );
         })}
       </div>
+
       <div className="w-full px-6 mt-8 flex flex-col items-center gap-2">
         <h3 className="text-lg font-semibold">Search Other People's Wishlist</h3>   {/* Search Other People's Wishlist */}
         <div className="flex gap-2 w-full max-w-md">
@@ -327,6 +335,7 @@ function WishList() {
           </button>
         </div>
       </div>
+
       <div className="w-full px-6 mt-8 flex flex-col items-center gap-6 pb-6 bg-gray-50">
         <div className="w-full max-w-md flex flex-col items-center gap-2">
           <h3 className="text-lg font-semibold mb-2">Sign Up for More Deals</h3> {/* Signup */}
@@ -346,6 +355,7 @@ function WishList() {
             </button>
           </div>
         </div>
+
         <div className="w-full max-w-md flex flex-col items-center gap-2 mt-6">
           <h3 className="text-lg font-semibold mb-2">FAQ</h3> {/* FAQ */}
           <div className="w-full flex flex-col gap-2">
