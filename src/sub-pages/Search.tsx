@@ -56,7 +56,6 @@ function Search() {
 
   const addToWishlist = async (item: Product) => {
     if (!userId) {
-      alert("Please log in to add items to your wishlist.");
       navigate("/login");
       return;
     }
