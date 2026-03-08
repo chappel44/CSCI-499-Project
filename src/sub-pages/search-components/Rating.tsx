@@ -13,7 +13,7 @@ export default function StarRating({ rating = 0, size = 20 }: StarRatingProps) {
     const fillPercent = Math.min(Math.max(rating - i, 0), 1) * 100;
 
     stars.push(
-      <div key={i} className="relative" style={{ width: size, height: size }}>
+      <span key={i} className="relative" style={{ width: size, height: size }}>
         {/* Empty star background */}
         <Star className="absolute w-full h-full text-gray-300 fill-current" />
 
@@ -26,7 +26,7 @@ export default function StarRating({ rating = 0, size = 20 }: StarRatingProps) {
             clipPath: `inset(0 ${100 - fillPercent}% 0 0)`,
           }}
         />
-      </div>
+      </span>
     );
   }
 

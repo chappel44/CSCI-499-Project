@@ -2,15 +2,13 @@ import { createContext, useState } from "react";
 import type { ReactNode } from "react";
 
 export type Product = {
-  product_id?: string; 
+  product_id?: string;
   title: string;
   link: string;
   thumbnail?: string;
   price?: string;
   old_price?: string;
-  prices?: { symbol: string; value: number }[];
   extracted_price?: number;
-  asin?: string;
   rating?: number | undefined;
 };
 
@@ -27,12 +25,15 @@ type MyContextType = {
   setOpenPage: React.Dispatch<React.SetStateAction<number>>;
   endPage: number;
   setEndPage: React.Dispatch<React.SetStateAction<number>>;
+  keyword: string;
+  setKeyword: React.Dispatch<React.SetStateAction<string>>;
 };
 
 export function SearchProvider({ children }: MyProviderProps) {
   const [products, setProducts] = useState<Product[]>([]);
   const [openPage, setOpenPage] = useState(0);
   const [endPage, setEndPage] = useState(10);
+  const [keyword, setKeyword] = useState("");
 
   return (
     <SearchContext.Provider
@@ -43,6 +44,8 @@ export function SearchProvider({ children }: MyProviderProps) {
         setOpenPage,
         endPage,
         setEndPage,
+        keyword,
+        setKeyword,
       }}
     >
       {children}

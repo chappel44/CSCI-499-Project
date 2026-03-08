@@ -4,6 +4,7 @@ import { useSearchContext } from "../Contexts/useSearchContext";
 import type { Product } from "../Contexts/SearchContext";
 import Rating from "./search-components/Rating";
 import { supabase } from "../supabase-client";
+import { useNavigate } from "react-router-dom";
 
 const searches = ["Air Pods", "Gaming Laptops", "Nike", "Nike Running Shoes"];
 
@@ -26,6 +27,7 @@ function Search() {
   const [userId, setUserId] = useState<string | null>(null); // logged in user id for wishlist inserts
   const [addedIds, setAddedIds] = useState<Set<string>>(new Set()); // tracks which items were added to wishlist
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     // connected with supabase — get username and user id from session
@@ -44,12 +46,6 @@ function Search() {
     // numeric extracted price
     if (item.extracted_price) return `$${item.extracted_price}`;
 
-    // prices array
-    if (item.prices?.length) {
-      const p = item.prices[0];
-      if (p?.value) return `${p.symbol ?? "$"}${p.value}`;
-    }
-
     if (item.title) {
       const match = item.title.match(/\$\d+(?:\.\d{1,2})?/);
       if (match) return match[0];
@@ -61,6 +57,7 @@ function Search() {
   const addToWishlist = async (item: Product) => {
     if (!userId) {
       alert("Please log in to add items to your wishlist.");
+      navigate("/login");
       return;
     }
 
@@ -84,33 +81,113 @@ function Search() {
     setAddedIds((prev) => new Set(prev).add(productKey));
   };
 
+  function normalizeKeyword(keyword: string): string {
+    const stopWords = new Set([
+      "the",
+      "a",
+      "an",
+      "for",
+      "with",
+      "and",
+      "or",
+      "of",
+      "to",
+      "buy",
+      "best",
+      "cheap",
+      "new",
+      "online",
+      "sale",
+      "shop",
+    ]);
+
+    return keyword
+      .toLowerCase()
+      .replace(/[^\w\s]/g, "") // remove punctuation
+      .split(/\s+/) // split words
+      .filter((word) => word && !stopWords.has(word)) // remove stop words
+      .map((word) => {
+        // simple plural normalization
+        if (word.endsWith("s") && word.length > 3) {
+          return word.slice(0, -1);
+        }
+        return word;
+      })
+      .sort() // order words for consistent cache keys
+      .join(""); // <-- join without spaces
+  }
+
   const searchProducts = async () => {
     if (!keyword) return;
 
     setLoading(true);
 
+    const normalizedKeyword = normalizeKeyword(keyword);
+    const threeDaysAgo = new Date(
+      Date.now() - 3 * 24 * 60 * 60 * 1000
+    ).toISOString();
+    await supabase
+      .from("cached_searches")
+      .delete()
+      .eq("search_term", normalizedKeyword) // same keyword
+      .lt("created_at", threeDaysAgo); // older than 3 days
+
     try {
-      const res = await fetch(
-        `/api/search?keyword=${encodeURIComponent(keyword)}`
-      );
+      const { data: cachedSearch, error: cachedErrors } = await supabase
+        .from("cached_searches")
+        .select(
+          "product_id, title, link, thumbnail, price, old_price, extracted_price, rating"
+        )
+        .eq("search_term", normalizedKeyword);
+      if (cachedErrors) {
+        console.error(cachedErrors.message);
+        alert("Selecting from cache failed.");
+      } else if (cachedSearch?.length) {
+        console.log("search pulled from cache");
+        setProducts(cachedSearch);
+      } else {
+        console.log("Pulling results from api");
+        const res = await fetch(
+          `/api/search?keyword=${encodeURIComponent(keyword)}`
+        );
 
-      if (!res.ok) throw new Error(`Server error: ${res.status}`);
+        if (!res.ok) throw new Error(`Server error: ${res.status}`);
 
-      const data = await res.json();
+        const data = await res.json();
 
-      const allProducts = [
-        ...(data.featured_products || []),
-        ...(data.organic_results || []),
-      ];
+        const allProducts = [
+          ...(data.featured_products || []),
+          ...(data.organic_results || []),
+        ];
 
-      console.log(allProducts);
+        const sortedProducts = allProducts.sort(
+          (a, b) =>
+            (a.extracted_price ?? Infinity) - (b.extracted_price ?? Infinity)
+        );
 
-      const sortedProducts = allProducts.sort(
-        (a, b) =>
-          (a.extracted_price ?? Infinity) - (b.extracted_price ?? Infinity)
-      );
+        const rows = sortedProducts.map((p) => ({
+          product_id: p.product_id,
+          title: p.title,
+          link: p.link,
+          thumbnail: p.thumbnail,
+          price: p.price,
+          old_price: p.old_price,
+          extracted_price: p.extracted_price,
+          rating: p.rating,
+          search_term: normalizedKeyword,
+        }));
 
-      setProducts(sortedProducts);
+        console.log(rows);
+
+        const { error } = await supabase.from("cached_searches").insert(rows);
+
+        if (error) {
+          console.log(error.message);
+          alert("inserting into cached searches failed");
+        }
+
+        setProducts(sortedProducts);
+      }
       setOpenPage(0);
     } catch (err) {
       console.error(err);
