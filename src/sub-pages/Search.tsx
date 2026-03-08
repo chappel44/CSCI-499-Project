@@ -404,7 +404,7 @@ function Search() {
 
         {/* Search bar — frosted glass */}
         <form
-          className="flex items-center flex-wrap gap-2 z-20 w-full max-w-2xl"
+          className="flex items-center justify-center flex-wrap gap-2 z-20 w-full max-w-2xl"
           style={{
             opacity: visible ? 1 : 0,
             transform: visible ? "translateY(0)" : "translateY(12px)",
@@ -416,113 +416,117 @@ function Search() {
           }}
         >
           {/* Input */}
-          <div
-            className="flex flex-1 items-center gap-2 rounded-xl px-4 py-2.5 transition min-w-0"
-            style={{
-              background: "rgba(255,255,255,0.7)",
-              backdropFilter: "blur(12px)",
-              border: "1px solid rgba(255,255,255,0.85)",
-              boxShadow: "0 2px 16px rgba(0,0,0,0.06)",
-            }}
-          >
-            <SearchIcon className="h-4 w-4 text-gray-400 flex-shrink-0" />
-            <input
-              value={keyword}
-              onChange={(e) => setKeyword(e.target.value)}
-              placeholder="Search Verifind products"
-              className="flex-1 text-sm text-gray-900 placeholder-gray-400 focus:outline-none bg-transparent min-w-0"
-            />
-          </div>
-
-          {/* Search button */}
-          <button
-            type="submit"
-            disabled={loading}
-            className="px-5 py-2.5 rounded-xl text-sm font-semibold text-white transition hover:opacity-90 shadow-md disabled:opacity-60 disabled:cursor-not-allowed flex items-center gap-2"
-            style={{ background: "linear-gradient(90deg,#00AAFF,#6B30FF)" }}
-          >
-            {loading ? (
-              <>
-                <svg
-                  className="w-3.5 h-3.5 animate-spin"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                >
-                  <circle
-                    className="opacity-25"
-                    cx="12"
-                    cy="12"
-                    r="10"
-                    stroke="currentColor"
-                    strokeWidth="4"
-                  />
-                  <path
-                    className="opacity-75"
-                    fill="currentColor"
-                    d="M4 12a8 8 0 018-8v8z"
-                  />
-                </svg>
-                Searching...
-              </>
-            ) : (
-              "Search"
-            )}
-          </button>
-
-          {/* Retailer Dropdown */}
-          <div className="relative z-10" ref={dropdownRef}>
-            <button
-              type="button"
-              className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition hover:opacity-90 shadow-md"
-              style={{
-                background: "linear-gradient(90deg,#00AAFF,#6B30FF)",
-                color: "#fff",
-              }}
-              onClick={() => setSearchOptionsOpen(!searchOptionsOpen)}
-            >
-              <span>{selectedRetailer || "Select Retailer"}</span>
-              <svg
-                className={`w-3.5 h-3.5 transition-transform duration-200 ${
-                  searchOptionsOpen ? "rotate-180" : ""
-                }`}
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={2.5}
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M19 9l-7 7-7-7"
-                />
-              </svg>
-            </button>
-
+          <div className="flex flex-col space-y-3">
             <div
-              className={`absolute top-full left-0 mt-2 rounded-xl border shadow-lg flex flex-col overflow-hidden transition-all duration-200
+              className="flex flex-1 items-center gap-2 rounded-xl px-4 py-2.5 transition min-w-0"
+              style={{
+                background: "rgba(255,255,255,0.7)",
+                backdropFilter: "blur(12px)",
+                border: "1px solid rgba(255,255,255,0.85)",
+                boxShadow: "0 2px 16px rgba(0,0,0,0.06)",
+              }}
+            >
+              <SearchIcon className="h-4 w-4 text-gray-400 flex-shrink-0" />
+              <input
+                value={keyword}
+                onChange={(e) => setKeyword(e.target.value)}
+                placeholder="Search Verifind products"
+                className="flex-1 w-80 text-sm text-gray-900 placeholder-gray-400 focus:outline-none bg-transparent min-w-0"
+              />
+            </div>
+
+            {/* Search button */}
+            <div className="flex gap-2 w-full justify-center">
+              <button
+                type="submit"
+                disabled={loading}
+                className="px-5 py-2.5 rounded-xl text-sm font-semibold text-white transition hover:opacity-90 shadow-md disabled:opacity-60 disabled:cursor-not-allowed flex items-center gap-2"
+                style={{ background: "linear-gradient(90deg,#00AAFF,#6B30FF)" }}
+              >
+                {loading ? (
+                  <>
+                    <svg
+                      className="w-3.5 h-3.5 animate-spin"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                    >
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                      />
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8v8z"
+                      />
+                    </svg>
+                    Searching...
+                  </>
+                ) : (
+                  "Search"
+                )}
+              </button>
+
+              {/* Retailer Dropdown */}
+              <div className="relative z-10" ref={dropdownRef}>
+                <button
+                  type="button"
+                  className="flex items-center w-48 gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition hover:opacity-90 shadow-md"
+                  style={{
+                    background: "linear-gradient(90deg,#00AAFF,#6B30FF)",
+                    color: "#fff",
+                  }}
+                  onClick={() => setSearchOptionsOpen(!searchOptionsOpen)}
+                >
+                  <span>{selectedRetailer || "Select Retailer"}</span>
+                  <svg
+                    className={`w-3.5 h-3.5 transition-transform duration-200 ${
+                      searchOptionsOpen ? "rotate-180" : ""
+                    }`}
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={2.5}
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M19 9l-7 7-7-7"
+                    />
+                  </svg>
+                </button>
+
+                <div
+                  className={`absolute top-full left-0 mt-2 rounded-xl border shadow-lg flex flex-col overflow-hidden transition-all duration-200
               ${
                 searchOptionsOpen
                   ? "opacity-100 scale-100"
                   : "opacity-0 scale-95 pointer-events-none"
               } w-44`}
-              style={{
-                background: "rgba(255,255,255,0.85)",
-                backdropFilter: "blur(16px)",
-                borderColor: "rgba(0,0,0,0.08)",
-              }}
-            >
-              {retailers.map((retailer) => (
-                <button
-                  key={retailer.id}
-                  onClick={() => {
-                    setSearchOptionsOpen(false);
-                    setSelectedRetailer(retailer.label);
+                  style={{
+                    background: "rgba(255,255,255,0.85)",
+                    backdropFilter: "blur(16px)",
+                    borderColor: "rgba(0,0,0,0.08)",
                   }}
-                  className="w-full py-2.5 px-4 text-sm text-left text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition cursor-pointer"
                 >
-                  {retailer.label}
-                </button>
-              ))}
+                  {retailers.map((retailer) => (
+                    <button
+                      key={retailer.id}
+                      onClick={() => {
+                        setSearchOptionsOpen(false);
+                        setSelectedRetailer(retailer.label);
+                      }}
+                      className=" py-2.5 px-4 text-sm text-left text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition cursor-pointer"
+                    >
+                      {retailer.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
             </div>
           </div>
         </form>
