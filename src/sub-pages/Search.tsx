@@ -25,7 +25,6 @@ function Search() {
   const [username, setUsername] = useState<string | null>(null); // logged in username
   const [userId, setUserId] = useState<string | null>(null); // logged in user id for wishlist inserts
   const [addedIds, setAddedIds] = useState<Set<string>>(new Set()); // tracks which items were added to wishlist
-  const [targetPriceMap, setTargetPriceMap] = useState<Record<string, string>>({}); // target price per product
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -67,7 +66,7 @@ function Search() {
 
     const productKey = item.product_id ?? item.title ?? "";
 
-const targetPrice = item.extracted_price ?? 0;
+    const targetPrice = item.extracted_price ?? 0;
     // connected with supabase — insert item into wishlists table
     const { error } = await supabase.from("wishlists").insert({
       user_id: userId,
@@ -149,12 +148,23 @@ const targetPrice = item.extracted_price ?? 0;
   return (
     <section className="py-20 md:py-25 min-h-screen bg-gray-100 overflow-x-hidden">
       <div className="flex flex-col items-center w-full px-4 sm:px-6 md:px-10">
-
         {/* Header */}
         <div className="flex flex-col items-center text-center mb-8">
           {username && (
             <p className="text-sm text-gray-500 mb-1">
-              Welcome back, <span className="font-semibold" style={{ background: "linear-gradient(90deg,#00AAFF,#6B30FF)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>{username}</span> 👋
+              Welcome back,{" "}
+              <span
+                className="font-semibold"
+                style={{
+                  background: "linear-gradient(90deg,#00AAFF,#6B30FF)",
+                  WebkitBackgroundClip: "text",
+                  WebkitTextFillColor: "transparent",
+                  backgroundClip: "text",
+                }}
+              >
+                {username}
+              </span>{" "}
+              👋
             </p>
           )}
           <h1 className="text-3xl font-semibold text-gray-900 mb-2">
@@ -193,9 +203,24 @@ const targetPrice = item.extracted_price ?? 0;
           >
             {loading ? (
               <>
-                <svg className="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
+                <svg
+                  className="w-3.5 h-3.5 animate-spin"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  />
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8v8z"
+                  />
                 </svg>
                 Searching...
               </>
@@ -214,16 +239,29 @@ const targetPrice = item.extracted_price ?? 0;
             >
               <span>{selectedRetailer || "Select Retailer"}</span>
               <svg
-                className={`w-3.5 h-3.5 transition-transform duration-200 ${searchOptionsOpen ? "rotate-180" : ""}`}
-                fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}
+                className={`w-3.5 h-3.5 transition-transform duration-200 ${
+                  searchOptionsOpen ? "rotate-180" : ""
+                }`}
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2.5}
               >
-                <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M19 9l-7 7-7-7"
+                />
               </svg>
             </button>
 
             <div
               className={`absolute top-full left-0 mt-2 rounded-xl bg-white border border-gray-200 shadow-lg flex flex-col overflow-hidden transition-all duration-200
-              ${searchOptionsOpen ? "opacity-100 scale-100" : "opacity-0 scale-95 pointer-events-none"} w-44`}
+              ${
+                searchOptionsOpen
+                  ? "opacity-100 scale-100"
+                  : "opacity-0 scale-95 pointer-events-none"
+              } w-44`}
             >
               {retailers.map((retailer) => (
                 <button
@@ -266,7 +304,11 @@ const targetPrice = item.extracted_price ?? 0;
                     <SearchIcon className="w-4 h-4 text-gray-400 flex-shrink-0" />
                     <p className="text-sm whitespace-nowrap">
                       Try:{" "}
-                      <span className={index === 0 ? "text-blue-500" : "text-gray-600"}>
+                      <span
+                        className={
+                          index === 0 ? "text-blue-500" : "text-gray-600"
+                        }
+                      >
                         {item}
                       </span>
                     </p>
@@ -278,8 +320,12 @@ const targetPrice = item.extracted_price ?? 0;
                 <div className="flex gap-3 items-center">
                   <ShieldCheck className="w-8 h-8 text-green-500 flex-shrink-0" />
                   <div>
-                    <h3 className="font-semibold text-gray-900 text-base">Verified Product Data</h3>
-                    <p className="text-gray-400 text-sm">Real-time Verifind product lookup.</p>
+                    <h3 className="font-semibold text-gray-900 text-base">
+                      Verified Product Data
+                    </h3>
+                    <p className="text-gray-400 text-sm">
+                      Real-time Verifind product lookup.
+                    </p>
                   </div>
                 </div>
               </div>
@@ -311,7 +357,9 @@ const targetPrice = item.extracted_price ?? 0;
                 )}
 
                 <div className="flex-1 flex flex-col gap-1 min-w-0">
-                  <h3 className="text-sm font-semibold text-gray-900 line-clamp-2">{item.title}</h3>
+                  <h3 className="text-sm font-semibold text-gray-900 line-clamp-2">
+                    {item.title}
+                  </h3>
 
                   <p className="text-gray-500 text-xs flex items-center gap-1.5">
                     Rating: <Rating rating={item?.rating ?? 0} size={14} />
@@ -328,24 +376,30 @@ const targetPrice = item.extracted_price ?? 0;
                   </p>
 
                   {/* Add to Wishlist */}
-{!isAdded ? (
-  <button
-    onClick={() => addToWishlist(item)}
-    className="w-fit text-xs font-semibold px-3 py-1 rounded-lg text-white transition hover:opacity-90 mt-1"
-    style={{ background: "linear-gradient(90deg,#00AAFF,#6B30FF)" }}
-  >
-    + Wishlist
-  </button>
-) : (
-  <p className="text-xs text-green-500 font-semibold mt-1">✔ Added to Wishlist</p>
-)}
+                  {!isAdded ? (
+                    <button
+                      onClick={() => addToWishlist(item)}
+                      className="w-fit text-xs font-semibold px-3 py-1 rounded-lg text-white transition hover:opacity-90 mt-1"
+                      style={{
+                        background: "linear-gradient(90deg,#00AAFF,#6B30FF)",
+                      }}
+                    >
+                      + Wishlist
+                    </button>
+                  ) : (
+                    <p className="text-xs text-green-500 font-semibold mt-1">
+                      ✔ Added to Wishlist
+                    </p>
+                  )}
 
                   <a
                     href={`${item.link}?tag=yourtag-20`}
                     target="_blank"
                     rel="noreferrer"
                     className="text-xs font-semibold w-fit px-3 py-1 rounded-lg text-white transition hover:opacity-90 mt-1"
-                    style={{ background: "linear-gradient(90deg,#00AAFF,#6B30FF)" }}
+                    style={{
+                      background: "linear-gradient(90deg,#00AAFF,#6B30FF)",
+                    }}
                   >
                     View on Verifind ↗
                   </a>
@@ -363,11 +417,16 @@ const targetPrice = item.extracted_price ?? 0;
                 key={index}
                 onClick={() => setOpenPage(index)}
                 className={`w-9 h-9 rounded-xl text-sm font-semibold border transition cursor-pointer
-                  ${openPage === index
-                    ? "text-white border-transparent shadow-md"
-                    : "bg-white border-gray-200 text-gray-600 hover:bg-gray-50"
+                  ${
+                    openPage === index
+                      ? "text-white border-transparent shadow-md"
+                      : "bg-white border-gray-200 text-gray-600 hover:bg-gray-50"
                   }`}
-                style={openPage === index ? { background: "linear-gradient(90deg,#00AAFF,#6B30FF)" } : {}}
+                style={
+                  openPage === index
+                    ? { background: "linear-gradient(90deg,#00AAFF,#6B30FF)" }
+                    : {}
+                }
               >
                 {index + 1}
               </button>
