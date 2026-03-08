@@ -25,6 +25,12 @@ type OtherWishlistItem = {//from supabase for other people's wishlists
   target_price: number;
 };
 
+// price history type — from supabase price_history table
+type PricePoint = {
+  recorded_at: string;
+  price: number;
+};
+
 const faqItems = [
   {
     question: "How do I add items to my wishlist?",
@@ -40,6 +46,55 @@ const faqItems = [
   },
 ];
 
+// sparkline SVG — draws a tiny inline price history chart from an array of price points
+function Sparkline({ points }: { points: PricePoint[] }) {
+  if (!points || points.length < 2) {
+    return <p className="text-xs text-gray-400 italic">No history yet</p>;
+  }
+
+  const prices = points.map((p) => p.price);
+  const min = Math.min(...prices);
+  const max = Math.max(...prices);
+  const range = max - min || 1;
+  const width = 140;
+  const height = 36;
+  const pad = 4;
+
+  const coords = prices.map((price, i) => {
+    const x = pad + (i / (prices.length - 1)) * (width - pad * 2);
+    const y = height - pad - ((price - min) / range) * (height - pad * 2);
+    return `${x},${y}`;
+  });
+
+  const polyline = coords.join(" ");
+  const lastPrice = prices[prices.length - 1];
+  const firstPrice = prices[0];
+  const trending = lastPrice <= firstPrice ? "#22c55e" : "#ef4444"; // green if price went down, red if up
+
+  return (
+    <div className="mt-1 mb-1">
+      <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`} className="overflow-visible">
+        <polyline
+          points={polyline}
+          fill="none"
+          stroke={trending}
+          strokeWidth="1.8"
+          strokeLinejoin="round"
+          strokeLinecap="round"
+        />
+        {/* dot on latest price */}
+        <circle
+          cx={coords[coords.length - 1].split(",")[0]}
+          cy={coords[coords.length - 1].split(",")[1]}
+          r="2.5"
+          fill={trending}
+        />
+      </svg>
+      <p className="text-xs text-gray-400">{points.length} price points</p>
+    </div>
+  );
+}
+
 function WishList() {
   const [items, setItems] = useState<EnrichedItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -47,7 +102,18 @@ function WishList() {
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
   const [username, setUsername] = useState<string | null>(null); // logged in username
   const [userId, setUserId] = useState<string | null>(null); // logged in user id — replaces TEST_USER_ID
+  const [visible, setVisible] = useState(false);
   const navigate = useNavigate();
+
+  // sort & filter state
+  const [sortBy, setSortBy] = useState<"none" | "price-asc" | "price-desc" | "alpha" | "drop">("none");
+  const [filterDropOnly, setFilterDropOnly] = useState(false);
+
+  // share wishlist state
+  const [shareCopied, setShareCopied] = useState(false);
+
+  // price history state — keyed by wishlist item id
+  const [priceHistory, setPriceHistory] = useState<Record<string, PricePoint[]>>({});
 
   const [otherUsername, setOtherUsername] = useState(""); // Search Other People's Wishlist
   const [otherItems, setOtherItems] = useState<OtherWishlistItem[] | null>(null);
@@ -73,6 +139,7 @@ function WishList() {
         fetchWishlist(id);
       }
     });
+    setTimeout(() => setVisible(true), 50);
   }, []);
 
   const fetchWishlist = async (id: string | null) => {
@@ -110,6 +177,32 @@ function WishList() {
 
           const liveData = await response.json();
 
+          // connected with supabase — record price once per day max (not on every refresh)
+          if (liveData.price) {
+            const numericPrice = parseFloat(liveData.price.replace(/[^0-9.]/g, ""));
+            if (!isNaN(numericPrice)) {
+              const todayStart = new Date();
+              todayStart.setHours(0, 0, 0, 0);
+
+              // check if we already recorded a price for this item today
+              const { data: existing } = await supabase
+                .from("price_history")
+                .select("id")
+                .eq("wishlist_item_id", item.id)
+                .gte("recorded_at", todayStart.toISOString())
+                .limit(1);
+
+              // only insert if no entry exists for today yet
+              if (!existing || existing.length === 0) {
+                await supabase.from("price_history").insert({
+                  wishlist_item_id: item.id,
+                  user_id: id,
+                  price: numericPrice,
+                });
+              }
+            }
+          }
+
           return {
             ...item,
             live_price: liveData.price ?? undefined,
@@ -128,6 +221,31 @@ function WishList() {
 
     setItems(enriched);
     setLoading(false);
+
+    // connected with supabase — fetch price history for all wishlist items
+    fetchPriceHistory(data.map((i: WishlistItem) => i.id));
+  };
+
+  // connected with supabase — load price history for sparklines
+  const fetchPriceHistory = async (itemIds: string[]) => {
+    const { data, error } = await supabase
+      .from("price_history")
+      .select("wishlist_item_id, price, recorded_at")
+      .in("wishlist_item_id", itemIds)
+      .order("recorded_at", { ascending: true });
+
+    if (error) {
+      console.warn("Price history fetch error:", error.message);
+      return;
+    }
+
+    // group by wishlist_item_id
+    const grouped: Record<string, PricePoint[]> = {};
+    for (const row of data ?? []) {
+      if (!grouped[row.wishlist_item_id]) grouped[row.wishlist_item_id] = [];
+      grouped[row.wishlist_item_id].push({ price: row.price, recorded_at: row.recorded_at });
+    }
+    setPriceHistory(grouped);
   };
 
   const removeFromWishlist = async (itemId: string) => {
@@ -136,6 +254,15 @@ function WishList() {
     if (!error) {
       setItems((prev) => prev.filter((item) => item.id !== itemId));
     }
+  };
+
+  // share wishlist — copies a URL with the current username to clipboard
+  const handleShareWishlist = () => {
+    const url = `${window.location.origin}/wish-list?user=${encodeURIComponent(username ?? "")}`;
+    navigator.clipboard.writeText(url).then(() => {
+      setShareCopied(true);
+      setTimeout(() => setShareCopied(false), 2500);
+    });
   };
 
   // Search Other People's Wishlist — connected with supabase
@@ -212,23 +339,73 @@ function WishList() {
     );
   };
 
-  const filteredItems = items.filter((item) =>
-    item.product_title.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  // sort + filter logic applied on top of search filter
+  const filteredItems = items
+    .filter((item) => item.product_title.toLowerCase().includes(searchQuery.toLowerCase()))
+    .filter((item) => {
+      if (!filterDropOnly) return true;
+      const numericLivePrice = item.live_price ? parseFloat(item.live_price.replace(/[^0-9.]/g, "")) : null;
+      return numericLivePrice !== null && numericLivePrice < item.target_price;
+    })
+    .sort((a, b) => {
+      if (sortBy === "price-asc") {
+        const pa = a.live_price ? parseFloat(a.live_price.replace(/[^0-9.]/g, "")) : Infinity;
+        const pb = b.live_price ? parseFloat(b.live_price.replace(/[^0-9.]/g, "")) : Infinity;
+        return pa - pb;
+      }
+      if (sortBy === "price-desc") {
+        const pa = a.live_price ? parseFloat(a.live_price.replace(/[^0-9.]/g, "")) : -Infinity;
+        const pb = b.live_price ? parseFloat(b.live_price.replace(/[^0-9.]/g, "")) : -Infinity;
+        return pb - pa;
+      }
+      if (sortBy === "alpha") return a.product_title.localeCompare(b.product_title);
+      if (sortBy === "drop") {
+        // price drops first
+        const aDrop = a.live_price ? parseFloat(a.live_price.replace(/[^0-9.]/g, "")) < a.target_price : false;
+        const bDrop = b.live_price ? parseFloat(b.live_price.replace(/[^0-9.]/g, "")) < b.target_price : false;
+        return Number(bDrop) - Number(aDrop);
+      }
+      return 0;
+    });
 
   // builds a Google Shopping search URL so users can see live ratings directly from Google
   const getGoogleShoppingUrl = (title: string) =>
     `https://www.google.com/search?tbm=shop&q=${encodeURIComponent(title)}`;
 
   return (
-    <div className="min-h-screen flex flex-col bg-gray-100 text-gray-900">
-      <div className="sticky top-0 z-30 px-6 py-6 flex justify-center items-center bg-transparent backdrop-blur-md border-b border-gray-200/30">
+    <div className="min-h-screen flex flex-col text-gray-900 overflow-x-hidden" style={{ background: "#f0f4ff" }}>
+
+      {/* Mesh gradient background orbs — same as Search & WhatIsVerifind for consistency */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden" style={{ zIndex: 0 }}>
+        <div style={{
+          position: "absolute", top: "-10%", left: "-5%",
+          width: "55vw", height: "55vw", maxWidth: 700, maxHeight: 700,
+          background: "radial-gradient(circle, rgba(0,170,255,0.16) 0%, transparent 70%)",
+          borderRadius: "50%", filter: "blur(50px)",
+        }} />
+        <div style={{
+          position: "absolute", top: "25%", right: "-10%",
+          width: "50vw", height: "50vw", maxWidth: 600, maxHeight: 600,
+          background: "radial-gradient(circle, rgba(107,48,255,0.13) 0%, transparent 70%)",
+          borderRadius: "50%", filter: "blur(50px)",
+        }} />
+        <div style={{
+          position: "absolute", bottom: "10%", left: "20%",
+          width: "40vw", height: "40vw", maxWidth: 500, maxHeight: 500,
+          background: "radial-gradient(circle, rgba(16,185,129,0.08) 0%, transparent 70%)",
+          borderRadius: "50%", filter: "blur(40px)",
+        }} />
+      </div>
+
+      {/* Sticky header — frosted glass */}
+      <div className="sticky top-0 z-30 px-6 py-6 flex justify-center items-center border-b" style={{ background: "rgba(240,244,255,0.7)", backdropFilter: "blur(16px)", borderColor: "rgba(0,170,255,0.12)" }}>
         <h1 className="text-3xl font-bold tracking-tight text-white drop-shadow-lg">
           {/* needed to filter the header and my banner logo */}
         </h1>
       </div>
 
-      <div className="w-full h-24 relative overflow-hidden rounded-b-3xl shadow-lg group">
+      {/* Banner */}
+      <div className="relative z-10 w-full h-24 relative overflow-hidden rounded-b-3xl shadow-lg group">
         <img
           src="/wishlist1.png"
           alt="Wishlist Banner"
@@ -245,19 +422,40 @@ function WishList() {
 
       {/* Welcome message */}
       {username && (
-        <p className="text-center text-sm text-gray-500 mt-4">
-          Welcome back, <span className="font-semibold" style={{ background: "linear-gradient(90deg,#00AAFF,#6B30FF)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>{username}</span> 👋
-        </p>
+        <div
+          className="relative z-10 flex justify-center mt-5"
+          style={{ opacity: visible ? 1 : 0, transition: "opacity 0.5s ease" }}
+        >
+          <div
+            className="px-4 py-1.5 rounded-full text-sm backdrop-blur-md border"
+            style={{ background: "rgba(255,255,255,0.55)", borderColor: "rgba(0,170,255,0.2)" }}
+          >
+            Welcome back,{" "}
+            <span className="font-semibold" style={{
+              background: "linear-gradient(90deg,#00AAFF,#6B30FF)",
+              WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text",
+            }}>{username}</span>{" "}👋
+          </div>
+        </div>
       )}
 
-      {/* Search */}
-      <div className="mt-4 px-6 flex justify-center items-center gap-2">
+      {/* Search + Share row */}
+      <div
+        className="relative z-10 mt-4 px-6 flex justify-center items-center gap-2 flex-wrap"
+        style={{ opacity: visible ? 1 : 0, transform: visible ? "translateY(0)" : "translateY(10px)", transition: "opacity 0.5s ease 0.1s, transform 0.5s ease 0.1s" }}
+      >
         <input
           type="text"
           placeholder="Search your wishlist..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="w-full max-w-md px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-400 focus:outline-none"
+          className="flex-1 min-w-0 max-w-md px-4 py-2 rounded-xl focus:outline-none transition"
+          style={{
+            background: "rgba(255,255,255,0.7)",
+            backdropFilter: "blur(12px)",
+            border: "1px solid rgba(255,255,255,0.85)",
+            boxShadow: "0 2px 12px rgba(0,0,0,0.05)",
+          }}
         />
         <button
           className="px-4 py-2 rounded-xl text-sm font-semibold text-white transition hover:opacity-90 shadow-md"
@@ -265,16 +463,83 @@ function WishList() {
         >
           Search
         </button>
+
+        {/* Share wishlist button */}
+        <button
+          onClick={handleShareWishlist}
+          className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold text-white transition hover:opacity-90 shadow-md"
+          style={{ background: "linear-gradient(90deg,#00AAFF,#6B30FF)" }}
+          title="Copy shareable wishlist link"
+        >
+          {shareCopied ? (
+            <>
+              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+              </svg>
+              Copied!
+            </>
+          ) : (
+            <>
+              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+              </svg>
+              Share
+            </>
+          )}
+        </button>
       </div>
 
-      {/* Wishlist Items */}
-      <div className="flex-1 overflow-y-auto px-6 py-6 flex flex-wrap justify-center gap-4">
+      {/* Sort & Filter bar — frosted glass pill row */}
+      <div
+        className="relative z-10 mt-3 px-6 flex justify-center items-center gap-2 flex-wrap"
+        style={{ opacity: visible ? 1 : 0, transform: visible ? "translateY(0)" : "translateY(8px)", transition: "opacity 0.5s ease 0.15s, transform 0.5s ease 0.15s" }}
+      >
+        <span className="text-xs text-gray-500 font-semibold uppercase tracking-wide">Sort:</span>
+        {(["none", "price-asc", "price-desc", "alpha", "drop"] as const).map((option) => {
+          const labels: Record<string, string> = {
+            none: "Default",
+            "price-asc": "Price ↑",
+            "price-desc": "Price ↓",
+            alpha: "A–Z",
+            drop: "Price Drops First",
+          };
+          return (
+            <button
+              key={option}
+              onClick={() => setSortBy(option)}
+              className="px-3 py-1 rounded-lg text-xs font-semibold transition"
+              style={
+                sortBy === option
+                  ? { background: "linear-gradient(90deg,#00AAFF,#6B30FF)", color: "#fff", border: "1px solid transparent", boxShadow: "0 2px 8px rgba(0,170,255,0.25)" }
+                  : { background: "rgba(255,255,255,0.65)", backdropFilter: "blur(8px)", border: "1px solid rgba(255,255,255,0.85)", color: "#4B5563" }
+              }
+            >
+              {labels[option]}
+            </button>
+          );
+        })}
+        <div className="flex items-center gap-1.5 ml-2">
+          <input
+            type="checkbox"
+            id="filterDrop"
+            checked={filterDropOnly}
+            onChange={(e) => setFilterDropOnly(e.target.checked)}
+            className="accent-blue-500 w-3.5 h-3.5 cursor-pointer"
+          />
+          <label htmlFor="filterDrop" className="text-xs text-gray-600 cursor-pointer select-none">
+            🔥 Price drops only
+          </label>
+        </div>
+      </div>
+
+      {/* Wishlist Items — frosted glass cards */}
+      <div className="relative z-10 flex-1 overflow-y-auto px-6 py-6 flex flex-wrap justify-center gap-4">
         {loading && <p className="text-gray-500 text-center">Loading wishlist...</p>}
         {!loading && filteredItems.length === 0 && (
           <p className="text-gray-500 text-center">No items found.</p>
         )}
 
-        {filteredItems.map((item) => {
+        {filteredItems.map((item, cardIndex) => {
           const numericLivePrice = item.live_price
             ? parseFloat(item.live_price.replace(/[^0-9.]/g, ""))
             : null;
@@ -284,7 +549,24 @@ function WishList() {
           return (
             <div
               key={item.id}
-              className="bg-white rounded-2xl shadow-sm hover:shadow-lg transition-all duration-300 p-3 flex flex-col w-48 relative"
+              // frosted glass card — bg-white/60 + backdrop-blur + border-white/40
+              className="backdrop-blur-md rounded-2xl transition-all duration-300 p-3 flex flex-col w-48 relative hover:-translate-y-1"
+              style={{
+                background: "rgba(255,255,255,0.60)",
+                border: "1px solid rgba(255,255,255,0.75)",
+                boxShadow: "0 4px 20px rgba(0,0,0,0.06)",
+                opacity: visible ? 1 : 0,
+                transform: visible ? "translateY(0)" : "translateY(16px)",
+                transition: `opacity 0.4s ease ${0.05 * cardIndex}s, transform 0.4s ease ${0.05 * cardIndex}s, box-shadow 0.3s ease`,
+              }}
+              onMouseEnter={(e) => {
+                (e.currentTarget as HTMLDivElement).style.boxShadow = "0 8px 32px rgba(0,170,255,0.15), 0 2px 8px rgba(0,0,0,0.06)";
+                (e.currentTarget as HTMLDivElement).style.borderColor = "rgba(0,170,255,0.25)";
+              }}
+              onMouseLeave={(e) => {
+                (e.currentTarget as HTMLDivElement).style.boxShadow = "0 4px 20px rgba(0,0,0,0.06)";
+                (e.currentTarget as HTMLDivElement).style.borderColor = "rgba(255,255,255,0.75)";
+              }}
             >
               {/* Image */}
               {item.product_image ? (
@@ -292,7 +574,7 @@ function WishList() {
                   <img
                     src={item.product_image}
                     alt={item.product_title}
-                    className="rounded-xl w-full h-28 object-contain mb-2 bg-gray-50"
+                    className="rounded-xl w-full h-28 object-contain mb-2 bg-white/50"
                   />
                   {isPriceDrop && (
                     <div className="absolute top-2 right-2 w-9 h-9 animate-bounce">
@@ -304,7 +586,7 @@ function WishList() {
                   )}
                 </div>
               ) : (
-                <div className="w-full h-28 bg-gray-100 rounded-xl mb-2 flex items-center justify-center text-gray-400 text-xs relative">
+                <div className="w-full h-28 bg-white/40 rounded-xl mb-2 flex items-center justify-center text-gray-400 text-xs relative">
                   No Image
                   {isPriceDrop && (
                     <div className="absolute top-2 right-2 w-6 h-6 animate-pulse">
@@ -326,6 +608,9 @@ function WishList() {
               <p className={`text-xs font-semibold mb-1 ${isPriceDrop ? "text-green-600" : "text-gray-800"}`}>
                 Live: {item.live_price || "N/A"}
               </p>
+
+              {/* Price history sparkline chart */}
+              <Sparkline points={priceHistory[item.id] ?? []} />
 
               {/* Rating — links to Google Shopping for live ratings */}
               <a
@@ -384,65 +669,92 @@ function WishList() {
         })}
       </div>
 
-      {/* Search Other People's Wishlist */}
-      <div className="w-full px-6 mt-8 flex flex-col items-center gap-2">
-        <h3 className="text-lg font-semibold">Search Other People's Wishlist</h3>   {/* Search Other People's Wishlist */}
-        <div className="flex gap-2 w-full max-w-md">
-          <input
-            type="text"
-            placeholder="Enter username"
-            value={otherUsername}
-            onChange={(e) => { setOtherUsername(e.target.value); setOtherItems(null); setOtherNotFound(false); }}
-            className="flex-1 px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-400 focus:outline-none"
-          />
-          <button
-            onClick={searchOtherWishlist}
-            disabled={otherLoading}
-            className="px-4 py-2 rounded-xl text-sm font-semibold text-white transition hover:opacity-90 shadow-md disabled:opacity-60"
-            style={{ background: "linear-gradient(90deg,#00AAFF,#6B30FF)" }}
-          >
-            {otherLoading ? "Searching..." : "Search"}
-          </button>
-        </div>
-
-        {/* Other wishlist results */}
-        {otherNotFound && (
-          <p className="text-sm text-gray-400 mt-2">No wishlist found for "{otherUsername}".</p>
-        )}
-        {otherItems && otherItems.length > 0 && (
-          <div className="w-full max-w-md mt-3">
-            <p className="text-sm font-semibold text-gray-700 mb-2">{otherUsername}'s Wishlist</p>
-            <div className="flex flex-col gap-2">
-              {otherItems.map((item, index) => (
-                <div key={index} className="flex items-center gap-3 bg-white rounded-xl border border-gray-200 p-3 shadow-sm">
-                  {item.product_image ? (
-                    <img src={item.product_image} alt={item.product_title} className="w-12 h-12 object-contain rounded-lg bg-gray-50 flex-shrink-0" />
-                  ) : (
-                    <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center text-gray-400 text-xs flex-shrink-0">No Image</div>
-                  )}
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-gray-900 line-clamp-1">{item.product_title}</p>
-                    <p className="text-xs text-gray-500">Target: <span className="font-medium text-gray-800">${item.target_price}</span></p>
-                  </div>
-                </div>
-              ))}
-            </div>
+      {/* Search Other People's Wishlist — frosted glass section */}
+      <div
+        className="relative z-10 w-full px-6 mt-8 flex flex-col items-center gap-3"
+        style={{ opacity: visible ? 1 : 0, transition: "opacity 0.6s ease 0.3s" }}
+      >
+        <div className="w-full max-w-md rounded-2xl p-5" style={{
+          background: "rgba(255,255,255,0.55)",
+          backdropFilter: "blur(14px)",
+          border: "1px solid rgba(255,255,255,0.75)",
+          boxShadow: "0 4px 24px rgba(0,0,0,0.06)",
+        }}>
+          <h3 className="text-base font-bold text-gray-900 mb-3">Search Other People's Wishlist</h3>
+          <div className="flex gap-2">
+            <input
+              type="text"
+              placeholder="Enter username"
+              value={otherUsername}
+              onChange={(e) => { setOtherUsername(e.target.value); setOtherItems(null); setOtherNotFound(false); }}
+              className="flex-1 px-3 py-2 rounded-xl text-sm focus:outline-none transition"
+              style={{
+                background: "rgba(255,255,255,0.7)",
+                border: "1px solid rgba(0,0,0,0.08)",
+              }}
+            />
+            <button
+              onClick={searchOtherWishlist}
+              disabled={otherLoading}
+              className="px-4 py-2 rounded-xl text-sm font-semibold text-white transition hover:opacity-90 shadow-md disabled:opacity-60"
+              style={{ background: "linear-gradient(90deg,#00AAFF,#6B30FF)" }}
+            >
+              {otherLoading ? "Searching..." : "Search"}
+            </button>
           </div>
-        )}
+
+          {/* Other wishlist results */}
+          {otherNotFound && (
+            <p className="text-sm text-gray-400 mt-3">No wishlist found for "{otherUsername}".</p>
+          )}
+          {otherItems && otherItems.length > 0 && (
+            <div className="mt-4">
+              <p className="text-sm font-semibold text-gray-700 mb-2">{otherUsername}'s Wishlist</p>
+              <div className="flex flex-col gap-2">
+                {otherItems.map((item, index) => (
+                  <div key={index} className="flex items-center gap-3 rounded-xl p-3" style={{ background: "rgba(255,255,255,0.7)", border: "1px solid rgba(0,0,0,0.06)" }}>
+                    {item.product_image ? (
+                      <img src={item.product_image} alt={item.product_title} className="w-12 h-12 object-contain rounded-lg bg-gray-50 flex-shrink-0" />
+                    ) : (
+                      <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center text-gray-400 text-xs flex-shrink-0">No Image</div>
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-gray-900 line-clamp-1">{item.product_title}</p>
+                      <p className="text-xs text-gray-500">Target: <span className="font-medium text-gray-800">${item.target_price}</span></p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
       </div>
 
-      <div className="w-full px-6 mt-8 flex flex-col items-center gap-6 pb-6 bg-gray-50">
+      {/* Bottom sections — frosted glass panels */}
+      <div
+        className="relative z-10 w-full px-6 mt-6 flex flex-col items-center gap-4 pb-8"
+        style={{ opacity: visible ? 1 : 0, transition: "opacity 0.6s ease 0.4s" }}
+      >
 
-        {/* Signup */}
-        <div className="w-full max-w-md flex flex-col items-center gap-2">
-          <h3 className="text-lg font-semibold mb-2">Sign Up for More Deals</h3> {/* Signup */}
+        {/* Sign Up for More Deals */}
+        <div className="w-full max-w-md rounded-2xl p-5" style={{
+          background: "rgba(255,255,255,0.55)",
+          backdropFilter: "blur(14px)",
+          border: "1px solid rgba(255,255,255,0.75)",
+          boxShadow: "0 4px 24px rgba(0,0,0,0.06)",
+        }}>
+          <h3 className="text-base font-bold text-gray-900 mb-3">Sign Up for More Deals</h3>
           <div className="flex w-full gap-2">
             <input
               type="email"
               placeholder="Enter your email"
               value={dealEmail}
               onChange={(e) => { setDealEmail(e.target.value); setDealSent(false); }}
-              className="flex-1 px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-400 focus:outline-none"
+              className="flex-1 px-4 py-2 rounded-xl text-sm focus:outline-none transition"
+              style={{
+                background: "rgba(255,255,255,0.7)",
+                border: "1px solid rgba(0,0,0,0.08)",
+              }}
             />
             <button
               onClick={handleDealSignup}
@@ -454,19 +766,24 @@ function WishList() {
             </button>
           </div>
           {dealSent && (
-            <p className="text-xs text-green-500 mt-1">Check your inbox — a test deal email is on its way!</p>
+            <p className="text-xs text-green-500 mt-2">Check your inbox — a test deal email is on its way!</p>
           )}
         </div>
 
         {/* FAQ */}
-        <div className="w-full max-w-md flex flex-col items-center gap-2 mt-6">
-          <h3 className="text-lg font-semibold mb-2">FAQ</h3> {/* FAQ */}
+        <div className="w-full max-w-md rounded-2xl p-5" style={{
+          background: "rgba(255,255,255,0.55)",
+          backdropFilter: "blur(14px)",
+          border: "1px solid rgba(255,255,255,0.75)",
+          boxShadow: "0 4px 24px rgba(0,0,0,0.06)",
+        }}>
+          <h3 className="text-base font-bold text-gray-900 mb-3">FAQ</h3>
           <div className="w-full flex flex-col gap-2">
             {faqItems.map((faq, index) => (
-              <div key={index} className="bg-gray-200 rounded-lg overflow-hidden">
+              <div key={index} className="rounded-xl overflow-hidden" style={{ background: "rgba(240,244,255,0.6)", border: "1px solid rgba(0,170,255,0.1)" }}>
                 <button
                   onClick={() => setOpenFaq(openFaq === index ? null : index)}
-                  className="w-full text-left px-4 py-3 flex justify-between items-center hover:bg-gray-300 transition font-medium text-sm text-gray-800"
+                  className="w-full text-left px-4 py-3 flex justify-between items-center transition font-medium text-sm text-gray-800 hover:bg-white/40"
                 >
                   {faq.question}
                   <svg
@@ -477,7 +794,7 @@ function WishList() {
                   </svg>
                 </button>
                 {openFaq === index && (
-                  <div className="px-4 py-3 text-sm text-gray-600 bg-white border-t border-gray-200">
+                  <div className="px-4 py-3 text-sm text-gray-600 bg-white/60 border-t" style={{ borderColor: "rgba(0,170,255,0.1)" }}>
                     {faq.answer}
                   </div>
                 )}
@@ -486,7 +803,7 @@ function WishList() {
           </div>
         </div>
 
-        <p className="text-xs text-gray-500 mt-4">&copy; {new Date().getFullYear()} Verifind</p>
+        <p className="text-xs text-gray-400 mt-2">&copy; {new Date().getFullYear()} Verifind</p>
       </div>
     </div>
   );

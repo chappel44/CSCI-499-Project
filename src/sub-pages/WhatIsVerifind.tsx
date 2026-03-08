@@ -36,8 +36,17 @@ const teamMembers = [
   },
 ];
 
+const features = ["Price Comparison", "Live Reviews", "Trust Scores", "Wishlist Tracking", "Smart Filters", "Instant Search"];
+
+const stats = [
+  { value: "4", label: "Core Features" },
+  { value: "∞", label: "Retailers" },
+  { value: "1", label: "Platform" },
+];
+
 function WhatIsVerifind() {
-  const [username, setUsername] = useState<string | null>(null); // logged in username
+  const [username, setUsername] = useState<string | null>(null);
+  const [visible, setVisible] = useState(false);
 
   useEffect(() => {
     // connected with supabase — get username from session
@@ -45,80 +54,195 @@ function WhatIsVerifind() {
       const name = data.session?.user?.user_metadata?.username ?? null;
       setUsername(name);
     });
+    // staggered entrance animation trigger
+    setTimeout(() => setVisible(true), 50);
   }, []);
 
   return (
-    <div className="min-h-screen flex flex-col bg-gray-100 text-gray-900">
-      <div className="sticky top-0 z-30 px-6 py-4 flex justify-center items-center bg-white/80 backdrop-blur-md border-b border-gray-200">
-        <h1 className="text-2xl font-bold tracking-tight text-gray-900">
-          Veri<span className="text-blue-600">Find</span>
-        </h1>
+    <div className="min-h-screen flex flex-col text-gray-900 overflow-x-hidden" style={{ background: "#f0f4ff" }}>
+
+      {/* Mesh gradient background orbs */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden" style={{ zIndex: 0 }}>
+        <div style={{
+          position: "absolute", top: "-10%", left: "-5%",
+          width: "55vw", height: "55vw", maxWidth: 700, maxHeight: 700,
+          background: "radial-gradient(circle, rgba(0,170,255,0.18) 0%, transparent 70%)",
+          borderRadius: "50%", filter: "blur(40px)",
+        }} />
+        <div style={{
+          position: "absolute", top: "30%", right: "-10%",
+          width: "50vw", height: "50vw", maxWidth: 650, maxHeight: 650,
+          background: "radial-gradient(circle, rgba(107,48,255,0.15) 0%, transparent 70%)",
+          borderRadius: "50%", filter: "blur(50px)",
+        }} />
+        <div style={{
+          position: "absolute", bottom: "5%", left: "20%",
+          width: "40vw", height: "40vw", maxWidth: 500, maxHeight: 500,
+          background: "radial-gradient(circle, rgba(16,185,129,0.10) 0%, transparent 70%)",
+          borderRadius: "50%", filter: "blur(40px)",
+        }} />
       </div>
 
-      <div className="flex flex-col items-center text-center px-6 py-12 bg-white border-b border-gray-200">
-        {/* Welcome message */}
+      {/* Sticky header */}
+      <div className="sticky top-0 z-30 px-6 py-4 flex justify-center items-center backdrop-blur-xl border-b" style={{ background: "rgba(240,244,255,0.7)", borderColor: "rgba(0,170,255,0.15)" }}>
+        <div className="flex items-center gap-2.5">
+          <svg width="26" height="26" viewBox="0 0 52 52" fill="none">
+            <defs>
+              <linearGradient id="wiv-lg" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stopColor="#00AAFF" />
+                <stop offset="100%" stopColor="#6B30FF" />
+              </linearGradient>
+            </defs>
+            <circle cx="22" cy="22" r="14" fill="rgba(0,170,255,0.1)" stroke="url(#wiv-lg)" strokeWidth="2.4" />
+            <polyline points="14,22 20,28 31,15" fill="none" stroke="url(#wiv-lg)" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+            <line x1="31" y1="31" x2="42" y2="42" stroke="url(#wiv-lg)" strokeWidth="3.4" strokeLinecap="round" />
+          </svg>
+          <span className="text-xl font-extrabold tracking-tight" style={{
+            background: "linear-gradient(90deg,#1A1A2E 43%,#0088DD 44%,#6B30FF 100%)",
+            WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text",
+          }}>Verifind</span>
+        </div>
+      </div>
+
+      {/* Hero section */}
+      <div className="relative z-10 flex flex-col items-center text-center px-6 pt-16 pb-14">
         {username && (
-          <p className="text-sm text-gray-500 mb-3">
-            Welcome back, <span className="font-semibold" style={{ background: "linear-gradient(90deg,#00AAFF,#6B30FF)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>{username}</span> 👋
-          </p>
+          <div
+            className="mb-5 px-4 py-1.5 rounded-full text-sm backdrop-blur-md border"
+            style={{ background: "rgba(255,255,255,0.5)", borderColor: "rgba(0,170,255,0.25)" }}
+          >
+            Welcome back,{" "}
+            <span className="font-semibold" style={{
+              background: "linear-gradient(90deg,#00AAFF,#6B30FF)",
+              WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text",
+            }}>{username}</span>{" "}👋
+          </div>
         )}
-        <h2 className="text-4xl font-bold text-gray-900 mb-4">
-          What is <span className="text-blue-600">VeriFind</span>?
+
+        <div
+          className="mb-3 px-3 py-1 rounded-full text-xs font-semibold tracking-widest uppercase"
+          style={{ background: "rgba(0,170,255,0.1)", color: "#0088DD", border: "1px solid rgba(0,170,255,0.2)" }}
+        >
+          The smarter way to shop
+        </div>
+
+        <h2
+          className="text-5xl font-black mb-5 leading-tight"
+          style={{
+            opacity: visible ? 1 : 0, transform: visible ? "translateY(0)" : "translateY(20px)",
+            transition: "opacity 0.6s ease, transform 0.6s ease",
+            background: "linear-gradient(135deg, #0f172a 0%, #0088DD 50%, #6B30FF 100%)",
+            WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text",
+          }}
+        >
+          What is VeriFind?
         </h2>
-        <p className="text-gray-500 text-base leading-relaxed max-w-2xl">
-          VeriFind is a centralized shopping platform that aggregates product listings from multiple
-          online and in-store retailers into one unified interface. Compare prices, read reviews,
-          check retailer trust scores, and track your favorites — all in one place.
+
+        <p
+          className="text-gray-500 text-base leading-relaxed max-w-xl mb-10"
+          style={{
+            opacity: visible ? 1 : 0, transform: visible ? "translateY(0)" : "translateY(16px)",
+            transition: "opacity 0.6s ease 0.1s, transform 0.6s ease 0.1s",
+          }}
+        >
+          A centralized shopping platform that aggregates product listings from multiple retailers
+          into one unified interface. Compare prices, read reviews, check trust scores, and track
+          your favorites — all in one place.
         </p>
-        <div className="mt-8 flex gap-8 justify-center bg-gray-50 border border-gray-200 rounded-2xl px-10 py-5">
-          {[
-            { value: "4", label: "Core Features" },
-            { value: "∞", label: "Retailers" },
-            { value: "1", label: "Platform" },
-          ].map(({ value, label }) => (
-            <div key={label} className="text-center px-4">
-              <div className="text-3xl font-bold text-blue-600">{value}</div>
-              <div className="text-xs text-gray-400 uppercase tracking-widest mt-1">{label}</div>
+
+        {/* Stats — frosted glass pills */}
+        <div
+          className="flex gap-4 flex-wrap justify-center"
+          style={{
+            opacity: visible ? 1 : 0, transform: visible ? "translateY(0)" : "translateY(12px)",
+            transition: "opacity 0.6s ease 0.2s, transform 0.6s ease 0.2s",
+          }}
+        >
+          {stats.map(({ value, label }) => (
+            <div
+              key={label}
+              className="flex flex-col items-center px-8 py-4 rounded-2xl backdrop-blur-md"
+              style={{
+                background: "rgba(255,255,255,0.55)",
+                border: "1px solid rgba(255,255,255,0.7)",
+                boxShadow: "0 4px 24px rgba(0,0,0,0.06)",
+              }}
+            >
+              <span className="text-3xl font-black" style={{
+                background: "linear-gradient(90deg,#00AAFF,#6B30FF)",
+                WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text",
+              }}>{value}</span>
+              <span className="text-xs text-gray-400 uppercase tracking-widest mt-1 font-medium">{label}</span>
             </div>
           ))}
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-6 py-10 flex flex-col items-center">
-        <h3 className="text-xs font-semibold uppercase tracking-widest text-blue-600 mb-1">The Team</h3>
-        <h2 className="text-2xl font-bold text-gray-900 mb-8">Built by four, designed for all</h2>
+      {/* Team section */}
+      <div className="relative z-10 flex flex-col items-center px-6 pb-16">
+        <div className="mb-2 px-3 py-1 rounded-full text-xs font-semibold tracking-widest uppercase" style={{ background: "rgba(107,48,255,0.08)", color: "#6B30FF", border: "1px solid rgba(107,48,255,0.15)" }}>
+          The Team
+        </div>
+        <h2
+          className="text-2xl font-black text-gray-900 mb-10 mt-1"
+          style={{
+            opacity: visible ? 1 : 0,
+            transition: "opacity 0.6s ease 0.3s",
+          }}
+        >
+          Built by four, designed for all
+        </h2>
 
-        <div className="flex flex-wrap justify-center gap-4">
-          {teamMembers.map((member) => {
+        <div className="flex flex-wrap justify-center gap-5">
+          {teamMembers.map((member, i) => {
             const initials = member.name.split(" ").map((n) => n[0]).join("");
             return (
               <div
                 key={member.name}
-                className="bg-white rounded-2xl shadow-sm hover:shadow-lg transition-all duration-300 p-5 flex flex-col w-52 relative hover:-translate-y-1"
+                className="group relative flex flex-col w-52 rounded-2xl p-5 cursor-default transition-all duration-300 hover:-translate-y-2"
+                style={{
+                  background: "rgba(255,255,255,0.55)",
+                  backdropFilter: "blur(16px)",
+                  WebkitBackdropFilter: "blur(16px)",
+                  border: "1px solid rgba(255,255,255,0.75)",
+                  boxShadow: "0 4px 24px rgba(0,0,0,0.07)",
+                  opacity: visible ? 1 : 0,
+                  transform: visible ? "translateY(0)" : "translateY(24px)",
+                  transition: `opacity 0.5s ease ${0.35 + i * 0.08}s, transform 0.5s ease ${0.35 + i * 0.08}s, box-shadow 0.3s ease, translate 0.3s ease`,
+                }}
+                onMouseEnter={(e) => {
+                  (e.currentTarget as HTMLDivElement).style.boxShadow = `0 12px 40px ${member.color}28, 0 4px 16px rgba(0,0,0,0.08)`;
+                  (e.currentTarget as HTMLDivElement).style.borderColor = `${member.color}40`;
+                }}
+                onMouseLeave={(e) => {
+                  (e.currentTarget as HTMLDivElement).style.boxShadow = "0 4px 24px rgba(0,0,0,0.07)";
+                  (e.currentTarget as HTMLDivElement).style.borderColor = "rgba(255,255,255,0.75)";
+                }}
               >
+                {/* Top color accent bar */}
                 <div
-                  className="absolute top-0 left-0 right-0 h-0.5 rounded-t-2xl opacity-0 hover:opacity-100 transition-opacity"
-                  style={{ background: `linear-gradient(90deg, ${member.color}, ${member.color}80)` }}
+                  className="absolute top-0 left-4 right-4 h-0.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                  style={{ background: `linear-gradient(90deg, ${member.color}, ${member.color}50)` }}
                 />
+
+                {/* Avatar */}
                 <div
-                  className="w-16 h-16 rounded-full flex items-center justify-center text-lg font-bold mx-auto mb-4"
+                  className="w-14 h-14 rounded-full flex items-center justify-center text-base font-black mx-auto mb-4 transition-transform duration-300 group-hover:scale-110"
                   style={{
-                    background: `${member.color}18`,
-                    border: `2px solid ${member.color}30`,
+                    background: `linear-gradient(135deg, ${member.color}20, ${member.color}08)`,
+                    border: `1.5px solid ${member.color}35`,
                     color: member.color,
+                    boxShadow: `0 4px 16px ${member.color}20`,
                   }}
                 >
                   {initials}
                 </div>
 
-                <h3 className="text-sm font-semibold text-gray-900 text-center mb-1">{member.name}</h3>
+                <h3 className="text-sm font-bold text-gray-900 text-center mb-1">{member.name}</h3>
 
                 <span
                   className="mx-auto px-3 py-0.5 rounded-full text-xs font-semibold tracking-wide mb-3"
-                  style={{
-                    background: `${member.color}15`,
-                    color: member.color,
-                  }}
+                  style={{ background: `${member.color}12`, color: member.color, border: `1px solid ${member.color}20` }}
                 >
                   {member.icon} {member.role}
                 </span>
@@ -130,18 +254,35 @@ function WhatIsVerifind() {
         </div>
       </div>
 
-      <div className="w-full px-6 py-8 bg-white border-t border-gray-200 flex flex-col items-center text-center">
-        <h3 className="text-xl font-bold text-gray-900 mb-3">Why VeriFind?</h3>
-        <p className="text-gray-500 text-sm leading-relaxed max-w-xl">
+      {/* Why VeriFind section */}
+      <div className="relative z-10 mx-4 mb-8 rounded-3xl p-8 flex flex-col items-center text-center" style={{
+        background: "rgba(255,255,255,0.50)",
+        backdropFilter: "blur(20px)",
+        WebkitBackdropFilter: "blur(20px)",
+        border: "1px solid rgba(255,255,255,0.7)",
+        boxShadow: "0 8px 40px rgba(0,0,0,0.06)",
+      }}>
+        <div className="mb-2 px-3 py-1 rounded-full text-xs font-semibold tracking-widest uppercase" style={{ background: "rgba(0,170,255,0.08)", color: "#0088DD", border: "1px solid rgba(0,170,255,0.15)" }}>
+          Our mission
+        </div>
+        <h3 className="text-2xl font-black text-gray-900 mb-3 mt-1">Why VeriFind?</h3>
+        <p className="text-gray-500 text-sm leading-relaxed max-w-xl mb-6">
           VeriFind brings transparency, efficiency, and convenience to shopping. Whether online or
           in-store, find the best product at the best price, track your favorites, and make informed
           decisions with real-time data and intelligent tools.
         </p>
-        <div className="flex flex-wrap gap-2 justify-center mt-5">
-          {["Price Comparison", "Live Reviews", "Trust Scores", "Wishlist Tracking", "Smart Filters", "Instant Search"].map((feat) => (
+
+        {/* Feature pills */}
+        <div className="flex flex-wrap gap-2 justify-center">
+          {features.map((feat, i) => (
             <span
               key={feat}
-              className="px-3 py-1 rounded-full bg-gray-100 border border-gray-200 text-gray-600 text-xs font-medium"
+              className="px-3 py-1.5 rounded-full text-xs font-semibold transition-all duration-200 hover:scale-105 cursor-default"
+              style={{
+                background: `rgba(${i % 2 === 0 ? "0,170,255" : "107,48,255"},0.08)`,
+                border: `1px solid rgba(${i % 2 === 0 ? "0,170,255" : "107,48,255"},0.2)`,
+                color: i % 2 === 0 ? "#0088DD" : "#6B30FF",
+              }}
             >
               {feat}
             </span>
@@ -149,8 +290,9 @@ function WhatIsVerifind() {
         </div>
       </div>
 
-      <div className="w-full py-4 bg-gray-50 border-t border-gray-200 flex justify-center">
-        <p className="text-xs text-gray-400">&copy; {new Date().getFullYear()} Verifind</p>
+      {/* Footer */}
+      <div className="relative z-10 w-full py-5 flex justify-center" style={{ borderTop: "1px solid rgba(0,170,255,0.1)" }}>
+        <p className="text-xs text-gray-400">&copy; {new Date().getFullYear()} Verifind. All rights reserved.</p>
       </div>
     </div>
   );

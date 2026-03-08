@@ -7,6 +7,7 @@ export default function Settings() {
   const [username, setUsername] = useState("");
   const [usernameSaved, setUsernameSaved] = useState(false);
   const [usernameLoading, setUsernameLoading] = useState(false);
+  const [usernameError, setUsernameError] = useState<string | null>(null);
 
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -34,45 +35,50 @@ export default function Settings() {
     if (!username.trim()) return;
     setUsernameLoading(true);
     setUsernameSaved(false);
+    setUsernameError(null);
 
     // connected with supabase — get current user id
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
-      alert("Not logged in.");
+      setUsernameError("Not logged in.");
       setUsernameLoading(false);
       return;
     }
 
-    // connected with supabase — update username in user_metadata
+    // connected with supabase — update username in user_metadata (updates what shows on the page/session)
     const { error: metaError } = await supabase.auth.updateUser({
       data: { username: username.trim() },
     });
 
     if (metaError) {
-      alert("Failed to update username: " + metaError.message);
+      setUsernameError("Failed to update username: " + metaError.message);
       setUsernameLoading(false);
       return;
     }
 
-    // connected with supabase — update username in profiles table so the database stays in sync
+    // connected with supabase — upsert username into profiles table so wishlist search finds the new name
+    // using upsert instead of update in case the profiles row doesn't exist yet for this user
     const { error: profileError } = await supabase
       .from("profiles")
-      .update({ username: username.trim() })
-      .eq("id", user.id);
+      .upsert({ id: user.id, username: username.trim() }, { onConflict: "id" });
 
     if (profileError) {
-      alert("Failed to update profile table: " + profileError.message);
+      // if this fires, check Supabase Dashboard → Authentication → Policies on the profiles table
+      // you need: "Users can update their own profile" with USING (auth.uid() = id)
+      console.error("Profiles table update failed:", profileError.code, profileError.message);
+      setUsernameError("Saved to session but failed to sync to database: " + profileError.message);
       setUsernameLoading(false);
       return;
     }
 
+    console.log("Username synced to profiles table successfully.");
     setCurrentUsername(username.trim());
     setUsernameSaved(true);
     setTimeout(() => setUsernameSaved(false), 3000);
     setUsernameLoading(false);
   };
 
-  //password requirments
+  //password requirements
   const requirements = [
     { label: "8+ characters", test: newPassword.length >= 8 },
     { label: "Contains a number", test: /\d/.test(newPassword) },
@@ -91,7 +97,7 @@ export default function Settings() {
     setPasswordLoading(true);
     setPasswordSaved(false);
 
-    // connected with supabase — update password
+    // connected with supabase — update password (stored in auth.users, no separate table needed)
     const { error } = await supabase.auth.updateUser({ password: newPassword });
 
     if (error) {
@@ -161,10 +167,15 @@ export default function Settings() {
                 type="text"
                 placeholder="Enter new username"
                 value={username}
-                onChange={(e) => { setUsername(e.target.value); setUsernameSaved(false); }}
+                onChange={(e) => { setUsername(e.target.value); setUsernameSaved(false); setUsernameError(null); }}
                 className="w-full px-4 py-2.5 rounded-lg border border-gray-300 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition"
               />
             </div>
+
+            {/* Inline error message instead of alert() */}
+            {usernameError && (
+              <p className="text-xs text-red-500 mb-3 self-start">{usernameError}</p>
+            )}
 
             <button
               onClick={handleSaveUsername}
