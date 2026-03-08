@@ -132,19 +132,35 @@ function Search() {
       .lt("created_at", threeDaysAgo); // older than 3 days
 
     try {
+      /* CHECK THE CACHE FOR SEARCH RESULTS */
       const { data: cachedSearch, error: cachedErrors } = await supabase
         .from("cached_searches")
-        .select(
-          "product_id, title, link, thumbnail, price, old_price, extracted_price, rating"
-        )
+        .select("search_json")
         .eq("search_term", normalizedKeyword);
+      /* CACHE LOOK UP TO SUPABASE FAILED */
       if (cachedErrors) {
         console.error(cachedErrors.message);
+
         alert("Selecting from cache failed.");
-      } else if (cachedSearch?.length) {
+      } /* CACHE HIT CONVERT JSON TO OBJECT OF TYPE PRODUCT AND ASSIGN */ else if (
+        cachedSearch?.length
+      ) {
         console.log("search pulled from cache");
-        setProducts(cachedSearch);
-      } else {
+
+        const raw = cachedSearch[0].search_json;
+        // Combine featured_products + organic_results
+        const products: Product[] = [
+          ...(raw.featured_products || []),
+          ...(raw.organic_results || []),
+        ];
+
+        const sortedProducts = products.sort(
+          (a, b) =>
+            (a.extracted_price ?? Infinity) - (b.extracted_price ?? Infinity)
+        );
+
+        setProducts(sortedProducts);
+      } /* CACHE MISS CALL THE API FOR THE SEARCH RESULTS */ else {
         console.log("Pulling results from api");
         const res = await fetch(
           `/api/search?keyword=${encodeURIComponent(keyword)}`
@@ -164,6 +180,7 @@ function Search() {
             (a.extracted_price ?? Infinity) - (b.extracted_price ?? Infinity)
         );
 
+        /*
         const rows = sortedProducts.map((p) => ({
           product_id: p.product_id,
           title: p.title,
@@ -175,15 +192,29 @@ function Search() {
           rating: p.rating,
           search_term: normalizedKeyword,
         }));
+        */
 
-        console.log(rows);
+        const { error: jsonInsertError } = await supabase
+          .from("cached_searches")
+          .insert([
+            {
+              search_term: normalizedKeyword, // your normalized keyword
+              search_json: data, // the parsed JSON object
+            },
+          ]);
 
-        const { error } = await supabase.from("cached_searches").insert(rows);
+        if (jsonInsertError) {
+          console.error(jsonInsertError.message);
+        }
 
+        //const { error } = await supabase.from("cached_searches").insert(rows);
+
+        /*
         if (error) {
           console.log(error.message);
           alert("inserting into cached searches failed");
         }
+        */
 
         setProducts(sortedProducts);
       }
