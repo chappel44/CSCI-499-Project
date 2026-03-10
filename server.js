@@ -24,7 +24,7 @@ app.get("/api/search", async (req, res) => {
   try {
     const response = await axios.get("https://serpapi.com/search.json", {
       params: {
-        engine: "amazon",        // Can also use "google_shopping"
+        engine: "amazon", // Can also use "google_shopping"
         amazon_domain: "amazon.com",
         k: keyword,
         api_key: process.env.SERPAPI_KEY,
@@ -90,4 +90,22 @@ app.get("/api/product-data", async (req, res) => {
   }
 });
 
-app.listen(PORT, () => console.log(`Backend running at http://localhost:${PORT}`));
+app.get("/api/serp-usage", async (req, res) => {
+  try {
+    const response = await axios.get("https://serpapi.com/account.json", {
+      params: { api_key: process.env.SERPAPI_KEY },
+    });
+
+    res.json({
+      this_month_usage: response.data.this_month_usage,
+      plan_searches_left: response.data.plan_searches_left,
+    });
+  } catch (err) {
+    console.error("SerpAPI usage fetch failed:", err.message);
+    res.status(500).json({ error: "Failed to fetch usage" });
+  }
+});
+
+app.listen(PORT, () =>
+  console.log(`Backend running at http://localhost:${PORT}`)
+);
