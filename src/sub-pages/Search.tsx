@@ -15,6 +15,11 @@ const retailers = [
   { id: "google-shopping", label: "Google Shopping" },
 ];
 
+type SerpResult = {
+  this_month_usage: number;
+  plan_searches_left: number;
+};
+
 const itemsPerPage = 10;
 
 function Search() {
@@ -28,6 +33,7 @@ function Search() {
   const [addedIds, setAddedIds] = useState<Set<string>>(new Set()); // tracks which items were added to wishlist
   const [visible, setVisible] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const [serpResult, setSerpResults] = useState<SerpResult>();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -125,11 +131,20 @@ function Search() {
     const threeDaysAgo = new Date(
       Date.now() - 3 * 24 * 60 * 60 * 1000
     ).toISOString();
-    await supabase
+    alert(
+      "deleteting entries older than " +
+        threeDaysAgo +
+        " with keyword " +
+        normalizedKeyword
+    );
+    const { error: deleteOldError } = await supabase
       .from("cached_searches")
       .delete()
       .eq("search_term", normalizedKeyword) // same keyword
       .lt("created_at", threeDaysAgo); // older than 3 days
+    if (deleteOldError) {
+      console.error(deleteOldError.message);
+    }
 
     try {
       /* CHECK THE CACHE FOR SEARCH RESULTS */
@@ -140,7 +155,6 @@ function Search() {
       /* CACHE LOOK UP TO SUPABASE FAILED */
       if (cachedErrors) {
         console.error(cachedErrors.message);
-
         alert("Selecting from cache failed.");
       } /* CACHE HIT CONVERT JSON TO OBJECT OF TYPE PRODUCT AND ASSIGN */ else if (
         cachedSearch?.length
@@ -180,20 +194,6 @@ function Search() {
             (a.extracted_price ?? Infinity) - (b.extracted_price ?? Infinity)
         );
 
-        /*
-        const rows = sortedProducts.map((p) => ({
-          product_id: p.product_id,
-          title: p.title,
-          link: p.link,
-          thumbnail: p.thumbnail,
-          price: p.price,
-          old_price: p.old_price,
-          extracted_price: p.extracted_price,
-          rating: p.rating,
-          search_term: normalizedKeyword,
-        }));
-        */
-
         const { error: jsonInsertError } = await supabase
           .from("cached_searches")
           .insert([
@@ -206,15 +206,6 @@ function Search() {
         if (jsonInsertError) {
           console.error(jsonInsertError.message);
         }
-
-        //const { error } = await supabase.from("cached_searches").insert(rows);
-
-        /*
-        if (error) {
-          console.log(error.message);
-          alert("inserting into cached searches failed");
-        }
-        */
 
         setProducts(sortedProducts);
       }
@@ -245,6 +236,13 @@ function Search() {
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, [openPage]);
+
+  useEffect(() => {
+    fetch("/api/serp-usage")
+      .then((res) => res.json())
+      .then((data) => setSerpResults(data))
+      .catch((err) => console.error(err));
+  }, []);
 
   // Pagination
   const totalPages = Math.ceil(products.length / itemsPerPage);
@@ -432,6 +430,16 @@ function Search() {
             </button>
           </div>
         </div>
+
+        {serpResult && (
+          <>
+            <p className="text-black text-3xl">{serpResult.this_month_usage}</p>
+            <p className="text-black text-3xl">
+              {serpResult.plan_searches_left}
+            </p>
+          </>
+        )}
+        {!serpResult && <p className="text-red-500 text-3xl">No results</p>}
 
         {/* Search bar — frosted glass */}
         <form
