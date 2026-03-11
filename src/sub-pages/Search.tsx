@@ -39,7 +39,15 @@ function Search() {
   const dropdownRef = useRef<HTMLDivElement>(null);
   const [serpResult, setSerpResults] = useState<SerpResult>();
   const [isFocused, setIsFocused] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
+
+  const handleBlur = (e: React.FocusEvent<HTMLDivElement>) => {
+    // Only hide if the new focused element is outside the container
+    if (!containerRef.current?.contains(e.relatedTarget as Node)) {
+      setIsFocused(false);
+    }
+  };
 
   useEffect(() => {
     // connected with supabase — get username and user id from session
@@ -424,17 +432,26 @@ function Search() {
                 boxShadow: "0 2px 16px rgba(0,0,0,0.06)",
               }}
             >
-              <div className="flex flex-row items-center gap-2">
+              <div
+                ref={containerRef}
+                className="flex flex-row items-center gap-2 relative"
+                onBlur={handleBlur}
+                tabIndex={-1} // make the div focusable so onBlur works
+              >
                 <SearchIcon className="h-4 w-4 text-gray-400 flex-shrink-0" />
                 <input
                   value={keyword}
                   onFocus={() => setIsFocused(true)}
-                  onBlur={() => setIsFocused(false)}
                   onChange={(e) => setKeyword(e.target.value)}
                   placeholder="Search Verifind products"
                   className="flex-1 w-80 text-sm text-gray-900 placeholder-gray-400 focus:outline-none bg-transparent min-w-0"
                 />
-                {isFocused && <DisplaySearchHistory />}
+                {isFocused && (
+                  <DisplaySearchHistory
+                    setKeyword={setKeyword}
+                    setIsFocused={setIsFocused}
+                  />
+                )}
               </div>
             </div>
 

@@ -1,7 +1,13 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type SetStateAction } from "react";
 import { supabase } from "../../supabase-client";
-
-export default function DisplaySearchHistory() {
+type DisplaySearchHistoryProps = {
+  setKeyword: (keyword: string) => void;
+  setIsFocused: React.Dispatch<SetStateAction<boolean>>;
+};
+export default function DisplaySearchHistory({
+  setKeyword,
+  setIsFocused,
+}: DisplaySearchHistoryProps) {
   const [searches, setSearches] = useState<any[]>([]);
 
   useEffect(() => {
@@ -35,6 +41,10 @@ export default function DisplaySearchHistory() {
         <div className="absolute top-full mt-2 w-80 bg-white border border-gray-200 rounded-lg shadow-lg p-2 z-20">
           {searches.map((search, index) => (
             <p
+              onClick={() => {
+                setKeyword(search.search_term);
+                setIsFocused(false);
+              }}
               key={index}
               className="px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded cursor-pointer"
             >
