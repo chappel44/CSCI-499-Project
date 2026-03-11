@@ -29,6 +29,7 @@ export default function Header() {
   const navLinks = [
     { to: "/search",           label: "Search"           },
     { to: "/wish-list",        label: "Wish List"        },
+    { to: "/marketplace",      label: "Marketplace"      },
     { to: "/what-is-verifind", label: "What is Verifind?" },
   ];
 
