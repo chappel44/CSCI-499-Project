@@ -5,6 +5,7 @@ import type { Product } from "../Contexts/SearchContext";
 import Rating from "./search-components/Rating";
 import { supabase } from "../supabase-client";
 import { useNavigate } from "react-router-dom";
+import DisplaySearchHistory from "./search-components/DisplayPreviousSearches";
 
 const searches = ["Air Pods", "Gaming Laptops", "Nike", "Nike Running Shoes"];
 
@@ -34,6 +35,7 @@ function Search() {
   const [visible, setVisible] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const [serpResult, setSerpResults] = useState<SerpResult>();
+  const [isFocused, setIsFocused] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -465,9 +467,9 @@ function Search() {
           }}
         >
           {/* Input */}
-          <div className="flex flex-col space-y-3">
+          <div className="flex flex-col space-y-3 ">
             <div
-              className="flex flex-1 items-center gap-2 rounded-xl px-4 py-2.5 transition min-w-0"
+              className="flex flex-1 items-center gap-2 rounded-xl px-4 py-2.5 transition min-w-0 z-10"
               style={{
                 background: "rgba(255,255,255,0.7)",
                 backdropFilter: "blur(12px)",
@@ -475,13 +477,18 @@ function Search() {
                 boxShadow: "0 2px 16px rgba(0,0,0,0.06)",
               }}
             >
-              <SearchIcon className="h-4 w-4 text-gray-400 flex-shrink-0" />
-              <input
-                value={keyword}
-                onChange={(e) => setKeyword(e.target.value)}
-                placeholder="Search Verifind products"
-                className="flex-1 w-80 text-sm text-gray-900 placeholder-gray-400 focus:outline-none bg-transparent min-w-0"
-              />
+              <div className="flex flex-row items-center gap-2">
+                <SearchIcon className="h-4 w-4 text-gray-400 flex-shrink-0" />
+                <input
+                  value={keyword}
+                  onFocus={() => setIsFocused(true)}
+                  onBlur={() => setIsFocused(false)}
+                  onChange={(e) => setKeyword(e.target.value)}
+                  placeholder="Search Verifind products"
+                  className="flex-1 w-80 text-sm text-gray-900 placeholder-gray-400 focus:outline-none bg-transparent min-w-0"
+                />
+                {isFocused && <DisplaySearchHistory />}
+              </div>
             </div>
 
             {/* Search button */}
@@ -521,7 +528,7 @@ function Search() {
               </button>
 
               {/* Retailer Dropdown */}
-              <div className="relative z-10" ref={dropdownRef}>
+              <div className="relative" ref={dropdownRef}>
                 <button
                   type="button"
                   className="flex items-center w-48 gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition hover:opacity-90 shadow-md"
