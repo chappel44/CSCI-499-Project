@@ -6,6 +6,9 @@ import Rating from "./search-components/Rating";
 import { supabase } from "../supabase-client";
 import { useNavigate } from "react-router-dom";
 import DisplaySearchHistory from "./search-components/DisplayPreviousSearches";
+import checkCache from "./search-hooks/checkCache";
+import pullProductsFromSerp from "./search-hooks/pullProductsFromSerp";
+import deleteOldSearches from "./search-hooks/deleteOldSearch";
 
 const searches = ["Air Pods", "Gaming Laptops", "Nike", "Nike Running Shoes"];
 
@@ -129,83 +132,27 @@ function Search() {
 
     setLoading(true);
 
-    const normalizedKeyword = normalizeKeyword(keyword);
-    const threeDaysAgo = new Date(
-      Date.now() - 3 * 24 * 60 * 60 * 1000
-    ).toISOString();
+    const { data: user } = await supabase.auth.getUser();
+    const userId = user.user?.id;
 
-    const { error: deleteOldError } = await supabase
-      .from("cached_searches")
-      .delete()
-      .eq("search_term", normalizedKeyword) // same keyword
-      .lt("created_at", threeDaysAgo); // older than 3 days
-    if (deleteOldError) {
-      console.error(deleteOldError.message);
-    }
+    const { error } = await supabase
+      .from("search_history")
+      .insert({ search_term: keyword, user_id: userId });
+    if (error) console.error(error.message);
+
+    const normalizedKeyword = normalizeKeyword(keyword);
+    deleteOldSearches(normalizedKeyword);
 
     try {
+      const pulledFromCache = await checkCache(normalizedKeyword, setProducts);
       /* CHECK THE CACHE FOR SEARCH RESULTS */
-      const { data: cachedSearch, error: cachedErrors } = await supabase
-        .from("cached_searches")
-        .select("search_json")
-        .eq("search_term", normalizedKeyword);
-      /* CACHE LOOK UP TO SUPABASE FAILED */
-      if (cachedErrors) {
-        console.error(cachedErrors.message);
-        alert("Selecting from cache failed.");
-      } /* CACHE HIT CONVERT JSON TO OBJECT OF TYPE PRODUCT AND ASSIGN */ else if (
-        cachedSearch?.length
-      ) {
-        console.log("search pulled from cache");
-
-        const raw = cachedSearch[0].search_json;
-        // Combine featured_products + organic_results
-        const products: Product[] = [
-          ...(raw.featured_products || []),
-          ...(raw.organic_results || []),
-        ];
-
-        const sortedProducts = products.sort(
-          (a, b) =>
-            (a.extracted_price ?? Infinity) - (b.extracted_price ?? Infinity)
-        );
-
-        setProducts(sortedProducts);
-      } /* CACHE MISS CALL THE API FOR THE SEARCH RESULTS */ else {
-        console.log("Pulling results from api");
-        const res = await fetch(
-          `/api/search?keyword=${encodeURIComponent(keyword)}`
-        );
-
-        if (!res.ok) throw new Error(`Server error: ${res.status}`);
-
-        const data = await res.json();
-
-        const allProducts = [
-          ...(data.featured_products || []),
-          ...(data.organic_results || []),
-        ];
-
-        const sortedProducts = allProducts.sort(
-          (a, b) =>
-            (a.extracted_price ?? Infinity) - (b.extracted_price ?? Infinity)
-        );
-
-        const { error: jsonInsertError } = await supabase
-          .from("cached_searches")
-          .insert([
-            {
-              search_term: normalizedKeyword, // your normalized keyword
-              search_json: data, // the parsed JSON object
-            },
-          ]);
-
-        if (jsonInsertError) {
-          console.error(jsonInsertError.message);
-        }
-
-        setProducts(sortedProducts);
+      if (pulledFromCache) {
+        setOpenPage(0);
+        return;
       }
+      /* CACHE MISS CALL THE API FOR THE SEARCH RESULTS */
+      pullProductsFromSerp(keyword, normalizedKeyword, setProducts);
+
       setOpenPage(0);
     } catch (err) {
       console.error(err);
