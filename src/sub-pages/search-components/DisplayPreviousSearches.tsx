@@ -12,7 +12,6 @@ export default function DisplaySearchHistory({
   setIsFocused,
 }: DisplaySearchHistoryProps) {
   const [searches, setSearches] = useState<any[]>([]);
-  const [userId, setUserId] = useState<string | null>(null);
 
   useEffect(() => {
     async function loadSearchHistory() {
@@ -20,11 +19,10 @@ export default function DisplaySearchHistory({
       const id = data.user?.id;
 
       if (!id) return;
-      setUserId(id);
 
       const { data: searchHistory, error } = await supabase
         .from("search_history")
-        .select("search_term")
+        .select("id, search_term")
         .limit(5)
         .order("created_at", { ascending: false })
         .eq("user_id", id);
@@ -40,24 +38,20 @@ export default function DisplaySearchHistory({
     loadSearchHistory();
   }, []);
 
-  async function deleteSearch(e: React.MouseEvent, searchTerm: string) {
-    e.stopPropagation(); // prevents triggering the row click
-
-    if (!userId) return;
-
+  async function deleteSearch(id: number) {
+    // Delete the row from Supabase by id
     const { error } = await supabase
       .from("search_history")
       .delete()
-      .eq("user_id", userId)
-      .eq("search_term", searchTerm);
+      .eq("id", id);
 
     if (error) {
       console.error("Failed to delete search:", error);
       return;
     }
 
-    // Update UI instantly
-    setSearches((prev) => prev.filter((s) => s.search_term !== searchTerm));
+    // Update local state: remove the deleted row
+    setSearches((prev) => prev.filter((s) => s.id !== id));
   }
 
   return (
@@ -76,7 +70,10 @@ export default function DisplaySearchHistory({
               <span>{search.search_term}</span>
 
               <Trash
-                onClick={(e) => deleteSearch(e, search.search_term)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  deleteSearch(search.id);
+                }}
                 className="h-4 w-4 text-gray-400 ml-auto hover:text-red-500"
               />
             </div>
