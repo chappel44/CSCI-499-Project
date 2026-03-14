@@ -75,7 +75,11 @@ function Search() {
 
         <SearchSuggestions visible={visible} />
 
-        <DisplayProducts currentProducts={currentProducts} visible={visible} />
+        <DisplayProducts
+          key={openPage}
+          currentProducts={currentProducts}
+          visible={visible}
+        />
 
         {/* Pagination — frosted glass pills */}
         {products.length > itemsPerPage && (
