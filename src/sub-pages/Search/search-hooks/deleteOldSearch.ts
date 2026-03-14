@@ -1,4 +1,4 @@
-import { supabase } from "../../supabase-client";
+import { supabase } from "../../../supabase-client";
 
 export default async function deleteOldSearches(normalizedKeyword: string) {
   const threeDaysAgo = new Date(

@@ -1,6 +1,6 @@
 import { Routes, Route } from "react-router-dom";
 import Header from "./Header";
-import Search from "./sub-pages/Search";
+import Search from "./sub-pages/Search/Search";
 import WishList from "./sub-pages/WishList";
 import WhatIsVerifind from "./sub-pages/WhatIsVerifind";
 import Login from "./sub-pages/Login";

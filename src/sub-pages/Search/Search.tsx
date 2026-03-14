@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useSearchContext } from "../Contexts/useSearchContext";
+import { useSearchContext } from "../../Contexts/useSearchContext";
 import DisplayProducts from "./search-components/DisplayProducts";
 import SearchHeading from "./search-components/SearchHeading";
 import SearchSuggestions from "./search-components/SearchSuggestions";

@@ -1,4 +1,4 @@
-import { useUser } from "../../Contexts/UserContext";
+import { useUser } from "../../../Contexts/UserContext";
 import ComingSoonCards from "./ComingSoonCards";
 
 interface SearchHeadingProps {

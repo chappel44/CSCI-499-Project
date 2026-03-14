@@ -1,6 +1,6 @@
 import { useSearchProducts } from "../search-hooks/searchProducts";
 import { useState } from "react";
-import { useSearchContext } from "../../Contexts/useSearchContext";
+import { useSearchContext } from "../../../Contexts/useSearchContext";
 import SearchInput from "./search-action-components/SearchInput";
 import RetailerDropdown from "./search-action-components/RetailerDropdown";
 

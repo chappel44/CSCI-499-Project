@@ -1,5 +1,5 @@
-import { supabase } from "../../supabase-client";
-import type { Product } from "../../Contexts/SearchContext";
+import { supabase } from "../../../supabase-client";
+import type { Product } from "../../../Contexts/SearchContext";
 
 export default async function (
   normalizedKeyword: string,

@@ -1,7 +1,7 @@
 import { useEffect, useState, type SetStateAction } from "react";
-import { supabase } from "../../supabase-client";
+import { supabase } from "../../../supabase-client";
 import { Trash } from "lucide-react";
-import { useSearchContext } from "../../Contexts/useSearchContext";
+import { useSearchContext } from "../../../Contexts/useSearchContext";
 
 type DisplaySearchHistoryProps = {
   setIsFocused: React.Dispatch<SetStateAction<boolean>>;

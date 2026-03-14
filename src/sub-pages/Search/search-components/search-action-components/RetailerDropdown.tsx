@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { useSearchContext } from "../../../Contexts/useSearchContext";
+import { useSearchContext } from "../../../../Contexts/useSearchContext";
 
 const retailers = [
   { id: "walmart", label: "Walmart" },

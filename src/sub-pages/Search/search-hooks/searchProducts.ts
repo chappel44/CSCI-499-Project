@@ -1,5 +1,5 @@
-import { useSearchContext } from "../../Contexts/useSearchContext";
-import { supabase } from "../../supabase-client";
+import { useSearchContext } from "../../../Contexts/useSearchContext";
+import { supabase } from "../../../supabase-client";
 import checkCache from "./checkCache";
 import deleteOldSearches from "./deleteOldSearch";
 import normalizeKeyword from "./normalizeKeyword";
