@@ -1,13 +1,12 @@
-import { useNavigate } from "react-router-dom";
 import type { Product } from "../../../Contexts/SearchContext";
 import { supabase } from "../../../supabase-client";
 
 export default async function addToWishlist(
   userId: string | null,
   item: Product,
-  setAddedIds: React.Dispatch<React.SetStateAction<Set<string>>>
+  setAddedIds: React.Dispatch<React.SetStateAction<Set<string>>>,
+  navigate: (path: string) => void
 ) {
-  const navigate = useNavigate();
   if (!userId) {
     navigate("/login");
     return;
