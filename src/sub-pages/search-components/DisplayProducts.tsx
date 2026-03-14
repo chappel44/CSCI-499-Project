@@ -5,38 +5,53 @@ import addToWishlist from "../search-hooks/addToWishlist";
 import { useState } from "react";
 import { useUser } from "../../Contexts/UserContext";
 import { useSearchContext } from "../../Contexts/useSearchContext";
+import type { Product } from "../../Contexts/SearchContext";
 
 interface DisplayProductsProps {
+  currentProducts: Product[];
   visible: boolean;
 }
 
-export default function DisplayProducts({ visible }: DisplayProductsProps) {
+const list = {
+  hidden: {},
+  visible: {
+    transition: {
+      staggerChildren: 0.15, // stagger by 0.1s
+    },
+  },
+};
+
+const itemStaggered = {
+  hidden: { opacity: 0 },
+  visible: { opacity: 1 },
+};
+
+export default function DisplayProducts({
+  currentProducts,
+}: DisplayProductsProps) {
   const [addedIds, setAddedIds] = useState<Set<string>>(new Set()); // tracks which items were added to wishlist
   const { userId } = useUser();
-  const { products, openPage } = useSearchContext();
-  const itemsPerPage = 10;
-  const startIndex = openPage * itemsPerPage;
-  const endIndex = startIndex + itemsPerPage;
-  const currentProducts = products.slice(startIndex, endIndex);
+  const { openPage } = useSearchContext();
 
   return (
-    <div className="w-full max-w-2xl mx-auto mt-4">
+    <motion.div
+      className="w-full max-w-2xl mx-auto mt-4"
+      variants={list}
+      initial="hidden"
+      animate="visible"
+    >
       {currentProducts.map((item, index) => {
         const productKey = item.product_id ?? item.title ?? "";
         const isAdded = addedIds.has(productKey);
         return (
           <motion.div
-            key={index}
+            key={openPage * 10 + index}
             className="flex items-center mt-4 gap-4 p-4 rounded-2xl transition-all duration-200 hover:-translate-y-0.5"
             style={{
               background: "rgba(255,255,255,0.65)",
               backdropFilter: "blur(14px)",
               border: "1px solid rgba(255,255,255,0.85)",
               boxShadow: "0 2px 16px rgba(0,0,0,0.06)",
-              opacity: visible ? 1 : 0,
-              transition: `background 0.2s, box-shadow 0.2s, transform 0.2s, opacity 0.4s ease ${
-                0.05 * index
-              }s`,
             }}
             onMouseEnter={(e) => {
               (e.currentTarget as HTMLDivElement).style.boxShadow =
@@ -50,7 +65,7 @@ export default function DisplayProducts({ visible }: DisplayProductsProps) {
               (e.currentTarget as HTMLDivElement).style.borderColor =
                 "rgba(255,255,255,0.85)";
             }}
-            //initial={{ opacity: 0 }}
+            variants={itemStaggered}
           >
             {item.thumbnail ? (
               <img
@@ -128,6 +143,6 @@ export default function DisplayProducts({ visible }: DisplayProductsProps) {
           </motion.div>
         );
       })}
-    </div>
+    </motion.div>
   );
 }

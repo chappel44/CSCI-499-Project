@@ -18,6 +18,10 @@ function Search() {
   const [visible, setVisible] = useState(false);
   const [serpResult, setSerpResults] = useState<SerpResult>();
 
+  const startIndex = openPage * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const currentProducts = products.slice(startIndex, endIndex);
+
   useEffect(() => {
     setTimeout(() => setVisible(true), 50);
   }, []);
@@ -71,7 +75,7 @@ function Search() {
 
         <SearchSuggestions visible={visible} />
 
-        <DisplayProducts visible={visible} />
+        <DisplayProducts currentProducts={currentProducts} visible={visible} />
 
         {/* Pagination — frosted glass pills */}
         {products.length > itemsPerPage && (
