@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { useUser } from "../../../Contexts/UserContext";
 import { useSearchContext } from "../../../Contexts/useSearchContext";
 import type { Product } from "../../../Contexts/SearchContext";
+import { useNavigate } from "react-router-dom";
 
 interface DisplayProductsProps {
   currentProducts: Product[];
@@ -15,6 +16,7 @@ export default function DisplayProducts({
 }: DisplayProductsProps) {
   const [addedIds, setAddedIds] = useState<Set<string>>(new Set());
   const [visible, setVisible] = useState(false);
+  const navigate = useNavigate();
 
   const { userId } = useUser();
   const { openPage } = useSearchContext();
@@ -98,7 +100,9 @@ export default function DisplayProducts({
               <div className="flex gap-2 mt-1 flex-wrap">
                 {!isAdded ? (
                   <button
-                    onClick={() => addToWishlist(userId, item, setAddedIds)}
+                    onClick={() =>
+                      addToWishlist(userId, item, setAddedIds, navigate)
+                    }
                     className="text-xs font-semibold px-3 py-1 rounded-lg text-white transition hover:opacity-90"
                     style={{
                       background: "linear-gradient(90deg,#00AAFF,#6B30FF)",
