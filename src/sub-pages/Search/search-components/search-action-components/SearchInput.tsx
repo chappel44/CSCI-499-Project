@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
 import DisplaySearchHistory from "../DisplayPreviousSearches";
-import { useSearchContext } from "../../../Contexts/useSearchContext";
+import { useSearchContext } from "../../../../Contexts/useSearchContext";
 import { SearchIcon } from "lucide-react";
 
 export default function SearchInput() {

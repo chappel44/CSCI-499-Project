@@ -1,6 +1,6 @@
 import { useNavigate } from "react-router-dom";
-import type { Product } from "../../Contexts/SearchContext";
-import { supabase } from "../../supabase-client";
+import type { Product } from "../../../Contexts/SearchContext";
+import { supabase } from "../../../supabase-client";
 
 export default async function addToWishlist(
   userId: string | null,

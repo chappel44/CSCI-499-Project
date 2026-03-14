@@ -1,4 +1,4 @@
-import type { Product } from "../../Contexts/SearchContext";
+import type { Product } from "../../../Contexts/SearchContext";
 
 export default function getPrice(item: Product) {
   if (item.price) return item.price;

@@ -1,5 +1,5 @@
 import { SearchIcon, ShieldCheck } from "lucide-react";
-import { useSearchContext } from "../../Contexts/useSearchContext";
+import { useSearchContext } from "../../../Contexts/useSearchContext";
 
 interface SearchSuggestionsProps {
   visible: boolean;

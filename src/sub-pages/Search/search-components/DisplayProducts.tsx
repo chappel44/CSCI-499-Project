@@ -2,9 +2,9 @@ import StarRating from "./Rating";
 import getPrice from "../search-hooks/getPrice";
 import addToWishlist from "../search-hooks/addToWishlist";
 import { useEffect, useState } from "react";
-import { useUser } from "../../Contexts/UserContext";
-import { useSearchContext } from "../../Contexts/useSearchContext";
-import type { Product } from "../../Contexts/SearchContext";
+import { useUser } from "../../../Contexts/UserContext";
+import { useSearchContext } from "../../../Contexts/useSearchContext";
+import type { Product } from "../../../Contexts/SearchContext";
 
 interface DisplayProductsProps {
   currentProducts: Product[];
