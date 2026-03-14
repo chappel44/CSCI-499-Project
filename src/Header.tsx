@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { supabase } from "./supabase-client";
+import { motion } from "framer-motion";
 
 export default function Header() {
   const { pathname } = useLocation();
@@ -13,9 +14,11 @@ export default function Header() {
       setLoggedIn(!!data.session);
     });
 
-    const { data: listener } = supabase.auth.onAuthStateChange((_e, session) => {
-      setLoggedIn(!!session);
-    });
+    const { data: listener } = supabase.auth.onAuthStateChange(
+      (_e, session) => {
+        setLoggedIn(!!session);
+      }
+    );
 
     return () => listener.subscription.unsubscribe();
   }, []);
@@ -27,8 +30,8 @@ export default function Header() {
   };
 
   const navLinks = [
-    { to: "/search",           label: "Search"           },
-    { to: "/wish-list",        label: "Wish List"        },
+    { to: "/search", label: "Search" },
+    { to: "/wish-list", label: "Wish List" },
     { to: "/what-is-verifind", label: "What is Verifind?" },
   ];
 
@@ -44,7 +47,9 @@ export default function Header() {
               </linearGradient>
             </defs>
             <circle
-              cx="22" cy="22" r="14"
+              cx="22"
+              cy="22"
+              r="14"
               fill="rgba(0,170,255,0.1)"
               stroke="url(#hdr-lg)"
               strokeWidth="2.4"
@@ -58,7 +63,10 @@ export default function Header() {
               strokeLinejoin="round"
             />
             <line
-              x1="31" y1="31" x2="42" y2="42"
+              x1="31"
+              y1="31"
+              x2="42"
+              y2="42"
               stroke="url(#hdr-lg)"
               strokeWidth="3.4"
               strokeLinecap="round"
@@ -68,7 +76,8 @@ export default function Header() {
           <span
             className="text-xl font-extrabold tracking-tight"
             style={{
-              background: "linear-gradient(90deg,#1A1A2E 43%,#0088DD 44%,#6B30FF 100%)",
+              background:
+                "linear-gradient(90deg,#1A1A2E 43%,#0088DD 44%,#6B30FF 100%)",
               WebkitBackgroundClip: "text",
               WebkitTextFillColor: "transparent",
               backgroundClip: "text",
@@ -87,15 +96,20 @@ export default function Header() {
                 to={to}
                 className={`relative px-4 py-1.5 rounded-xl text-sm font-medium transition-all duration-200 ${
                   active
-                    ? "text-indigo-600"
+                    ? "text-indigo-600 transition-all duration-1100"
                     : "text-gray-500 hover:text-gray-900 hover:bg-gray-100"
                 }`}
               >
                 {label}
                 {active && (
-                  <span
-                    className="absolute bottom-0 left-1/2 -translate-x-1/2 h-0.5 w-5 rounded-full"
-                    style={{ background: "linear-gradient(90deg,#00AAFF,#6B30FF)" }}
+                  <motion.span
+                    initial={{ clipPath: "inset(100% 100% 100% 0)" }}
+                    animate={{ clipPath: "inset(0% 0% 0% 0)" }}
+                    transition={{ duration: 0.4, ease: "easeOut" }}
+                    className="absolute bottom-0 left-1/2 -translate-x-1/2 h-0.5 w-10 rounded-full"
+                    style={{
+                      background: "linear-gradient(90deg,#00AAFF,#6B30FF)",
+                    }}
                   />
                 )}
               </Link>
@@ -148,18 +162,24 @@ export default function Header() {
             <Link
               key={to}
               to={to}
-              className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${
-                active
-                  ? "text-white"
-                  : "text-gray-500 hover:text-gray-900 hover:bg-gray-100"
-              }`}
-              style={
-                active
-                  ? { background: "linear-gradient(90deg,#00AAFF,#6B30FF)" }
-                  : {}
-              }
+              className="relative px-3 py-1.5 rounded-xl text-xs font-semibold text-gray-500 hover:text-gray-900 hover:bg-gray-100"
             >
-              {label}
+              {/* Gradient background */}
+              <span
+                className={`absolute inset-0 rounded-xl transition-opacity duration-500 ${
+                  pathname === to ? "opacity-100" : "opacity-0"
+                }`}
+                style={{ background: "linear-gradient(90deg,#00AAFF,#6B30FF)" }}
+              />
+
+              {/* Make text appear above gradient */}
+              <span
+                className={`relative whitespace-nowrap transition-all duration-500 ${
+                  active ? "text-white" : "text-black"
+                }`}
+              >
+                {label}
+              </span>
             </Link>
           );
         })}

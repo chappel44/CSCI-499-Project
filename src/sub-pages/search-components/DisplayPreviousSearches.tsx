@@ -1,17 +1,18 @@
 import { useEffect, useState, type SetStateAction } from "react";
 import { supabase } from "../../supabase-client";
 import { Trash } from "lucide-react";
+import { useSearchContext } from "../../Contexts/useSearchContext";
 
 type DisplaySearchHistoryProps = {
-  setKeyword: (keyword: string) => void;
   setIsFocused: React.Dispatch<SetStateAction<boolean>>;
 };
 
 export default function DisplaySearchHistory({
-  setKeyword,
   setIsFocused,
 }: DisplaySearchHistoryProps) {
   const [searches, setSearches] = useState<any[]>([]);
+
+  const { setKeyword } = useSearchContext();
 
   useEffect(() => {
     async function loadSearchHistory() {
