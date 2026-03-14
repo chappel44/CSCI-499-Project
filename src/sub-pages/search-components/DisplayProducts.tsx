@@ -1,4 +1,3 @@
-import { motion, AnimatePresence } from "framer-motion";
 import StarRating from "./Rating";
 import getPrice from "../search-hooks/getPrice";
 import addToWishlist from "../search-hooks/addToWishlist";
@@ -9,149 +8,133 @@ import type { Product } from "../../Contexts/SearchContext";
 
 interface DisplayProductsProps {
   currentProducts: Product[];
-  visible: boolean;
 }
-
-const list = {
-  hidden: {},
-  visible: {
-    transition: {
-      staggerChildren: 0.15, // stagger by 0.1s
-    },
-  },
-};
-
-const itemStaggered = {
-  hidden: { opacity: 0 },
-  visible: { opacity: 1 },
-};
 
 export default function DisplayProducts({
   currentProducts,
 }: DisplayProductsProps) {
-  const [addedIds, setAddedIds] = useState<Set<string>>(new Set()); // tracks which items were added to wishlist
+  const [addedIds, setAddedIds] = useState<Set<string>>(new Set());
+  const [visible, setVisible] = useState(false);
+
   const { userId } = useUser();
   const { openPage } = useSearchContext();
 
+  // retrigger animation when results change
   useEffect(() => {
-    openPage;
-    currentProducts;
-    console.log(openPage);
-  }, [openPage, currentProducts]);
+    setVisible(false);
+    const t = setTimeout(() => setVisible(true), 30);
+    return () => clearTimeout(t);
+  }, [currentProducts, openPage]);
 
   return (
-    <AnimatePresence mode="wait">
-      <motion.div
-        className="w-full max-w-2xl mx-auto mt-4"
-        variants={list}
-        initial="hidden"
-        animate="visible"
-      >
-        {currentProducts.map((item) => {
-          const productKey = item.product_id ?? item.title ?? "";
-          const isAdded = addedIds.has(productKey);
-          return (
-            <motion.div
-              key={item.product_id ?? item.title}
-              className="flex items-center mt-4 gap-4 p-4 rounded-2xl transition-all duration-200 hover:-translate-y-0.5"
-              style={{
-                background: "rgba(255,255,255,0.65)",
-                backdropFilter: "blur(14px)",
-                border: "1px solid rgba(255,255,255,0.85)",
-                boxShadow: "0 2px 16px rgba(0,0,0,0.06)",
-              }}
-              onMouseEnter={(e) => {
-                (e.currentTarget as HTMLDivElement).style.boxShadow =
-                  "0 8px 32px rgba(0,170,255,0.12), 0 2px 8px rgba(0,0,0,0.06)";
-                (e.currentTarget as HTMLDivElement).style.borderColor =
-                  "rgba(0,170,255,0.2)";
-              }}
-              onMouseLeave={(e) => {
-                (e.currentTarget as HTMLDivElement).style.boxShadow =
-                  "0 2px 16px rgba(0,0,0,0.06)";
-                (e.currentTarget as HTMLDivElement).style.borderColor =
-                  "rgba(255,255,255,0.85)";
-              }}
-              variants={itemStaggered}
-            >
-              {item.thumbnail ? (
-                <img
-                  src={item.thumbnail}
-                  alt={item.title}
-                  className="w-20 h-20 object-contain rounded-xl flex-shrink-0"
-                  style={{ background: "rgba(255,255,255,0.8)" }}
-                />
-              ) : (
-                <div
-                  className="w-20 h-20 rounded-xl flex items-center justify-center text-gray-400 text-xs flex-shrink-0"
-                  style={{ background: "rgba(0,0,0,0.04)" }}
-                >
-                  No Image
-                </div>
-              )}
+    <div className="w-full max-w-2xl mx-auto mt-4">
+      {currentProducts.map((item, index) => {
+        const productKey = item.product_id ?? item.title ?? "";
+        const isAdded = addedIds.has(productKey);
 
-              <div className="flex-1 flex flex-col gap-1 min-w-0">
-                <h3 className="text-sm font-semibold text-gray-900 line-clamp-2">
-                  {item.title}
-                </h3>
+        return (
+          <div
+            key={productKey}
+            className="flex items-center mt-4 gap-4 p-4 rounded-2xl transition-all duration-200 hover:-translate-y-0.5"
+            style={{
+              background: "rgba(255,255,255,0.65)",
+              backdropFilter: "blur(14px)",
+              border: "1px solid rgba(255,255,255,0.85)",
+              boxShadow: "0 2px 16px rgba(0,0,0,0.06)",
 
-                <p className="text-gray-500 text-xs flex items-center gap-1.5">
-                  Rating: <StarRating rating={item?.rating ?? 0} size={14} />
-                </p>
+              opacity: visible ? 1 : 0,
+              transform: visible ? "translateY(0)" : "translateY(16px)",
 
-                <div className="text-sm font-bold text-gray-900">
-                  {getPrice(item)}{" "}
-                  {item.old_price && (
-                    <span className="text-gray-400 font-normal text-xs ml-1">
-                      List:{" "}
-                      <span className="line-through">{item.old_price}</span>
-                    </span>
-                  )}
-                </div>
+              transition: "opacity 0.5s ease, transform 0.5s ease",
+              transitionDelay: `${index * 150}ms`,
+              willChange: "transform, opacity",
+            }}
+            onMouseEnter={(e) => {
+              const el = e.currentTarget as HTMLDivElement;
+              el.style.boxShadow =
+                "0 8px 32px rgba(0,170,255,0.12), 0 2px 8px rgba(0,0,0,0.06)";
+              el.style.borderColor = "rgba(0,170,255,0.2)";
+            }}
+            onMouseLeave={(e) => {
+              const el = e.currentTarget as HTMLDivElement;
+              el.style.boxShadow = "0 2px 16px rgba(0,0,0,0.06)";
+              el.style.borderColor = "rgba(255,255,255,0.85)";
+            }}
+          >
+            {item.thumbnail ? (
+              <img
+                src={item.thumbnail}
+                alt={item.title}
+                className="w-20 h-20 object-contain rounded-xl flex-shrink-0"
+                style={{ background: "rgba(255,255,255,0.8)" }}
+              />
+            ) : (
+              <div
+                className="w-20 h-20 rounded-xl flex items-center justify-center text-gray-400 text-xs flex-shrink-0"
+                style={{ background: "rgba(0,0,0,0.04)" }}
+              >
+                No Image
+              </div>
+            )}
 
-                {/* Buttons row */}
-                <div className="flex gap-2 mt-1 flex-wrap">
-                  {/* Add to Wishlist */}
-                  {!isAdded ? (
-                    <button
-                      onClick={() => addToWishlist(userId, item, setAddedIds)}
-                      className="text-xs font-semibold px-3 py-1 rounded-lg text-white transition hover:opacity-90"
-                      style={{
-                        background: "linear-gradient(90deg,#00AAFF,#6B30FF)",
-                      }}
-                    >
-                      + Wishlist
-                    </button>
-                  ) : (
-                    <span
-                      className="text-xs font-semibold px-3 py-1 rounded-lg"
-                      style={{
-                        background: "rgba(16,185,129,0.1)",
-                        color: "#10B981",
-                        border: "1px solid rgba(16,185,129,0.2)",
-                      }}
-                    >
-                      ✔ Added
-                    </span>
-                  )}
+            <div className="flex-1 flex flex-col gap-1 min-w-0">
+              <h3 className="text-sm font-semibold text-gray-900 line-clamp-2">
+                {item.title}
+              </h3>
 
-                  <a
-                    href={`${item.link}?tag=yourtag-20`}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="text-xs font-semibold px-3 py-1 rounded-lg text-white hover:opacity-90"
+              <p className="text-gray-500 text-xs flex items-center gap-1.5">
+                Rating: <StarRating rating={item?.rating ?? 0} size={14} />
+              </p>
+
+              <div className="text-sm font-bold text-gray-900">
+                {getPrice(item)}{" "}
+                {item.old_price && (
+                  <span className="text-gray-400 font-normal text-xs ml-1">
+                    List: <span className="line-through">{item.old_price}</span>
+                  </span>
+                )}
+              </div>
+
+              <div className="flex gap-2 mt-1 flex-wrap">
+                {!isAdded ? (
+                  <button
+                    onClick={() => addToWishlist(userId, item, setAddedIds)}
+                    className="text-xs font-semibold px-3 py-1 rounded-lg text-white transition hover:opacity-90"
                     style={{
                       background: "linear-gradient(90deg,#00AAFF,#6B30FF)",
                     }}
                   >
-                    View on Verifind ↗
-                  </a>
-                </div>
+                    + Wishlist
+                  </button>
+                ) : (
+                  <span
+                    className="text-xs font-semibold px-3 py-1 rounded-lg"
+                    style={{
+                      background: "rgba(16,185,129,0.1)",
+                      color: "#10B981",
+                      border: "1px solid rgba(16,185,129,0.2)",
+                    }}
+                  >
+                    ✔ Added
+                  </span>
+                )}
+
+                <a
+                  href={`${item.link}?tag=yourtag-20`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-xs font-semibold px-3 py-1 rounded-lg text-white hover:opacity-90"
+                  style={{
+                    background: "linear-gradient(90deg,#00AAFF,#6B30FF)",
+                  }}
+                >
+                  View on Verifind ↗
+                </a>
               </div>
-            </motion.div>
-          );
-        })}
-      </motion.div>
-    </AnimatePresence>
+            </div>
+          </div>
+        );
+      })}
+    </div>
   );
 }
