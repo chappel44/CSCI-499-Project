@@ -1,38 +1,12 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { supabase } from "../supabase-client";
-
-type WishlistItem = {
-  //from supabase
-  id: string;
-  product_id: string;
-  product_title: string;
-  product_image: string;
-  target_price: number;
-};
-
-type EnrichedItem = WishlistItem & {
-  //from serpAPI
-  live_price?: string;
-  rating?: number;
-  reviews?: number;
-  seller?: string;
-  product_url?: string;
-  review_url?: string;
-};
-
-type OtherWishlistItem = {
-  //from supabase for other people's wishlists
-  product_title: string;
-  product_image: string;
-  target_price: number;
-};
-
-// price history type — from supabase price_history table
-type PricePoint = {
-  recorded_at: string;
-  price: number;
-};
+import { supabase } from "../../supabase-client";
+import { useUser } from "../../Contexts/UserContext";
+import { useWishlist } from "../../Contexts/WishListContext";
+import { removeFromWishlist } from "./wish-list-hooks/removeFromWishlist";
+import { Sparkline } from "./wish-list-components/SparkLine";
+import { renderStars } from "./wish-list-components/renderStars";
+import ApplyGradientOrbs from "../Search/search-components/ApplyGradientOrbs";
+import { SearchOtherWishlist } from "./wish-list-components/SearchOtherWishlists";
 
 const faqItems = [
   {
@@ -52,70 +26,14 @@ const faqItems = [
   },
 ];
 
-// sparkline SVG — draws a tiny inline price history chart from an array of price points
-function Sparkline({ points }: { points: PricePoint[] }) {
-  if (!points || points.length < 2) {
-    return <p className="text-xs text-gray-400 italic">No history yet</p>;
-  }
-
-  const prices = points.map((p) => p.price);
-  const min = Math.min(...prices);
-  const max = Math.max(...prices);
-  const range = max - min || 1;
-  const width = 140;
-  const height = 36;
-  const pad = 4;
-
-  const coords = prices.map((price, i) => {
-    const x = pad + (i / (prices.length - 1)) * (width - pad * 2);
-    const y = height - pad - ((price - min) / range) * (height - pad * 2);
-    return `${x},${y}`;
-  });
-
-  const polyline = coords.join(" ");
-  const lastPrice = prices[prices.length - 1];
-  const firstPrice = prices[0];
-  const trending = lastPrice <= firstPrice ? "#22c55e" : "#ef4444"; // green if price went down, red if up
-
-  return (
-    <div className="mt-1 mb-1">
-      <svg
-        width={width}
-        height={height}
-        viewBox={`0 0 ${width} ${height}`}
-        className="overflow-visible"
-      >
-        <polyline
-          points={polyline}
-          fill="none"
-          stroke={trending}
-          strokeWidth="1.8"
-          strokeLinejoin="round"
-          strokeLinecap="round"
-        />
-        {/* dot on latest price */}
-        <circle
-          cx={coords[coords.length - 1].split(",")[0]}
-          cy={coords[coords.length - 1].split(",")[1]}
-          r="2.5"
-          fill={trending}
-        />
-      </svg>
-      <p className="text-xs text-gray-400">{points.length} price points</p>
-    </div>
-  );
-}
-
 function WishList() {
-  const [items, setItems] = useState<EnrichedItem[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { items, setItems, priceHistory } = useWishlist();
+  const [loading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
-  const [username, setUsername] = useState<string | null>(null); // logged in username
+  const { username } = useUser(); // logged in username
 
-  const [_, setUserId] = useState<string | null>(null); // logged in user id — replaces TEST_USER_ID
   const [visible, setVisible] = useState(false);
-  const navigate = useNavigate();
 
   // sort & filter state
   const [sortBy, setSortBy] = useState<
@@ -127,16 +45,6 @@ function WishList() {
   const [shareCopied, setShareCopied] = useState(false);
 
   // price history state — keyed by wishlist item id
-  const [priceHistory, setPriceHistory] = useState<
-    Record<string, PricePoint[]>
-  >({});
-
-  const [otherUsername, setOtherUsername] = useState(""); // Search Other People's Wishlist
-  const [otherItems, setOtherItems] = useState<OtherWishlistItem[] | null>(
-    null
-  );
-  const [otherLoading, setOtherLoading] = useState(false);
-  const [otherNotFound, setOtherNotFound] = useState(false);
 
   const [dealEmail, setDealEmail] = useState(""); // Sign Up for More Deals
   const [dealSent, setDealSent] = useState(false);
@@ -145,143 +53,10 @@ function WishList() {
   const [openFaq, setOpenFaq] = useState<number | null>(null); // FAQ accordion
 
   useEffect(() => {
-    // connected with supabase — redirect to login if not authenticated
-    supabase.auth.getSession().then(({ data }) => {
-      if (!data.session) {
-        navigate("/login");
-      } else {
-        const name = data.session?.user?.user_metadata?.username ?? null;
-        const id = data.session?.user?.id ?? null; // connected with supabase — real user id
-        setUsername(name);
-        setUserId(id);
-        fetchWishlist(id);
-      }
-    });
     setTimeout(() => setVisible(true), 50);
   }, []);
 
-  const fetchWishlist = async (id: string | null) => {
-    if (!id) return;
-    setLoading(true);
-
-    // connected with supabase — fetch wishlist using real logged in user id
-    const { data, error } = await supabase
-      .from("wishlists")
-      .select("*")
-      .eq("user_id", id);
-
-    if (error) {
-      console.error("Supabase error:", error.message);
-      setLoading(false);
-      return;
-    }
-
-    if (!data || data.length === 0) {
-      setItems([]);
-      setLoading(false);
-      return;
-    }
-
-    const enriched = await Promise.all(
-      data.map(async (item: WishlistItem) => {
-        try {
-          const response = await fetch(
-            //LOCAL host for testing 5173 and 3001
-            `http://localhost:3001/api/product-data?query=${encodeURIComponent(
-              item.product_title
-            )}`
-          );
-
-          if (!response.ok) throw new Error("API fetch failed");
-
-          const liveData = await response.json();
-
-          // connected with supabase — record price once per day max (not on every refresh)
-          if (liveData.price) {
-            const numericPrice = parseFloat(
-              liveData.price.replace(/[^0-9.]/g, "")
-            );
-            if (!isNaN(numericPrice)) {
-              const todayStart = new Date();
-              todayStart.setHours(0, 0, 0, 0);
-
-              // check if we already recorded a price for this item today
-              const { data: existing } = await supabase
-                .from("price_history")
-                .select("id")
-                .eq("wishlist_item_id", item.id)
-                .gte("recorded_at", todayStart.toISOString())
-                .limit(1);
-
-              // only insert if no entry exists for today yet
-              if (!existing || existing.length === 0) {
-                await supabase.from("price_history").insert({
-                  wishlist_item_id: item.id,
-                  user_id: id,
-                  price: numericPrice,
-                });
-              }
-            }
-          }
-
-          return {
-            ...item,
-            live_price: liveData.price ?? undefined,
-            rating: liveData.rating ?? undefined,
-            reviews: liveData.reviews ?? undefined,
-            seller: liveData.seller ?? undefined,
-            product_url: liveData.product_url ?? undefined,
-            review_url: liveData.review_url ?? undefined,
-          };
-        } catch (err) {
-          console.warn(`Failed to fetch live data for ${item.product_title}`);
-          return item;
-        }
-      })
-    );
-
-    setItems(enriched);
-    setLoading(false);
-
-    // connected with supabase — fetch price history for all wishlist items
-    fetchPriceHistory(data.map((i: WishlistItem) => i.id));
-  };
-
   // connected with supabase — load price history for sparklines
-  const fetchPriceHistory = async (itemIds: string[]) => {
-    const { data, error } = await supabase
-      .from("price_history")
-      .select("wishlist_item_id, price, recorded_at")
-      .in("wishlist_item_id", itemIds)
-      .order("recorded_at", { ascending: true });
-
-    if (error) {
-      console.warn("Price history fetch error:", error.message);
-      return;
-    }
-
-    // group by wishlist_item_id
-    const grouped: Record<string, PricePoint[]> = {};
-    for (const row of data ?? []) {
-      if (!grouped[row.wishlist_item_id]) grouped[row.wishlist_item_id] = [];
-      grouped[row.wishlist_item_id].push({
-        price: row.price,
-        recorded_at: row.recorded_at,
-      });
-    }
-    setPriceHistory(grouped);
-  };
-
-  const removeFromWishlist = async (itemId: string) => {
-    const { error } = await supabase
-      .from("wishlists")
-      .delete()
-      .eq("id", itemId);
-
-    if (!error) {
-      setItems((prev) => prev.filter((item) => item.id !== itemId));
-    }
-  };
 
   // share wishlist — copies a URL with the current username to clipboard
   const handleShareWishlist = () => {
@@ -295,40 +70,6 @@ function WishList() {
   };
 
   // Search Other People's Wishlist — connected with supabase
-  const searchOtherWishlist = async () => {
-    if (!otherUsername.trim()) return;
-    setOtherLoading(true);
-    setOtherItems(null);
-    setOtherNotFound(false);
-
-    // connected with supabase — look up user id by username in profiles table
-    const { data: profileData, error: profileError } = await supabase
-      .from("profiles")
-      .select("id")
-      .ilike("username", otherUsername.trim())
-      .single();
-
-    if (profileError || !profileData) {
-      setOtherNotFound(true);
-      setOtherLoading(false);
-      return;
-    }
-
-    // connected with supabase — fetch their wishlist using the found user id
-    const { data: wishlistData, error: wishlistError } = await supabase
-      .from("wishlists")
-      .select("product_title, product_image, target_price")
-      .eq("user_id", profileData.id);
-
-    if (wishlistError || !wishlistData || wishlistData.length === 0) {
-      setOtherNotFound(true);
-      setOtherLoading(false);
-      return;
-    }
-
-    setOtherItems(wishlistData);
-    setOtherLoading(false);
-  };
 
   // Sign Up for More Deals — sends a test email via supabase auth magic link as a stand-in
   const handleDealSignup = async () => {
@@ -355,21 +96,6 @@ function WishList() {
       setDealSent(false);
       setDealEmail("");
     }, 4000);
-  };
-
-  const renderStars = (rating?: number) => {
-    //still in working progress
-    if (!rating) return "N/A";
-    const fullStars = Math.floor(rating);
-    const halfStar = rating - fullStars >= 0.5 ? 1 : 0;
-    const emptyStars = 5 - fullStars - halfStar;
-    return (
-      <>
-        {"★".repeat(fullStars)}
-        {"☆".repeat(halfStar)}
-        {"✩".repeat(emptyStars)}
-      </>
-    );
   };
 
   // sort + filter logic applied on top of search filter
@@ -428,56 +154,8 @@ function WishList() {
       style={{ background: "#f0f4ff" }}
     >
       {/* Mesh gradient background orbs — same as Search & WhatIsVerifind for consistency */}
-      <div
-        className="fixed inset-0 pointer-events-none overflow-hidden"
-        style={{ zIndex: 0 }}
-      >
-        <div
-          style={{
-            position: "absolute",
-            top: "-10%",
-            left: "-5%",
-            width: "55vw",
-            height: "55vw",
-            maxWidth: 700,
-            maxHeight: 700,
-            background:
-              "radial-gradient(circle, rgba(0,170,255,0.16) 0%, transparent 70%)",
-            borderRadius: "50%",
-            filter: "blur(50px)",
-          }}
-        />
-        <div
-          style={{
-            position: "absolute",
-            top: "25%",
-            right: "-10%",
-            width: "50vw",
-            height: "50vw",
-            maxWidth: 600,
-            maxHeight: 600,
-            background:
-              "radial-gradient(circle, rgba(107,48,255,0.13) 0%, transparent 70%)",
-            borderRadius: "50%",
-            filter: "blur(50px)",
-          }}
-        />
-        <div
-          style={{
-            position: "absolute",
-            bottom: "10%",
-            left: "20%",
-            width: "40vw",
-            height: "40vw",
-            maxWidth: 500,
-            maxHeight: 500,
-            background:
-              "radial-gradient(circle, rgba(16,185,129,0.08) 0%, transparent 70%)",
-            borderRadius: "50%",
-            filter: "blur(40px)",
-          }}
-        />
-      </div>
+
+      <ApplyGradientOrbs />
 
       {/* Sticky header — frosted glass */}
       <div
@@ -679,9 +357,6 @@ function WishList() {
 
       {/* Wishlist Items — frosted glass cards */}
       <div className="relative z-10 flex-1 overflow-y-auto px-6 py-6 flex flex-wrap justify-center gap-4">
-        {loading && (
-          <p className="text-gray-500 text-center">Loading wishlist...</p>
-        )}
         {!loading && filteredItems.length === 0 && (
           <p className="text-gray-500 text-center">No items found.</p>
         )}
@@ -845,7 +520,7 @@ function WishList() {
                     <div className="flex gap-1">
                       <button
                         onClick={() => {
-                          removeFromWishlist(item.id);
+                          removeFromWishlist(item.id, setItems);
                           setConfirmingId(null);
                         }}
                         className="flex-1 py-1 rounded-md text-xs font-semibold text-white bg-red-500 hover:bg-red-600 transition"
@@ -874,102 +549,7 @@ function WishList() {
         })}
       </div>
 
-      {/* Search Other People's Wishlist — frosted glass section */}
-      <div
-        className="relative z-10 w-full px-6 mt-8 flex flex-col items-center gap-3"
-        style={{
-          opacity: visible ? 1 : 0,
-          transition: "opacity 0.6s ease 0.3s",
-        }}
-      >
-        <div
-          className="w-full max-w-md rounded-2xl p-5"
-          style={{
-            background: "rgba(255,255,255,0.55)",
-            backdropFilter: "blur(14px)",
-            border: "1px solid rgba(255,255,255,0.75)",
-            boxShadow: "0 4px 24px rgba(0,0,0,0.06)",
-          }}
-        >
-          <h3 className="text-base font-bold text-gray-900 mb-3">
-            Search Other People's Wishlist
-          </h3>
-          <div className="flex gap-2">
-            <input
-              type="text"
-              placeholder="Enter username"
-              value={otherUsername}
-              onChange={(e) => {
-                setOtherUsername(e.target.value);
-                setOtherItems(null);
-                setOtherNotFound(false);
-              }}
-              className="flex-1 px-3 py-2 rounded-xl text-sm focus:outline-none transition"
-              style={{
-                background: "rgba(255,255,255,0.7)",
-                border: "1px solid rgba(0,0,0,0.08)",
-              }}
-            />
-            <button
-              onClick={searchOtherWishlist}
-              disabled={otherLoading}
-              className="px-4 py-2 rounded-xl text-sm font-semibold text-white transition hover:opacity-90 shadow-md disabled:opacity-60"
-              style={{ background: "linear-gradient(90deg,#00AAFF,#6B30FF)" }}
-            >
-              {otherLoading ? "Searching..." : "Search"}
-            </button>
-          </div>
-
-          {/* Other wishlist results */}
-          {otherNotFound && (
-            <p className="text-sm text-gray-400 mt-3">
-              No wishlist found for "{otherUsername}".
-            </p>
-          )}
-          {otherItems && otherItems.length > 0 && (
-            <div className="mt-4">
-              <p className="text-sm font-semibold text-gray-700 mb-2">
-                {otherUsername}'s Wishlist
-              </p>
-              <div className="flex flex-col gap-2">
-                {otherItems.map((item, index) => (
-                  <div
-                    key={index}
-                    className="flex items-center gap-3 rounded-xl p-3"
-                    style={{
-                      background: "rgba(255,255,255,0.7)",
-                      border: "1px solid rgba(0,0,0,0.06)",
-                    }}
-                  >
-                    {item.product_image ? (
-                      <img
-                        src={item.product_image}
-                        alt={item.product_title}
-                        className="w-12 h-12 object-contain rounded-lg bg-gray-50 flex-shrink-0"
-                      />
-                    ) : (
-                      <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center text-gray-400 text-xs flex-shrink-0">
-                        No Image
-                      </div>
-                    )}
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold text-gray-900 line-clamp-1">
-                        {item.product_title}
-                      </p>
-                      <p className="text-xs text-gray-500">
-                        Target:{" "}
-                        <span className="font-medium text-gray-800">
-                          ${item.target_price}
-                        </span>
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
+      <SearchOtherWishlist visible={visible} />
 
       {/* Bottom sections — frosted glass panels */}
       <div
