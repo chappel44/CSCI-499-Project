@@ -30,6 +30,7 @@ export function useSearchProducts() {
         .from("search_history")
         .insert({ search_term: keyword, user_id: userId });
       if (error) console.error(error.message);
+      setOpenPage(-1);
 
       // Normalize keyword & clean old searches
       const normalizedKeyword = normalizeKeyword(keyword);

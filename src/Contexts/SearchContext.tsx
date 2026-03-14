@@ -31,7 +31,7 @@ type MyContextType = {
 
 export function SearchProvider({ children }: MyProviderProps) {
   const [products, setProducts] = useState<Product[]>([]);
-  const [openPage, setOpenPage] = useState(0);
+  const [openPage, setOpenPage] = useState(-1);
   const [endPage, setEndPage] = useState(10);
   const [keyword, setKeyword] = useState("");
 
