@@ -4,7 +4,7 @@ import DisplayProducts from "./search-components/DisplayProducts";
 import SearchHeading from "./search-components/SearchHeading";
 import SearchSuggestions from "./search-components/SearchSuggestions";
 import SearchActions from "./search-components/SearchActions";
-import ApplyGradientOrbs from "./search-components/ApplyGradientOrbs";
+import ApplyGradientOrbs from "../SharedComponents/ApplyGradientOrbs";
 
 type SerpResult = {
   this_month_usage: number;

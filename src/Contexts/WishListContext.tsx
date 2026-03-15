@@ -4,6 +4,7 @@ import {
   useEffect,
   useState,
   type ReactNode,
+  type SetStateAction,
 } from "react";
 import type {
   EnrichedItem,
@@ -38,6 +39,17 @@ type WishlistContextType = {
 
   otherNotFound: boolean;
   setOtherNotFound: React.Dispatch<React.SetStateAction<boolean>>;
+
+  searchQuery: string;
+  setSearchQuery: React.Dispatch<React.SetStateAction<string>>;
+
+  sortBy: string;
+  setSortBy: React.Dispatch<
+    React.SetStateAction<"none" | "price-asc" | "price-desc" | "alpha" | "drop">
+  >;
+
+  filterDropOnly: boolean;
+  setFilterDropOnly: React.Dispatch<SetStateAction<boolean>>;
 };
 
 const WishlistContext = createContext<WishlistContextType | undefined>(
@@ -56,6 +68,13 @@ export function WishlistProvider({ children }: { children: ReactNode }) {
   );
   const [otherLoading, setOtherLoading] = useState(false);
   const [otherNotFound, setOtherNotFound] = useState(false);
+
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const [sortBy, setSortBy] = useState<
+    "none" | "price-asc" | "price-desc" | "alpha" | "drop"
+  >("none");
+  const [filterDropOnly, setFilterDropOnly] = useState(false);
 
   async function fetchWishlist(userId: string) {
     const { data, error } = await supabase
@@ -103,6 +122,12 @@ export function WishlistProvider({ children }: { children: ReactNode }) {
         setOtherLoading,
         otherNotFound,
         setOtherNotFound,
+        searchQuery,
+        setSearchQuery,
+        sortBy,
+        setSortBy,
+        filterDropOnly,
+        setFilterDropOnly,
       }}
     >
       {children}

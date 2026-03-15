@@ -6,29 +6,23 @@ import WhatIsVerifind from "./sub-pages/WhatIsVerifind";
 import Login from "./sub-pages/Login";
 import SignUp from "./sub-pages/SignUp";
 import Settings from "./sub-pages/Settings";
-import { SearchProvider } from "./Contexts/SearchContext";
-import { UserProvider } from "./Contexts/UserContext";
-import { WishlistProvider } from "./Contexts/WishListContext";
+import Layout from "./Contexts/Layout";
 
 function App() {
   return (
     <>
       <Header />
-      <SearchProvider>
-        <UserProvider>
-          <WishlistProvider>
-            <Routes>
-              <Route path="/" element={<Search />} />
-              <Route path="/search" element={<Search />} />
-              <Route path="/wish-list" element={<WishList />} />
-              <Route path="/what-is-verifind" element={<WhatIsVerifind />} />
-              <Route path="/login" element={<Login />} />
-              <Route path="/signup" element={<SignUp />} />
-              <Route path="/settings" element={<Settings />} />
-            </Routes>
-          </WishlistProvider>
-        </UserProvider>
-      </SearchProvider>
+      <Layout>
+        <Routes>
+          <Route path="/" element={<Search />} />
+          <Route path="/search" element={<Search />} />
+          <Route path="/wish-list" element={<WishList />} />
+          <Route path="/what-is-verifind" element={<WhatIsVerifind />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/signup" element={<SignUp />} />
+          <Route path="/settings" element={<Settings />} />
+        </Routes>
+      </Layout>
     </>
   );
 }
