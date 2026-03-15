@@ -1,4 +1,4 @@
-import { useSearchProducts } from "../search-hooks/searchProducts";
+import { useSearchProducts } from "../search-custom-hooks/searchProducts";
 import { useState } from "react";
 import { useSearchContext } from "../../../Contexts/useSearchContext";
 import SearchInput from "./search-action-components/SearchInput";

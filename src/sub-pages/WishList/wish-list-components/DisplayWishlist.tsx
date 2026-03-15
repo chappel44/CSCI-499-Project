@@ -4,6 +4,7 @@ import type { EnrichedItem } from "../wish-list-structures/wishListStructs";
 import { renderStars } from "./renderStars";
 import { Sparkline } from "./SparkLine";
 import { removeFromWishlist } from "../wish-list-hooks/removeFromWishlist";
+import { useSearchContext } from "../../../Contexts/useSearchContext";
 
 interface DisplayWishlistProps {
   visible: boolean;
@@ -15,6 +16,7 @@ export default function DisplayWishlist({
   filteredItems,
 }: DisplayWishlistProps) {
   const { priceHistory, setItems } = useWishlist();
+  const { setAddedIds } = useSearchContext();
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
   const [loading] = useState(true);
 
@@ -182,7 +184,12 @@ export default function DisplayWishlist({
                   <div className="flex gap-1">
                     <button
                       onClick={() => {
-                        removeFromWishlist(item.id, setItems);
+                        removeFromWishlist(
+                          item.id,
+                          item.product_title,
+                          setItems,
+                          setAddedIds
+                        );
                         setConfirmingId(null);
                       }}
                       className="flex-1 py-1 rounded-md text-xs font-semibold text-white bg-red-500 hover:bg-red-600 transition"

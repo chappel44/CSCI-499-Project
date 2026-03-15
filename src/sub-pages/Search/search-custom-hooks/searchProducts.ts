@@ -1,9 +1,9 @@
 import { useSearchContext } from "../../../Contexts/useSearchContext";
 import { supabase } from "../../../supabase-client";
-import checkCache from "./checkCache";
-import deleteOldSearches from "./deleteOldSearch";
-import normalizeKeyword from "./normalizeKeyword";
-import pullProductsFromSerp from "./pullProductsFromSerp";
+import checkCache from "../search-hooks/checkCache";
+import deleteOldSearches from "../search-hooks/deleteOldSearch";
+import normalizeKeyword from "../search-hooks/normalizeKeyword";
+import pullProductsFromSerp from "../search-hooks/pullProductsFromSerp";
 
 /**
  * Custom hook to search products using keyword from context,

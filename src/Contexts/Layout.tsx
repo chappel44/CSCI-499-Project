@@ -8,10 +8,10 @@ interface LayoutProps {
 
 export default function Layout({ children }: LayoutProps) {
   return (
-    <SearchProvider>
-      <UserProvider>
+    <UserProvider>
+      <SearchProvider>
         <WishlistProvider>{children}</WishlistProvider>
-      </UserProvider>
-    </SearchProvider>
+      </SearchProvider>
+    </UserProvider>
   );
 }
