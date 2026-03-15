@@ -1,4 +1,4 @@
-import { useSearchOtherWishlist } from "../wish-list-hooks/searchOtherWishlist";
+import { useSearchOtherWishlist } from "../custom-hooks/searchOtherWishlist";
 import { useWishlist } from "../../../Contexts/WishListContext";
 
 interface SearchOtherWishlistProps {
