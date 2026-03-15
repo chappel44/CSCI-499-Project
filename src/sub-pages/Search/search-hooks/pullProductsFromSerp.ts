@@ -18,10 +18,6 @@ export default async function pullProductsFromSerp(
     ...(data.organic_results || []),
   ];
 
-  const sortedProducts = allProducts.sort(
-    (a, b) => (a.extracted_price ?? Infinity) - (b.extracted_price ?? Infinity)
-  );
-
   const { error: jsonInsertError } = await supabase
     .from("cached_searches")
     .insert([
@@ -35,5 +31,5 @@ export default async function pullProductsFromSerp(
     console.error(jsonInsertError.message);
   }
 
-  setProducts(sortedProducts);
+  setProducts(allProducts);
 }

@@ -10,6 +10,16 @@ type MyProviderProps = {
   children: ReactNode;
 };
 
+export type SortByType =
+  | "none"
+  | "price-asc"
+  | "price-desc"
+  | "rating-asc"
+  | "rating-desc"
+  | "title-asc"
+  | "title-desc"
+  | "discount-desc";
+
 type MyContextType = {
   products: Product[];
   setProducts: React.Dispatch<React.SetStateAction<Product[]>>;
@@ -21,6 +31,8 @@ type MyContextType = {
   setKeyword: React.Dispatch<React.SetStateAction<string>>;
   addedIds: Set<string>;
   setAddedIds: React.Dispatch<React.SetStateAction<Set<string>>>;
+  sortBy: string;
+  setSortBy: React.Dispatch<React.SetStateAction<SortByType>>;
 };
 
 export function SearchProvider({ children }: MyProviderProps) {
@@ -29,6 +41,7 @@ export function SearchProvider({ children }: MyProviderProps) {
   const [endPage, setEndPage] = useState(10);
   const [keyword, setKeyword] = useState("");
   const [addedIds, setAddedIds] = useState<Set<string>>(new Set());
+  const [sortBy, setSortBy] = useState<SortByType>("none");
 
   const { userId } = useUser();
 
@@ -66,6 +79,8 @@ export function SearchProvider({ children }: MyProviderProps) {
         setKeyword,
         addedIds,
         setAddedIds,
+        sortBy,
+        setSortBy,
       }}
     >
       {children}

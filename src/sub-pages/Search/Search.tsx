@@ -7,16 +7,19 @@ import SearchActions from "./search-components/SearchActions";
 import ApplyGradientOrbs from "../SharedComponents/ApplyGradientOrbs";
 import PaginationButtons from "./search-components/PaginationButtons";
 import { DiplaySearchesLeft } from "./search-components/DisplaySearchesLeft";
+import { useSortedProducts } from "./search-hooks/sortSearch";
+import DisplayAdvancedSortingButtons from "./search-components/SearchSortingButtons";
 
 const itemsPerPage = 10;
 
 function Search() {
-  const { products, openPage } = useSearchContext();
+  const { products, openPage, sortBy } = useSearchContext();
   const [visible, setVisible] = useState(false);
 
   const startIndex = openPage * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
-  const currentProducts = products.slice(startIndex, endIndex);
+  const sortedProducts = useSortedProducts(products, sortBy);
+  const currentProducts = sortedProducts.slice(startIndex, endIndex);
 
   useEffect(() => {
     setTimeout(() => setVisible(true), 50);
@@ -24,7 +27,6 @@ function Search() {
 
   // Pagination
   const totalPages = Math.ceil(products.length / itemsPerPage);
-
   return (
     <section
       className="min-h-screen overflow-x-hidden"
@@ -41,6 +43,8 @@ function Search() {
         <SearchActions visible={visible} />
 
         <SearchSuggestions visible={visible} />
+
+        {products.length && <DisplayAdvancedSortingButtons visible={visible} />}
 
         <DisplayProducts key={openPage} currentProducts={currentProducts} />
 
