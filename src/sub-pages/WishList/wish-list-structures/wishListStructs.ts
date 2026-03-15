@@ -13,8 +13,9 @@ export type EnrichedItem = WishlistItem & {
   rating?: number;
   reviews?: number;
   seller?: string;
-  product_url?: string;
+  link?: string;
   review_url?: string;
+  old_price?: string;
 };
 
 export type OtherWishlistItem = {

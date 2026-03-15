@@ -135,7 +135,7 @@ export default function DisplayWishlist({
                 isPriceDrop ? "text-green-600" : "text-gray-800"
               }`}
             >
-              Live: {item.live_price || "N/A"}
+              Live: {item.old_price || "N/A"}
             </p>
 
             {/* Price history sparkline chart */}
@@ -159,16 +159,16 @@ export default function DisplayWishlist({
 
             <div className="flex gap-2 mt-auto">
               <a
-                href={item.product_url || "#"}
+                href={item.link || "#"}
                 target="_blank"
                 rel="noopener noreferrer"
                 className={`flex-1 text-center py-1 rounded-md text-xs font-semibold transition ${
-                  item.product_url
+                  item.link
                     ? "text-white hover:opacity-90"
                     : "bg-gray-300 text-gray-500 cursor-not-allowed"
                 }`}
                 style={
-                  item.product_url
+                  item.link
                     ? { background: "linear-gradient(90deg,#00AAFF,#6B30FF)" }
                     : {}
                 }

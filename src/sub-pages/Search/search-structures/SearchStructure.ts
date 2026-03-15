@@ -7,6 +7,7 @@ export type Product = {
   old_price?: string;
   extracted_price?: number;
   rating?: number | undefined;
+  reviews?: number;
 };
 
 export type SerpResult = {

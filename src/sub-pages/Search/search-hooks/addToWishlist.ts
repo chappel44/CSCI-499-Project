@@ -20,6 +20,10 @@ export default async function addToWishlist(
     product_title: item.title ?? "",
     product_image: item.thumbnail ?? "",
     target_price: item.extracted_price ?? 0,
+    link: item.link,
+    old_price: item.old_price,
+    rating: item.rating,
+    reviews: item.reviews,
   });
 
   if (error) {
