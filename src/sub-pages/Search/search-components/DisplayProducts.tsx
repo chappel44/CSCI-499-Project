@@ -19,14 +19,13 @@ export default function DisplayProducts({
   const navigate = useNavigate();
 
   const { userId } = useUser();
-  const { openPage } = useSearchContext();
 
   // retrigger animation when results change
   useEffect(() => {
     setVisible(false);
     const t = setTimeout(() => setVisible(true), 30);
     return () => clearTimeout(t);
-  }, [currentProducts, openPage]);
+  }, [currentProducts]);
 
   return (
     <div className="w-full max-w-2xl mx-auto mt-4">
@@ -84,8 +83,9 @@ export default function DisplayProducts({
                 {item.title}
               </h3>
 
-              <p className="text-gray-500 text-xs flex items-center gap-1.5">
-                Rating: <StarRating rating={item?.rating ?? 0} size={14} />
+              <p className="text-gray-600 text-xs flex items-center gap-1.5">
+                Rating: <StarRating rating={item?.rating ?? 0} size={14} />{" "}
+                <span className="text-gray-500/70">({item?.reviews})</span>
               </p>
 
               <div className="text-sm font-bold text-gray-900">

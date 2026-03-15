@@ -7,7 +7,7 @@ interface DisplayAdvancedSortingButtonsProps {
 export default function DisplayAdvancedSortingButtons({
   visible,
 }: DisplayAdvancedSortingButtonsProps) {
-  const { sortBy, setSortBy } = useSearchContext();
+  const { sortBy, setSortBy, setOpenPage } = useSearchContext();
 
   // List of all available sort options
   const sortOptions = [
@@ -49,6 +49,7 @@ export default function DisplayAdvancedSortingButtons({
           key={option}
           onClick={() => {
             setSortBy(option);
+            setOpenPage(0);
           }}
           className="px-3 py-1 rounded-lg text-xs font-semibold transition"
           style={
