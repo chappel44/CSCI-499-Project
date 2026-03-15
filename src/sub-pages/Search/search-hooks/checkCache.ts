@@ -24,12 +24,7 @@ export default async function (
       ...(raw.organic_results || []),
     ];
 
-    const sortedProducts = products.sort(
-      (a, b) =>
-        (a.extracted_price ?? Infinity) - (b.extracted_price ?? Infinity)
-    );
-
-    setProducts(sortedProducts);
+    setProducts(products);
     return true;
   }
   return false;
