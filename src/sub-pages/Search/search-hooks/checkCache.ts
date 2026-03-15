@@ -1,6 +1,5 @@
 import { supabase } from "../../../supabase-client";
-import type { Product } from "../../../Contexts/SearchContext";
-
+import type { Product } from "../search-structures/SearchStructure";
 export default async function (
   normalizedKeyword: string,
   setProducts: (products: Product[]) => void

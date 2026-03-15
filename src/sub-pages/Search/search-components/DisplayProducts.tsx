@@ -4,7 +4,7 @@ import addToWishlist from "../search-hooks/addToWishlist";
 import { useEffect, useState } from "react";
 import { useUser } from "../../../Contexts/UserContext";
 import { useSearchContext } from "../../../Contexts/useSearchContext";
-import type { Product } from "../../../Contexts/SearchContext";
+import type { Product } from "../search-structures/SearchStructure";
 import { useNavigate } from "react-router-dom";
 
 interface DisplayProductsProps {
@@ -14,7 +14,7 @@ interface DisplayProductsProps {
 export default function DisplayProducts({
   currentProducts,
 }: DisplayProductsProps) {
-  const [addedIds, setAddedIds] = useState<Set<string>>(new Set());
+  const { addedIds, setAddedIds } = useSearchContext();
   const [visible, setVisible] = useState(false);
   const navigate = useNavigate();
 
@@ -36,7 +36,7 @@ export default function DisplayProducts({
 
         return (
           <div
-            key={productKey}
+            key={index}
             className="flex items-center mt-4 gap-4 p-4 rounded-2xl transition-all duration-200 hover:-translate-y-0.5"
             style={{
               background: "rgba(255,255,255,0.65)",

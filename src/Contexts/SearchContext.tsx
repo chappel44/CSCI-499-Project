@@ -1,16 +1,8 @@
-import { createContext, useState } from "react";
+import { createContext, useEffect, useState } from "react";
 import type { ReactNode } from "react";
-
-export type Product = {
-  product_id?: string;
-  title: string;
-  link: string;
-  thumbnail?: string;
-  price?: string;
-  old_price?: string;
-  extracted_price?: number;
-  rating?: number | undefined;
-};
+import type { Product } from "../sub-pages/Search/search-structures/SearchStructure";
+import { supabase } from "../supabase-client";
+import { useUser } from "./UserContext";
 
 export const SearchContext = createContext<MyContextType | null>(null);
 
@@ -27,6 +19,8 @@ type MyContextType = {
   setEndPage: React.Dispatch<React.SetStateAction<number>>;
   keyword: string;
   setKeyword: React.Dispatch<React.SetStateAction<string>>;
+  addedIds: Set<string>;
+  setAddedIds: React.Dispatch<React.SetStateAction<Set<string>>>;
 };
 
 export function SearchProvider({ children }: MyProviderProps) {
@@ -34,6 +28,30 @@ export function SearchProvider({ children }: MyProviderProps) {
   const [openPage, setOpenPage] = useState(-1);
   const [endPage, setEndPage] = useState(10);
   const [keyword, setKeyword] = useState("");
+  const [addedIds, setAddedIds] = useState<Set<string>>(new Set());
+
+  const { userId } = useUser();
+
+  const fetchAddedWishlist = async (userId: string) => {
+    const { data, error } = await supabase
+      .from("wishlists")
+      .select("product_id")
+      .eq("user_id", userId);
+
+    if (error) {
+      console.error(error.message);
+      return;
+    }
+
+    if (data) {
+      setAddedIds(new Set(data.map((item) => item.product_id)));
+    }
+  };
+
+  // call this once on mount or when userId changes
+  useEffect(() => {
+    if (userId) fetchAddedWishlist(userId);
+  }, [userId]);
 
   return (
     <SearchContext.Provider
@@ -46,6 +64,8 @@ export function SearchProvider({ children }: MyProviderProps) {
         setEndPage,
         keyword,
         setKeyword,
+        addedIds,
+        setAddedIds,
       }}
     >
       {children}

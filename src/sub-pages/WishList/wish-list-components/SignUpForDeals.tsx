@@ -1,5 +1,5 @@
 import { useState } from "react";
-import handleDealSignup from "../custom-hooks/useHandleDealSignup";
+import handleDealSignup from "../wishlist-custom-hooks/useHandleDealSignup";
 
 export default function SignUpForDeals() {
   const [dealEmail, setDealEmail] = useState(""); // Sign Up for More Deals

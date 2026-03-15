@@ -1,5 +1,5 @@
-import type { Product } from "../../../Contexts/SearchContext";
 import { supabase } from "../../../supabase-client";
+import type { Product } from "../search-structures/SearchStructure";
 
 export default async function pullProductsFromSerp(
   keyword: string,
