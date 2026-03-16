@@ -36,7 +36,10 @@ export default function SearchActions({ visible }: SearchActionsProps) {
             type="submit"
             disabled={loading}
             className="px-5 py-2.5 rounded-xl text-sm font-semibold text-white transition hover:opacity-90 shadow-md disabled:opacity-60 disabled:cursor-not-allowed flex items-center gap-2"
-            style={{ background: "linear-gradient(90deg,#00AAFF,#6B30FF)" }}
+            style={{
+              background:
+                "linear-gradient(90deg,rgb(105, 107, 245),rgb(52, 55, 240))",
+            }}
           >
             {loading ? (
               <>

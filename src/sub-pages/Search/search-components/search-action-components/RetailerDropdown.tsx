@@ -39,7 +39,8 @@ export default function RetailerDropdown() {
         type="button"
         className="flex items-center w-48 gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition hover:opacity-90 shadow-md"
         style={{
-          background: "linear-gradient(90deg,#00AAFF,#6B30FF)",
+          background:
+            "linear-gradient(90deg,rgb(105, 107, 245),rgb(52, 55, 240))",
           color: "#fff",
         }}
         onClick={() => setSearchOptionsOpen(!searchOptionsOpen)}
@@ -63,7 +64,7 @@ export default function RetailerDropdown() {
       </button>
 
       <div
-        className={`absolute top-full left-0 mt-2 rounded-xl border shadow-lg flex flex-col overflow-hidden transition-all duration-200
+        className={`absolute top-full left-0 mt-2 rounded-xl border shadow-lg flex flex-col overflow-hidden transition-all duration-200 z-10
               ${
                 searchOptionsOpen
                   ? "opacity-100 scale-100"

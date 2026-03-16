@@ -103,9 +103,13 @@ export default function DisplayProducts({
                     onClick={() =>
                       addToWishlist(userId, item, setAddedIds, navigate)
                     }
-                    className="text-xs font-semibold px-3 py-1 rounded-lg text-white transition hover:opacity-90"
+                    className="cursor-pointer text-xs font-semibold px-3 py-1 rounded-lg text-white transition hover:scale-105 transition-all duration-300"
                     style={{
-                      background: "linear-gradient(90deg,#00AAFF,#6B30FF)",
+                      //background: "linear-gradient(90deg,#00AAFF,#6B30FF)",
+                      background:
+                        "linear-gradient(90deg,rgb(105, 107, 245),rgb(52, 55, 240))",
+                      boxShadow:
+                        "0 0 10px rgba(105, 107, 245, 0.4), 0 2px 10px rgba(52, 55, 240, 0.6)",
                     }}
                   >
                     + Wishlist
@@ -127,9 +131,12 @@ export default function DisplayProducts({
                   href={`${item.link}?tag=yourtag-20`}
                   target="_blank"
                   rel="noreferrer"
-                  className="text-xs font-semibold px-3 py-1 rounded-lg text-white hover:opacity-90"
+                  className="text-xs font-semibold px-3 py-1 rounded-lg text-white hover:scale-105 transition-all duration-300"
                   style={{
-                    background: "linear-gradient(90deg,#00AAFF,#6B30FF)",
+                    background:
+                      "linear-gradient(90deg,rgb(156, 79, 223),rgb(143, 65, 245))",
+                    boxShadow:
+                      "0 0 10px rgba(145, 62, 218, 0.4), 0 2px 10px rgba(87, 47, 167, 0.6)",
                   }}
                 >
                   View on Verifind ↗

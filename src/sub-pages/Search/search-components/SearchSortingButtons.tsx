@@ -55,7 +55,8 @@ export default function DisplayAdvancedSortingButtons({
           style={
             sortBy === option
               ? {
-                  background: "linear-gradient(90deg,#00AAFF,#6B30FF)",
+                  background:
+                    "linear-gradient(90deg,rgb(156, 79, 223),rgb(76, 16, 216))",
                   color: "#fff",
                   border: "1px solid transparent",
                   boxShadow: "0 2px 8px rgba(0,170,255,0.25)",
