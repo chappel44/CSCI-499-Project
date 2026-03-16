@@ -10,11 +10,27 @@ export default function Login() {
   const [welcomeUsername, setWelcomeUsername] = useState<string | null>(null); // for welcome message
   const navigate = useNavigate();
 
+  const handleForgotPassword = async () => {
+    if (!email) {
+      alert("Enter your email first");
+      return;
+    }
+    const {error} = await supabase.auth.resetPasswordForEmail(email);
+
+    if (error) {
+      alert(error.message);
+    } else {
+      alert("Password reset email sent!");
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     console.log("Logging in with:", { email, password });
     console.log("Form submitted!");
+
+  
 
     // connected with supabase
     const { data, error } = await supabase.auth.signInWithPassword({
@@ -24,6 +40,7 @@ export default function Login() {
     if (error) {
       alert(error.message);
       setLoading(false);
+      return;
     }
     const username = data.user?.user_metadata?.username ?? "there";
     setWelcomeUsername(username); // show welcome message before redirecting
@@ -167,6 +184,7 @@ export default function Login() {
                   </label>
                   <button
                     type="button"
+                    onClick={handleForgotPassword}
                     className="text-xs text-blue-500 hover:underline"
                   >
                     Forgot password?
