@@ -9,6 +9,7 @@ export default async function addToWishlist(
 ) {
   if (!userId) {
     navigate("/login");
+    alert("Not signed in");
     return;
   }
 

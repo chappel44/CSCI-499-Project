@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "../supabase-client";
+import { useUser } from "../Contexts/UserContext";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -9,10 +10,12 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
   const [welcomeUsername, setWelcomeUsername] = useState<string | null>(null); // for welcome message
   const navigate = useNavigate();
+  const { setUserId, setUsername } = useUser();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+
     console.log("Logging in with:", { email, password });
     console.log("Form submitted!");
 
@@ -26,6 +29,8 @@ export default function Login() {
       setLoading(false);
     }
     const username = data.user?.user_metadata?.username ?? "there";
+    setUserId(data?.session?.user?.id || "");
+    setUsername(username);
     setWelcomeUsername(username); // show welcome message before redirecting
     setTimeout(() => {
       navigate("/"); // bring user to homepage on successful login can do navigate(-1) to go to last page

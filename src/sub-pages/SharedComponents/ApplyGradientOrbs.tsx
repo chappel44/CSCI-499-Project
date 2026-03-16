@@ -14,7 +14,7 @@ export default function ApplyGradientOrbs() {
           maxWidth: 700,
           maxHeight: 700,
           background:
-            "radial-gradient(circle, rgba(0,170,255,0.16) 0%, transparent 70%)",
+            "radial-gradient(circle, rgba(0, 153, 255, 0.16) 0%, transparent 70%)",
           borderRadius: "50%",
           filter: "blur(50px)",
         }}
@@ -47,6 +47,21 @@ export default function ApplyGradientOrbs() {
             "radial-gradient(circle, rgba(16,185,129,0.08) 0%, transparent 70%)",
           borderRadius: "50%",
           filter: "blur(40px)",
+        }}
+      />
+      <div
+        style={{
+          position: "absolute",
+          bottom: "-10%",
+          right: "-5%",
+          width: "55vw",
+          height: "55vw",
+          maxWidth: 700,
+          maxHeight: 700,
+          background:
+            "radial-gradient(circle, rgba(109, 43, 172, 0.2) 0%, rgba(107,33,168,0.12) 15%, transparent 70%)",
+          borderRadius: "50%",
+          filter: "blur(50px)",
         }}
       />
     </div>
