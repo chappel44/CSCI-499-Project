@@ -6,6 +6,7 @@ import WhatIsVerifind from "./sub-pages/WhatIsVerifind";
 import Login from "./sub-pages/Login";
 import SignUp from "./sub-pages/SignUp";
 import Settings from "./sub-pages/Settings";
+import Marketplace from "./sub-pages/Marketplace";
 import Layout from "./Contexts/Layout";
 
 function App() {
@@ -18,6 +19,7 @@ function App() {
           <Route path="/search" element={<Search />} />
           <Route path="/wish-list" element={<WishList />} />
           <Route path="/what-is-verifind" element={<WhatIsVerifind />} />
+          <Route path="/marketplace" element={<Marketplace />} />
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<SignUp />} />
           <Route path="/settings" element={<Settings />} />
