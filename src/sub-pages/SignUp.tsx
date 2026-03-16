@@ -8,30 +8,35 @@ export default function SignUp() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [signUpSucces, setSignUpSucess] = useState(false);
+  const [signUpSuccess, setSignUpSuccess] = useState(false); // Tracks whether signup succeeded so we can show the confirmation modal.
   const [okClicked, setOkClicked] = useState(false);
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (loading) return; // Prevents duplicate requests if the user clicks submit more than once.
+
     setLoading(true);
     console.log("Signing up with:", { username, email, password });
     console.log("Form submitted!");
 
-    // connected with supabase
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: { username }, // stores username in raw_user_meta_data so the trigger can pick it up
-      },
-    });
-    if (error) {
-      alert("Sign up failed: " + error.message);
-      setLoading(false);
-    } else {
-      //navigate("/"); // same as login, sends to main page
-      setSignUpSucess(true);
+    try {
+      const { error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: { username }, // stores username in raw_user_meta_data so the trigger can pick it up
+        },
+      });
+
+      if (error) {
+        alert("Sign up failed: " + error.message);
+        return; // Exit early on Supabase errors and let finally reset the loading state.
+      }
+
+      setSignUpSuccess(true); // Opens the success modal after a successful signup request.
+    } finally {
+      setLoading(false); // Always re-enable the submit button, even if signup fails or succeeds.
     }
   };
 
@@ -40,7 +45,7 @@ export default function SignUp() {
       <div className="fixed inset-0 flex items-center justify-center bg-gray-100 z-20">
         <div className="bg-white rounded-lg p-6 w-80 shadow-xl">
           <p className="text-center mb-4 text-black">
-            <strong className="text-3xl">Sign up successful! 🎉</strong> <br />
+            <strong className="text-3xl">Sign up successful!</strong> <br />
             Check your email to confirm your account. <br />
             Look for a message from <strong>Supabase</strong> and click the
             verification link.
@@ -48,7 +53,7 @@ export default function SignUp() {
           <button
             onClick={() => {
               setOkClicked(true);
-              setSignUpSucess(false);
+              setSignUpSuccess(false); // Closes the success modal after the user confirms it.
             }}
             className="w-full rounded bg-black text-white py-2 cursor-pointer hover:opacity-80"
           >
@@ -77,11 +82,11 @@ export default function SignUp() {
     if (okClicked) {
       navigate("/");
     }
-  }, [okClicked]);
+  }, [okClicked, navigate]); // Includes navigate to satisfy the effect dependency requirements.
 
   return (
     <>
-      {signUpSucces && displaySignUpAlert()}
+      {signUpSuccess && displaySignUpAlert()} {/* Only render the modal after a successful signup. */}
 
       <div className="min-h-screen bg-gray-100 flex items-center justify-center px-4">
         <div className="w-full max-w-sm">
