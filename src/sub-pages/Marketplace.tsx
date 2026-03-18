@@ -7,8 +7,8 @@ export default function Marketplace() {
   const [selectedItem, setSelectedItem] = useState<any>(null);
   const [isPostModalOpen, setIsPostModalOpen] = useState(false);
   const [loggedIn, setLoggedIn] = useState(false);
-  const [currentUserId, setCurrentUserId] = useState<string | null>(null); // Track logged-in user ID
-  const [loading, setLoading] = useState(true);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true); // <-- Now being used!
   
   const [formData, setFormData] = useState({
     title: "",
@@ -22,7 +22,7 @@ export default function Marketplace() {
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
       setLoggedIn(!!data.session);
-      setCurrentUserId(data.session?.user?.id || null); // Save the user's ID
+      setCurrentUserId(data.session?.user?.id || null);
     });
     fetchListings();
   }, []);
@@ -69,7 +69,6 @@ export default function Marketplace() {
     }
   };
 
-  // Delete listing function
   const handleDeleteListing = async (itemId: string) => {
     const confirmDelete = window.confirm("Are you sure you want to delete this listing? This cannot be undone.");
     if (!confirmDelete) return;
@@ -82,8 +81,8 @@ export default function Marketplace() {
     if (error) {
       alert("Error deleting listing: " + error.message);
     } else {
-      setSelectedItem(null); // Close the modal
-      fetchListings(); // Refresh the items grid
+      setSelectedItem(null);
+      fetchListings();
     }
   };
 
@@ -139,34 +138,41 @@ export default function Marketplace() {
           </div>
         </div>
 
-        {/* Listings Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 pb-10">
-          {items.map((item) => (
-            <div key={item.id} className="bg-white/60 backdrop-blur-md rounded-[2rem] p-4 border border-white/50 shadow-sm hover:shadow-xl transition-all duration-300 group flex flex-col">
-              <div className="aspect-square rounded-2xl overflow-hidden mb-4 bg-gray-100">
-                <img 
-                  src={item.images?.[0] || "https://placehold.co/400x400/e2e8f0/64748b?text=No+Image"} 
-                  onError={(e) => { e.currentTarget.src = "https://placehold.co/400x400/e2e8f0/64748b?text=Image+Unavailable"; }}
-                  alt={item.title} 
-                  className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" 
-                />
+        {/* Listings Grid with Loading State */}
+        {loading ? (
+          <div className="flex justify-center items-center py-20 w-full">
+            <div className="w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+          </div>
+        ) : items.length === 0 ? (
+          <div className="text-center py-20 text-gray-500 font-medium text-lg w-full">
+            No items listed yet. Be the first to post!
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 pb-10">
+            {items.map((item) => (
+              <div key={item.id} className="bg-white/60 backdrop-blur-md rounded-[2rem] p-4 border border-white/50 shadow-sm hover:shadow-xl transition-all duration-300 group flex flex-col">
+                <div className="aspect-square rounded-2xl overflow-hidden mb-4 bg-gray-100">
+                  <img 
+                    src={item.images?.[0] || "https://placehold.co/400x400/e2e8f0/64748b?text=No+Image"} 
+                    onError={(e) => { e.currentTarget.src = "https://placehold.co/400x400/e2e8f0/64748b?text=Image+Unavailable"; }}
+                    alt={item.title} 
+                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" 
+                  />
+                </div>
+                <div className="px-2 flex-grow flex flex-col">
+                  <p className="text-[10px] font-bold text-indigo-500 uppercase tracking-widest mb-1">{item.category}</p>
+                  <h3 className="text-xl font-bold text-gray-900 mb-1 truncate">{item.title}</h3>
+                  <p className="text-2xl font-medium mb-4 text-gray-900">
+                    {formatPrice(item.price)}
+                  </p>
+                  <button onClick={() => setSelectedItem(item)} className="w-full mt-auto py-3 bg-gray-900 text-white font-bold rounded-xl hover:bg-black transition-colors">
+                    View Details
+                  </button>
+                </div>
               </div>
-              <div className="px-2 flex-grow flex flex-col">
-                <p className="text-[10px] font-bold text-indigo-500 uppercase tracking-widest mb-1">{item.category}</p>
-                <h3 className="text-xl font-bold text-gray-900 mb-1 truncate">{item.title}</h3>
-                
-                {/* Changed font weight from font-black to font-medium */}
-                <p className="text-2xl font-medium mb-4 text-gray-900">
-                  {formatPrice(item.price)}
-                </p>
-                
-                <button onClick={() => setSelectedItem(item)} className="w-full mt-auto py-3 bg-gray-900 text-white font-bold rounded-xl hover:bg-black transition-colors">
-                  View Details
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* MODAL: POST LISTING */}
@@ -263,8 +269,6 @@ export default function Marketplace() {
               </div>
               
               <h2 className="text-3xl md:text-4xl font-black text-gray-900 mb-4 leading-tight">{selectedItem.title}</h2>
-              
-              {/* Changed font weight from font-black to font-medium */}
               <p className="text-4xl font-medium mb-8 text-gray-900">
                 {formatPrice(selectedItem.price)}
               </p>
@@ -286,7 +290,6 @@ export default function Marketplace() {
                 </div>
               </div>
 
-              {/* Conditional Button: Delete if owner, otherwise Message Seller */}
               {currentUserId === selectedItem.user_id ? (
                 <button 
                   onClick={() => handleDeleteListing(selectedItem.id)}
@@ -300,7 +303,6 @@ export default function Marketplace() {
                   Message Seller
                 </button>
               )}
-
             </div>
           </div>
         </div>
