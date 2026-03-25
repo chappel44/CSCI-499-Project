@@ -53,12 +53,21 @@ cd CSCI-499-Project
 npm install
 ```
 
-3. **Start the Backend Server:**
+3. **Create Environment Variables:**
+Create a file named `.env` in the root directory and add the following:
+
+```env
+VITE_SUPABASE_URL=your_supabase_project_url
+VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
+SERPAPI_KEY=your_serpapi_api_key
+```
+
+4. **Start the Backend Server:**
 ```bash
 node server.js
 ```
 
-4. **Start the Frontend:**
+5. **Start the Frontend:**
 ```bash
 npm run dev
 ```
