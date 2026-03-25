@@ -18,6 +18,16 @@ export type EnrichedItem = WishlistItem & {
   old_price?: string;
 };
 
+export type WatchPriority = "low" | "medium" | "high";
+
+export type WatchStatus = "watching" | "ready-to-buy" | "bought";
+
+export type WatchMeta = {
+  note: string;
+  priority: WatchPriority;
+  status: WatchStatus;
+};
+
 export type OtherWishlistItem = {
   //from supabase for other people's wishlists
   product_title: string;

@@ -13,13 +13,12 @@ export function DiplaySearchesLeft() {
 
     async function fetchUsage() {
       try {
-        const res = await fetch("http://localhost:3001/api/serp-usage"); // <-- Express backend
+        const res = await fetch("http://localhost:3001/api/serp-usage");
         if (!res.ok) throw new Error(`HTTP error ${res.status}`);
         const data: SerpResult = await res.json();
         setSerpResults(data);
-      } catch (err: any) {
+      } catch (err) {
         console.error(err);
-      } finally {
       }
     }
     fetchUsage();
@@ -29,10 +28,10 @@ export function DiplaySearchesLeft() {
     <>
       {serpResult && (
         <>
-          <p className="text-black text-3xl">
+          <p className="search-stats text-black text-3xl">
             Searches this month: {serpResult.this_month_usage}
           </p>
-          <p className="text-black text-3xl mb-8">
+          <p className="search-stats text-black text-3xl mb-8">
             Searches Left: {serpResult.plan_searches_left}
           </p>
         </>

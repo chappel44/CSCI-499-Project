@@ -34,10 +34,10 @@ export default function RetailerDropdown() {
   }, [openPage]);
 
   return (
-    <div className="relative" ref={dropdownRef}>
+    <div className="relative z-40" ref={dropdownRef}>
       <button
         type="button"
-        className="flex items-center w-48 gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition hover:opacity-90 shadow-md"
+        className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition hover:opacity-90 shadow-md whitespace-nowrap"
         style={{
           background: "linear-gradient(90deg,#00AAFF,#6B30FF)",
           color: "#fff",
@@ -63,7 +63,7 @@ export default function RetailerDropdown() {
       </button>
 
       <div
-        className={`absolute top-full left-0 mt-2 rounded-xl border shadow-lg flex flex-col overflow-hidden transition-all duration-200
+        className={`search-retailer-menu absolute top-full left-0 mt-2 rounded-xl border shadow-lg flex flex-col overflow-hidden transition-all duration-200 z-50
               ${
                 searchOptionsOpen
                   ? "opacity-100 scale-100"
@@ -82,7 +82,7 @@ export default function RetailerDropdown() {
               setSearchOptionsOpen(false);
               setSelectedRetailer(retailer.label);
             }}
-            className=" py-2.5 px-4 text-sm text-left text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition cursor-pointer"
+            className="search-retailer-option py-2.5 px-4 text-sm text-left text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition cursor-pointer"
           >
             {retailer.label}
           </button>

@@ -10,9 +10,10 @@ import type {
   EnrichedItem,
   OtherWishlistItem,
   PricePoint,
+  WatchMeta,
 } from "../sub-pages/WishList/wish-list-structures/wishListStructs";
 import { supabase } from "../supabase-client";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 
 type WishlistContextType = {
   items: EnrichedItem[];
@@ -50,6 +51,8 @@ type WishlistContextType = {
 
   filterDropOnly: boolean;
   setFilterDropOnly: React.Dispatch<SetStateAction<boolean>>;
+  watchMeta: Record<string, WatchMeta>;
+  updateWatchMeta: (itemId: string, updates: Partial<WatchMeta> | null) => void;
 };
 
 const WishlistContext = createContext<WishlistContextType | undefined>(
@@ -59,6 +62,7 @@ const WishlistContext = createContext<WishlistContextType | undefined>(
 export function WishlistProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<EnrichedItem[]>([]);
   const navigate = useNavigate();
+  const location = useLocation();
   const [priceHistory, setPriceHistory] = useState<
     Record<string, PricePoint[]>
   >({});
@@ -75,6 +79,27 @@ export function WishlistProvider({ children }: { children: ReactNode }) {
     "none" | "price-asc" | "price-desc" | "alpha" | "drop"
   >("none");
   const [filterDropOnly, setFilterDropOnly] = useState(false);
+  const [watchMeta, setWatchMeta] = useState<Record<string, WatchMeta>>({});
+
+  const updateWatchMeta = (itemId: string, updates: Partial<WatchMeta> | null) => {
+    setWatchMeta((prev) => {
+      if (updates === null) {
+        const next = { ...prev };
+        delete next[itemId];
+        return next;
+      }
+
+      return {
+        ...prev,
+        [itemId]: {
+          note: prev[itemId]?.note ?? "",
+          priority: prev[itemId]?.priority ?? "medium",
+          status: prev[itemId]?.status ?? "watching",
+          ...updates,
+        },
+      };
+    });
+  };
 
   async function fetchWishlist(userId: string) {
     const { data, error } = await supabase
@@ -95,7 +120,13 @@ export function WishlistProvider({ children }: { children: ReactNode }) {
       const { data } = await supabase.auth.getSession();
 
       if (!data.session) {
-        navigate("/login");
+        setItems([]);
+        setWatchMeta({});
+
+        if (location.pathname === "/wish-list") {
+          navigate("/login");
+        }
+
         return;
       }
 
@@ -104,7 +135,46 @@ export function WishlistProvider({ children }: { children: ReactNode }) {
     }
 
     checkSession();
-  }, [navigate]);
+  }, [navigate, location.pathname]);
+
+  useEffect(() => {
+    async function loadWatchMeta() {
+      const { data } = await supabase.auth.getSession();
+      const userId = data.session?.user.id;
+
+      if (!userId) return;
+
+      const saved = window.localStorage.getItem(`wishlist-watch-meta:${userId}`);
+      if (!saved) {
+        setWatchMeta({});
+        return;
+      }
+
+      try {
+        setWatchMeta(JSON.parse(saved) as Record<string, WatchMeta>);
+      } catch {
+        setWatchMeta({});
+      }
+    }
+
+    loadWatchMeta();
+  }, []);
+
+  useEffect(() => {
+    async function persistWatchMeta() {
+      const { data } = await supabase.auth.getSession();
+      const userId = data.session?.user.id;
+
+      if (!userId) return;
+
+      window.localStorage.setItem(
+        `wishlist-watch-meta:${userId}`,
+        JSON.stringify(watchMeta)
+      );
+    }
+
+    persistWatchMeta();
+  }, [watchMeta]);
 
   return (
     <WishlistContext.Provider
@@ -128,6 +198,8 @@ export function WishlistProvider({ children }: { children: ReactNode }) {
         setSortBy,
         filterDropOnly,
         setFilterDropOnly,
+        watchMeta,
+        updateWatchMeta,
       }}
     >
       {children}

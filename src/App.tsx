@@ -6,6 +6,8 @@ import WhatIsVerifind from "./sub-pages/WhatIsVerifind";
 import Login from "./sub-pages/Login";
 import SignUp from "./sub-pages/SignUp";
 import Settings from "./sub-pages/Settings";
+import ForgotPassword from "./sub-pages/ForgotPassword";
+import ResetPassword from "./sub-pages/ResetPassword";
 import Layout from "./Contexts/Layout";
 
 function App() {
@@ -20,6 +22,9 @@ function App() {
           <Route path="/what-is-verifind" element={<WhatIsVerifind />} />
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<SignUp />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
+          <Route path="/profile" element={<Settings />} />
           <Route path="/settings" element={<Settings />} />
         </Routes>
       </Layout>

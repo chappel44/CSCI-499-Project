@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "../supabase-client";
+import { useUser } from "../Contexts/UserContext";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -9,20 +10,7 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
   const [welcomeUsername, setWelcomeUsername] = useState<string | null>(null); // for welcome message
   const navigate = useNavigate();
-
-  const handleForgotPassword = async () => {
-    if (!email) {
-      alert("Enter your email first");
-      return;
-    }
-    const {error} = await supabase.auth.resetPasswordForEmail(email);
-
-    if (error) {
-      alert(error.message);
-    } else {
-      alert("Password reset email sent!");
-    }
-  };
+  const {setUserId} = useUser()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -43,6 +31,7 @@ export default function Login() {
       return;
     }
     const username = data.user?.user_metadata?.username ?? "there";
+    setUserId(data?.user?.id)
     setWelcomeUsername(username); // show welcome message before redirecting
     setTimeout(() => {
       navigate("/"); // bring user to homepage on successful login can do navigate(-1) to go to last page
@@ -83,12 +72,6 @@ export default function Login() {
       <div className="w-full max-w-sm">
         {/* Card */}
         <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
-          {/* Top accent bar */}
-          <div
-            className="h-1 w-full"
-            style={{ background: "linear-gradient(90deg,#00AAFF,#6B30FF)" }}
-          />
-
           <div className="px-8 py-10 flex flex-col items-center">
             {/* Logo */}
             <div className="flex items-center gap-2.5 mb-2">
@@ -134,8 +117,7 @@ export default function Login() {
               <span
                 className="text-2xl font-extrabold tracking-tight"
                 style={{
-                  background:
-                    "linear-gradient(90deg,#1A1A2E 43%,#0088DD 44%,#6B30FF 100%)",
+                  background: "linear-gradient(90deg,#00AAFF,#6B30FF)",
                   WebkitBackgroundClip: "text",
                   WebkitTextFillColor: "transparent",
                   backgroundClip: "text",
@@ -182,13 +164,12 @@ export default function Login() {
                   <label className="text-xs font-semibold text-gray-600 uppercase tracking-wide">
                     Password
                   </label>
-                  <button
-                    type="button"
-                    onClick={handleForgotPassword}
+                  <Link
+                    to="/forgot-password"
                     className="text-xs text-blue-500 hover:underline"
                   >
                     Forgot password?
-                  </button>
+                  </Link>
                 </div>
                 <div className="relative">
                   <input
