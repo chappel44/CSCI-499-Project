@@ -36,8 +36,31 @@ name/role/contributions
 
 ## Getting Started
 
-1. **Clone the repository:**
+### Prerequisites
+* **Node.js** (v18 or higher recommended)
+* **npm** or **yarn**
 
-```bash
-git clone https://github.com/yourusername/verifind.git
-cd verifind
+### Installation & Setup
+
+1. **Clone the repository:**
+   ```bash
+   git clone https://github.com/chappel44/CSCI-499-Project.git
+   cd CSCI-499-Project
+```
+
+2. **Install dependencies:**
+    ```bash 
+    npm install
+    ```
+
+3. **Start the Backend Server:**
+    ```bash
+    node server.js
+    ```
+
+4. **Start the Frontend:**
+    ```bash
+    npm run dev
+    ```
+
+> **Note:** Vite will provide a local link in your terminal (usually http://localhost:5173).
