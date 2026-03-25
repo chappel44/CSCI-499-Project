@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { useWishlist } from "../../Contexts/WishListContext";
 import ApplyGradientOrbs from "../SharedComponents/ApplyGradientOrbs";
 import { SearchOtherWishlist } from "./wish-list-components/SearchOtherWishlists";
@@ -9,15 +10,27 @@ import SignUpForDeals from "./wish-list-components/SignUpForDeals";
 import sortWishlist from "./wish-list-hooks/sortWishlist";
 import DisplayWishlist from "./wish-list-components/DisplayWishlist";
 import DisplayWishlistActions from "./wish-list-components/DisplayWishlistActions";
+import { useSearchOtherWishlist } from "./wishlist-custom-hooks/searchOtherWishlist";
 
 function WishList() {
-  const { items, searchQuery, sortBy, filterDropOnly } = useWishlist();
+  const { items, searchQuery, sortBy, filterDropOnly, setOtherUsername } =
+    useWishlist();
+  const { searchOtherWishlist } = useSearchOtherWishlist();
+  const [searchParams] = useSearchParams();
 
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
     setTimeout(() => setVisible(true), 50);
   }, []);
+
+  useEffect(() => {
+    const sharedUsername = searchParams.get("user")?.trim();
+    if (!sharedUsername) return;
+
+    setOtherUsername(sharedUsername);
+    searchOtherWishlist(sharedUsername);
+  }, [searchOtherWishlist, searchParams, setOtherUsername]);
 
   // sort + filter logic applied on top of search filter
   const filteredItems = sortWishlist(
@@ -29,7 +42,7 @@ function WishList() {
 
   return (
     <div
-      className="min-h-screen flex flex-col text-gray-900 overflow-x-hidden"
+      className="wishlist-page min-h-screen flex flex-col text-gray-900 overflow-x-hidden"
       style={{ background: "#f0f4ff" }}
     >
       {/* Mesh gradient background orbs — same as Search & WhatIsVerifind for consistency */}
@@ -37,7 +50,7 @@ function WishList() {
 
       {/* Sticky header — frosted glass */}
       <div
-        className="sticky top-0 z-30 px-6 py-6 flex justify-center items-center border-b"
+        className="wishlist-sticky-header sticky top-0 z-30 px-6 py-6 flex justify-center items-center border-b"
         style={{
           background: "rgba(240,244,255,0.7)",
           backdropFilter: "blur(16px)",
@@ -64,7 +77,7 @@ function WishList() {
 
       {/* Bottom sections — frosted glass panels */}
       <div
-        className="relative z-10 w-full px-6 mt-6 flex flex-col items-center gap-4 pb-8"
+        className="wishlist-bottom relative z-10 w-full px-6 mt-6 flex flex-col items-center gap-4 pb-8"
         style={{
           opacity: visible ? 1 : 0,
           transition: "opacity 0.6s ease 0.4s",

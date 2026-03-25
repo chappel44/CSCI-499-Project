@@ -12,7 +12,7 @@ export default function SearchShareWishlist({
 
   return (
     <div
-      className="relative z-10 mt-4 px-6 flex justify-center items-center gap-2 flex-wrap"
+      className="wishlist-search-row relative z-10 mt-4 px-6 flex justify-center items-center gap-2 flex-wrap"
       style={{
         opacity: visible ? 1 : 0,
         transform: visible ? "translateY(0)" : "translateY(10px)",
@@ -24,7 +24,7 @@ export default function SearchShareWishlist({
         placeholder="Search your wishlist..."
         value={searchQuery}
         onChange={(e) => setSearchQuery(e.target.value)}
-        className="flex-1 min-w-0 max-w-md px-4 py-2 rounded-xl focus:outline-none transition"
+        className="wishlist-search-input flex-1 min-w-0 max-w-md px-4 py-2 rounded-xl focus:outline-none transition"
         style={{
           background: "rgba(255,255,255,0.7)",
           backdropFilter: "blur(12px)",

@@ -22,7 +22,7 @@ export default function SearchSuggestions({ visible }: SearchSuggestionsProps) {
           }}
         >
           <div
-            className="relative flex flex-col items-center rounded-2xl px-6 md:px-10 pt-24 pb-8 space-y-4"
+            className="search-suggestions-card relative flex flex-col items-center rounded-2xl px-6 md:px-10 pt-24 pb-8 space-y-4"
             style={{
               background: "rgba(255,255,255,0.6)",
               backdropFilter: "blur(16px)",
@@ -36,7 +36,7 @@ export default function SearchSuggestions({ visible }: SearchSuggestionsProps) {
               alt="Search illustration"
             />
 
-            <p className="max-w-xs mt-20 md:mt-40 text-center text-gray-400 text-sm z-10">
+            <p className="search-suggestions-copy max-w-xs mt-20 md:mt-40 text-center text-gray-400 text-sm z-10">
               Start by searching for a product name, keyword, or ASIN.
             </p>
 
@@ -44,7 +44,7 @@ export default function SearchSuggestions({ visible }: SearchSuggestionsProps) {
               {searches.map((item, index) => (
                 <button
                   key={item}
-                  className={`flex cursor-pointer items-center justify-start gap-2 px-3 py-2 rounded-xl transition-all duration-200 ${
+                  className={`search-suggestion-chip flex cursor-pointer items-center justify-start gap-2 px-3 py-2 rounded-xl transition-all duration-200 ${
                     index === 3 ? "col-start-2" : ""
                   }`}
                   style={{
@@ -81,7 +81,7 @@ export default function SearchSuggestions({ visible }: SearchSuggestionsProps) {
             </div>
 
             <div
-              className="px-4 py-3 rounded-xl w-full"
+              className="search-verified-banner px-4 py-3 rounded-xl w-full"
               style={{
                 background: "rgba(16,185,129,0.06)",
                 border: "1px solid rgba(16,185,129,0.15)",

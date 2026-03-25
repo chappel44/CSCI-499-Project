@@ -59,7 +59,7 @@ function WhatIsVerifind() {
   }, []);
 
   return (
-    <div className="min-h-screen flex flex-col text-gray-900 overflow-x-hidden" style={{ background: "#f0f4ff" }}>
+    <div className="wiv-page min-h-screen flex flex-col text-gray-900 overflow-x-hidden" style={{ background: "#f0f4ff" }}>
 
       {/* Mesh gradient background orbs */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden" style={{ zIndex: 0 }}>
@@ -84,7 +84,7 @@ function WhatIsVerifind() {
       </div>
 
       {/* Sticky header */}
-      <div className="sticky top-0 z-30 px-6 py-4 flex justify-center items-center backdrop-blur-xl border-b" style={{ background: "rgba(240,244,255,0.7)", borderColor: "rgba(0,170,255,0.15)" }}>
+      <div className="wiv-sticky-header sticky top-0 z-30 px-6 py-4 flex justify-center items-center backdrop-blur-xl border-b" style={{ background: "rgba(240,244,255,0.7)", borderColor: "rgba(0,170,255,0.15)" }}>
         <div className="flex items-center gap-2.5">
           <svg width="26" height="26" viewBox="0 0 52 52" fill="none">
             <defs>
@@ -97,10 +97,17 @@ function WhatIsVerifind() {
             <polyline points="14,22 20,28 31,15" fill="none" stroke="url(#wiv-lg)" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
             <line x1="31" y1="31" x2="42" y2="42" stroke="url(#wiv-lg)" strokeWidth="3.4" strokeLinecap="round" />
           </svg>
-          <span className="text-xl font-extrabold tracking-tight" style={{
-            background: "linear-gradient(90deg,#1A1A2E 43%,#0088DD 44%,#6B30FF 100%)",
-            WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text",
-          }}>Verifind</span>
+          <span
+            className="text-xl font-extrabold tracking-tight"
+            style={{
+              background: "linear-gradient(90deg,#00AAFF,#6B30FF)",
+              WebkitBackgroundClip: "text",
+              WebkitTextFillColor: "transparent",
+              backgroundClip: "text",
+            }}
+          >
+            Verifind
+          </span>
         </div>
       </div>
 
@@ -108,8 +115,11 @@ function WhatIsVerifind() {
       <div className="relative z-10 flex flex-col items-center text-center px-6 pt-16 pb-14">
         {username && (
           <div
-            className="mb-5 px-4 py-1.5 rounded-full text-sm backdrop-blur-md border"
-            style={{ background: "rgba(255,255,255,0.5)", borderColor: "rgba(0,170,255,0.25)" }}
+            className="greet-user-pill mb-5 px-4 py-1.5 rounded-full text-sm backdrop-blur-md border"
+            style={{
+              background: "rgba(255,255,255,0.55)",
+              borderColor: "rgba(0,170,255,0.2)",
+            }}
           >
             Welcome back,{" "}
             <span className="font-semibold" style={{
@@ -127,19 +137,21 @@ function WhatIsVerifind() {
         </div>
 
         <h2
-          className="text-5xl font-black mb-5 leading-tight"
+          className="wiv-title text-5xl font-black mb-5 leading-tight"
           style={{
             opacity: visible ? 1 : 0, transform: visible ? "translateY(0)" : "translateY(20px)",
             transition: "opacity 0.6s ease, transform 0.6s ease",
-            background: "linear-gradient(135deg, #0f172a 0%, #0088DD 50%, #6B30FF 100%)",
-            WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text",
+            background: "linear-gradient(90deg,#00AAFF,#6B30FF)",
+            WebkitBackgroundClip: "text",
+            WebkitTextFillColor: "transparent",
+            backgroundClip: "text",
           }}
         >
           What is VeriFind?
         </h2>
 
         <p
-          className="text-gray-500 text-base leading-relaxed max-w-xl mb-10"
+          className="wiv-copy text-gray-500 text-base leading-relaxed max-w-xl mb-10"
           style={{
             opacity: visible ? 1 : 0, transform: visible ? "translateY(0)" : "translateY(16px)",
             transition: "opacity 0.6s ease 0.1s, transform 0.6s ease 0.1s",
@@ -161,7 +173,7 @@ function WhatIsVerifind() {
           {stats.map(({ value, label }) => (
             <div
               key={label}
-              className="flex flex-col items-center px-8 py-4 rounded-2xl backdrop-blur-md"
+              className="wiv-stat-card flex flex-col items-center px-8 py-4 rounded-2xl backdrop-blur-md"
               style={{
                 background: "rgba(255,255,255,0.55)",
                 border: "1px solid rgba(255,255,255,0.7)",
@@ -193,13 +205,13 @@ function WhatIsVerifind() {
           Built by four, designed for all
         </h2>
 
-        <div className="flex flex-wrap justify-center gap-5">
+        <div className="wiv-team-grid flex flex-wrap justify-center gap-5">
           {teamMembers.map((member, i) => {
             const initials = member.name.split(" ").map((n) => n[0]).join("");
             return (
               <div
                 key={member.name}
-                className="group relative flex flex-col w-52 rounded-2xl p-5 cursor-default transition-all duration-300 hover:-translate-y-2"
+                className="wiv-team-card group relative flex flex-col w-52 rounded-2xl p-5 cursor-default transition-all duration-300 hover:-translate-y-2"
                 style={{
                   background: "rgba(255,255,255,0.55)",
                   backdropFilter: "blur(16px)",
@@ -255,7 +267,7 @@ function WhatIsVerifind() {
       </div>
 
       {/* Why VeriFind section */}
-      <div className="relative z-10 mx-4 mb-8 rounded-3xl p-8 flex flex-col items-center text-center" style={{
+      <div className="wiv-mission relative z-10 mx-4 mb-8 rounded-3xl p-8 flex flex-col items-center text-center" style={{
         background: "rgba(255,255,255,0.50)",
         backdropFilter: "blur(20px)",
         WebkitBackdropFilter: "blur(20px)",

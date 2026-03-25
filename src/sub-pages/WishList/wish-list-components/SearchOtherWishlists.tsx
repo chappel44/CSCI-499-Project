@@ -26,12 +26,12 @@ export function SearchOtherWishlist({ visible }: SearchOtherWishlistProps) {
       }}
     >
       <div
-        className="w-full max-w-md rounded-2xl p-5"
+        className="wishlist-other-card w-full max-w-md rounded-2xl p-5"
         style={{
           background: "rgba(255,255,255,0.55)",
           backdropFilter: "blur(14px)",
           border: "1px solid rgba(255,255,255,0.75)",
-          boxShadow: "0 4px 24px rgba(0,0,0,0.06)",
+          boxShadow: "0 12px 40px rgba(31,38,135,0.14)",
         }}
       >
         <h3 className="text-base font-bold text-gray-900 mb-3">
@@ -47,14 +47,14 @@ export function SearchOtherWishlist({ visible }: SearchOtherWishlistProps) {
               setOtherItems(null);
               setOtherNotFound(false);
             }}
-            className="flex-1 px-3 py-2 rounded-xl text-sm focus:outline-none transition"
+            className="wishlist-other-input flex-1 px-3 py-2 rounded-xl text-sm focus:outline-none transition"
             style={{
               background: "rgba(255,255,255,0.7)",
               border: "1px solid rgba(0,0,0,0.08)",
             }}
           />
           <button
-            onClick={searchOtherWishlist}
+            onClick={() => void searchOtherWishlist()}
             disabled={otherLoading}
             className="px-4 py-2 rounded-xl text-sm font-semibold text-white transition hover:opacity-90 shadow-md disabled:opacity-60"
             style={{ background: "linear-gradient(90deg,#00AAFF,#6B30FF)" }}
@@ -78,7 +78,7 @@ export function SearchOtherWishlist({ visible }: SearchOtherWishlistProps) {
               {otherItems.map((item, index) => (
                 <div
                   key={index}
-                  className="flex items-center gap-3 rounded-xl p-3"
+                  className="wishlist-other-item flex items-center gap-3 rounded-xl p-3"
                   style={{
                     background: "rgba(255,255,255,0.7)",
                     border: "1px solid rgba(0,0,0,0.06)",
