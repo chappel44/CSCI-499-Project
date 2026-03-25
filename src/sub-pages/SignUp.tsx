@@ -2,6 +2,11 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom"; // so that we can send to Login Page :)
 import { supabase } from "../supabase-client";
 
+const SIGNUP_COOLDOWN_SECONDS = 45;
+const SIGNUP_FAIL_LIMIT = 4;
+const SIGNUP_FAIL_KEY = "signup-failed-attempts";
+const SIGNUP_LOCK_KEY = "signup-locked-until";
+
 export default function SignUp() {
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
@@ -11,30 +16,77 @@ export default function SignUp() {
   const [loading, setLoading] = useState(false);
   const [signUpSuccess, setSignUpSuccess] = useState(false); // Tracks whether signup succeeded so we can show the confirmation modal.
   const [okClicked, setOkClicked] = useState(false);
+  const [cooldownRemaining, setCooldownRemaining] = useState(0);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const lockedUntil = Number(window.sessionStorage.getItem(SIGNUP_LOCK_KEY));
+    if (!lockedUntil) return;
+
+    const nextRemaining = Math.max(
+      Math.ceil((lockedUntil - Date.now()) / 1000),
+      0
+    );
+    setCooldownRemaining(nextRemaining);
+  }, []);
+
+  useEffect(() => {
+    if (cooldownRemaining <= 0) return;
+
+    const timer = window.setInterval(() => {
+      setCooldownRemaining((prev) => {
+        if (prev <= 1) {
+          window.clearInterval(timer);
+          window.sessionStorage.removeItem(SIGNUP_LOCK_KEY);
+          window.sessionStorage.removeItem(SIGNUP_FAIL_KEY);
+          return 0;
+        }
+
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => window.clearInterval(timer);
+  }, [cooldownRemaining]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (loading) return; // Prevents duplicate requests if the user clicks submit more than once.
+    if (loading || cooldownRemaining > 0) return; // Prevents duplicate requests if the user clicks submit more than once.
 
     setLoading(true);
-    console.log("Signing up with:", { username, email, password });
-    console.log("Form submitted!");
+    setErrorMessage(null);
 
     try {
       const { error } = await supabase.auth.signUp({
-        email,
+        email: email.trim(),
         password,
         options: {
-          data: { username }, // stores username in raw_user_meta_data so the trigger can pick it up
+          data: { username: username.trim() }, // stores username in raw_user_meta_data so the trigger can pick it up
         },
       });
 
       if (error) {
-        alert("Sign up failed: " + error.message);
+        const failedAttempts =
+          Number(window.sessionStorage.getItem(SIGNUP_FAIL_KEY) ?? "0") + 1;
+        window.sessionStorage.setItem(SIGNUP_FAIL_KEY, failedAttempts.toString());
+
+        if (failedAttempts >= SIGNUP_FAIL_LIMIT) {
+          const lockedUntil = Date.now() + SIGNUP_COOLDOWN_SECONDS * 1000;
+          window.sessionStorage.setItem(SIGNUP_LOCK_KEY, lockedUntil.toString());
+          setCooldownRemaining(SIGNUP_COOLDOWN_SECONDS);
+          setErrorMessage(
+            `Too many sign up attempts. Please wait ${SIGNUP_COOLDOWN_SECONDS}s and try again.`
+          );
+        } else {
+          setErrorMessage("We could not create the account with those details.");
+        }
+
         return; // Exit early on Supabase errors and let finally reset the loading state.
       }
 
+      window.sessionStorage.removeItem(SIGNUP_FAIL_KEY);
+      window.sessionStorage.removeItem(SIGNUP_LOCK_KEY);
       setSignUpSuccess(true); // Opens the success modal after a successful signup request.
     } finally {
       setLoading(false); // Always re-enable the submit button, even if signup fails or succeeds.
@@ -78,7 +130,8 @@ export default function SignUp() {
     password.length < 8 ||
     !/\d/.test(password) ||
     !/[@$!%*?&]/.test(password) ||
-    confirmPassword !== password;
+    confirmPassword !== password ||
+    cooldownRemaining > 0;
 
   useEffect(() => {
     if (okClicked) {
@@ -338,6 +391,16 @@ export default function SignUp() {
                   )}
                 </div>
 
+                {errorMessage && (
+                  <p className="text-xs text-red-500">{errorMessage}</p>
+                )}
+
+                {cooldownRemaining > 0 && (
+                  <p className="text-xs text-amber-600">
+                    Please wait {cooldownRemaining}s before trying to create another account.
+                  </p>
+                )}
+
                 {/* Submit */}
                 <button
                   type="submit"
@@ -374,6 +437,8 @@ export default function SignUp() {
                       </svg>
                       Creating account...
                     </>
+                  ) : cooldownRemaining > 0 ? (
+                    `Wait ${cooldownRemaining}s`
                   ) : (
                     "Create Account"
                   )}
