@@ -1,16 +1,46 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "../supabase-client";
+
+const RESET_COOLDOWN_SECONDS = 60;
+const RESET_COOLDOWN_KEY = "forgot-password-last-request-at";
 
 export default function ForgotPassword() {
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [cooldownRemaining, setCooldownRemaining] = useState(0);
+
+  useEffect(() => {
+    const lastSentAt = Number(window.sessionStorage.getItem(RESET_COOLDOWN_KEY));
+    if (!lastSentAt) return;
+
+    const elapsedSeconds = Math.floor((Date.now() - lastSentAt) / 1000);
+    const nextRemaining = Math.max(RESET_COOLDOWN_SECONDS - elapsedSeconds, 0);
+    setCooldownRemaining(nextRemaining);
+  }, []);
+
+  useEffect(() => {
+    if (cooldownRemaining <= 0) return;
+
+    const timer = window.setInterval(() => {
+      setCooldownRemaining((prev) => {
+        if (prev <= 1) {
+          window.clearInterval(timer);
+          return 0;
+        }
+
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => window.clearInterval(timer);
+  }, [cooldownRemaining]);
 
   const handleSendReset = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email.trim()) return;
+    if (!email.trim() || loading || cooldownRemaining > 0) return;
 
     setLoading(true);
     setSent(false);
@@ -24,6 +54,11 @@ export default function ForgotPassword() {
       setErrorMessage(error.message);
     } else {
       setSent(true);
+      window.sessionStorage.setItem(
+        RESET_COOLDOWN_KEY,
+        Date.now().toString()
+      );
+      setCooldownRemaining(RESET_COOLDOWN_SECONDS);
     }
 
     setLoading(false);
@@ -119,13 +154,23 @@ export default function ForgotPassword() {
                 </p>
               )}
 
+              {cooldownRemaining > 0 && (
+                <p className="text-xs text-amber-600">
+                  Please wait {cooldownRemaining}s before sending another reset link.
+                </p>
+              )}
+
               <button
                 type="submit"
-                disabled={loading || !email.trim()}
+                disabled={loading || !email.trim() || cooldownRemaining > 0}
                 className="w-full mt-1 py-2.5 rounded-xl text-white text-sm font-semibold transition-all duration-200 flex items-center justify-center gap-2 hover:opacity-90 shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
                 style={{ background: "linear-gradient(90deg,#00AAFF,#6B30FF)" }}
               >
-                {loading ? "Sending..." : "Send Reset Link"}
+                {loading
+                  ? "Sending..."
+                  : cooldownRemaining > 0
+                    ? `Wait ${cooldownRemaining}s`
+                    : "Send Reset Link"}
               </button>
             </form>
 
