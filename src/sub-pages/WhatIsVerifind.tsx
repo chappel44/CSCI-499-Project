@@ -302,6 +302,74 @@ function WhatIsVerifind() {
         </div>
       </div>
 
+      {/* Community section */}
+      <div className="relative z-10 mx-4 mb-8">
+        <div className="text-center mb-5">
+          <div className="inline-block mb-2 px-3 py-1 rounded-full text-xs font-semibold tracking-widest uppercase" style={{ background: "rgba(88,101,242,0.08)", color: "#5865F2", border: "1px solid rgba(88,101,242,0.15)" }}>
+            Community
+          </div>
+          <h3 className="text-xl font-black text-gray-900">Stay connected</h3>
+          <p className="text-sm text-gray-400 mt-1">Join the Verifind community for deals, updates and more</p>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-2xl mx-auto">
+
+          {/* Discord */}
+          <a
+            href=""
+            target="_blank"
+            rel="noopener noreferrer"
+            className="group flex items-center gap-4 px-5 py-5 rounded-2xl transition-all duration-200 hover:-translate-y-1"
+            style={{ background: "rgba(217, 129, 129, 0.65)", backdropFilter: "blur(14px)", WebkitBackdropFilter: "blur(14px)", border: "1px solid rgba(88,101,242,0.2)", boxShadow: "0 4px 20px rgba(88,101,242,0.08)", textDecoration: "none" }}
+          >
+            <div className="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0 transition-transform duration-200 group-hover:scale-110" style={{ background: "rgba(88,101,242,0.10)" }}>
+              <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none">
+                <path d="M20.317 4.37a19.791 19.791 0 00-4.885-1.515.074.074 0 00-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 00-5.487 0 12.64 12.64 0 00-.617-1.25.077.077 0 00-.079-.037A19.736 19.736 0 003.677 4.37a.07.07 0 00-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 00.031.057 19.9 19.9 0 005.993 3.03.078.078 0 00.084-.028c.462-.63.874-1.295 1.226-1.994a.076.076 0 00-.041-.106 13.107 13.107 0 01-1.872-.892.077.077 0 01-.008-.128 10.2 10.2 0 00.372-.292.074.074 0 01.077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 01.078.01c.12.098.246.198.373.292a.077.077 0 01-.006.127 12.299 12.299 0 01-1.873.892.077.077 0 00-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 00.084.028 19.839 19.839 0 006.002-3.03.077.077 0 00.032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 00-.031-.03z" fill="#5865F2" />
+              </svg>
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-bold text-gray-800 group-hover:text-indigo-600 transition-colors">Join our Discord</p>
+              <p className="text-xs text-gray-400 mt-0.5">Chat with the community, get support, share deals</p>
+            </div>
+            <div className="flex-shrink-0 w-7 h-7 rounded-xl flex items-center justify-center transition-colors" style={{ background: "rgba(130, 134, 177, 0.08)" }}>
+              <svg className="w-3.5 h-3.5 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>
+            </div>
+          </a>
+
+          {/* Instagram */}
+          <a
+            href=""
+            target="_blank"
+            rel="noopener noreferrer"
+            className="group flex items-center gap-4 px-5 py-5 rounded-2xl transition-all duration-200 hover:-translate-y-1"
+            style={{ background: "rgba(212, 136, 136, 0.65)", backdropFilter: "blur(14px)", WebkitBackdropFilter: "blur(14px)", border: "1px solid rgba(225,48,108,0.18)", boxShadow: "0 4px 20px rgba(225,48,108,0.07)", textDecoration: "none" }}
+          >
+            <div className="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0 transition-transform duration-200 group-hover:scale-110" style={{ background: "rgba(225,48,108,0.08)" }}>
+              <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none">
+                <defs>
+                  <linearGradient id="wiv-ig" x1="2" y1="22" x2="22" y2="2" gradientUnits="userSpaceOnUse">
+                    <stop stopColor="#F58529" />
+                    <stop offset="0.5" stopColor="#E1306C" />
+                    <stop offset="1" stopColor="#833AB4" />
+                  </linearGradient>
+                </defs>
+                <rect x="2" y="2" width="20" height="20" rx="5" stroke="url(#wiv-ig)" strokeWidth="2" />
+                <circle cx="12" cy="12" r="4" stroke="url(#wiv-ig)" strokeWidth="2" />
+                <circle cx="17.5" cy="6.5" r="1.2" fill="#E1306C" />
+              </svg>
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-bold text-gray-800 group-hover:text-pink-600 transition-colors">Follow on Instagram</p>
+              <p className="text-xs text-gray-400 mt-0.5">Latest drops, marketplace highlights and updates</p>
+            </div>
+            <div className="flex-shrink-0 w-7 h-7 rounded-xl flex items-center justify-center" style={{ background: "rgba(189, 137, 154, 0.07)" }}>
+              <svg className="w-3.5 h-3.5 text-pink-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>
+            </div>
+          </a>
+
+        </div>
+      </div>
+
       {/* Footer */}
       <div className="relative z-10 w-full py-5 flex justify-center" style={{ borderTop: "1px solid rgba(0,170,255,0.1)" }}>
         <p className="text-xs text-gray-400">&copy; {new Date().getFullYear()} Verifind. All rights reserved.</p>
