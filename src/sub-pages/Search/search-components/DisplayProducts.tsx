@@ -41,7 +41,7 @@ function RetailerIcon({ retailer }: { retailer?: string }) {
     );
 
   const [, url] = match;
-  return <img src={url} alt={retailer} width={13} height={13} />;
+  return <img src={url} alt={retailer} width={25} height={25} />;
 }
 
 export default function DisplayProducts({
