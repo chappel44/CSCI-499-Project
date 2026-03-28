@@ -15,8 +15,10 @@ function RetailerIcon({ retailer }: { retailer?: string }) {
   const normalized = retailer?.toLowerCase();
 
   const logoMap: Record<string, string> = {
-    walmart: "https://cdn.simpleicons.org/walmart/0071CE",
-    amazon: "https://cdn.simpleicons.org/amazon/FF9900",
+    walmart:
+      "https://upload.wikimedia.org/wikipedia/commons/thumb/0/0b/Walmart_logo_%282025%3B_Alt%29.svg/1280px-Walmart_logo_%282025%3B_Alt%29.svg.png",
+    amazon:
+      "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a9/Amazon_logo.svg/960px-Amazon_logo.svg.png?_=20250504041148",
     ebay: "https://cdn.simpleicons.org/ebay/E53238",
   };
 
