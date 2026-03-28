@@ -11,6 +11,37 @@ interface DisplayProductsProps {
   currentProducts: Product[];
 }
 
+function RetailerIcon({ retailer }: { retailer?: string }) {
+  const normalized = retailer?.toLowerCase();
+
+  const logoMap: Record<string, string> = {
+    walmart: "https://cdn.simpleicons.org/walmart/0071CE",
+    amazon: "https://cdn.simpleicons.org/amazon/FF9900",
+    ebay: "https://cdn.simpleicons.org/ebay/E53238",
+  };
+
+  const match = Object.entries(logoMap).find(([key]) =>
+    normalized?.includes(key)
+  );
+
+  if (!match)
+    return (
+      <span
+        className="text-xs font-medium px-1.5 py-0.5 rounded-md"
+        style={{
+          background: "rgba(0,0,0,0.06)",
+          color: "#555",
+          fontSize: "10px",
+        }}
+      >
+        {retailer}
+      </span>
+    );
+
+  const [, url] = match;
+  return <img src={url} alt={retailer} width={13} height={13} />;
+}
+
 export default function DisplayProducts({
   currentProducts,
 }: DisplayProductsProps) {
@@ -20,7 +51,6 @@ export default function DisplayProducts({
 
   const { userId } = useUser();
 
-  // retrigger animation when results change
   useEffect(() => {
     setVisible(false);
     const t = setTimeout(() => setVisible(true), 30);
@@ -42,10 +72,8 @@ export default function DisplayProducts({
               backdropFilter: "blur(14px)",
               border: "1px solid rgba(255,255,255,0.85)",
               boxShadow: "0 2px 16px rgba(0,0,0,0.06)",
-
               opacity: visible ? 1 : 0,
               transform: visible ? "translateY(0)" : "translateY(16px)",
-
               transition: "opacity 0.5s ease, transform 0.5s ease",
               transitionDelay: `${index * 150}ms`,
               willChange: "transform, opacity",
@@ -79,9 +107,13 @@ export default function DisplayProducts({
             )}
 
             <div className="flex-1 flex flex-col gap-1 min-w-0">
-              <h3 className="search-result-title text-sm font-semibold text-gray-900 line-clamp-2">
-                {item.title}
-              </h3>
+              {/* Title row with retailer icon */}
+              <div className="flex items-center gap-1.5 min-w-0">
+                <h3 className="search-result-title text-sm font-semibold text-gray-900 line-clamp-2">
+                  {item.title}
+                </h3>
+                {item.retailer && <RetailerIcon retailer={item.retailer} />}
+              </div>
 
               <p className="search-result-copy text-gray-600 text-xs flex items-center gap-1.5">
                 Rating: <StarRating rating={item?.rating ?? 0} size={14} />{" "}
@@ -105,7 +137,6 @@ export default function DisplayProducts({
                     }
                     className="cursor-pointer text-xs font-semibold px-3 py-1 rounded-lg text-white transition hover:scale-105 transition-all duration-300"
                     style={{
-                      //background: "linear-gradient(90deg,#00AAFF,#6B30FF)",
                       background:
                         "linear-gradient(90deg,rgb(105, 107, 245),rgb(52, 55, 240))",
                       boxShadow:

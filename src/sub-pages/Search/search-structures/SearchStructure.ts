@@ -8,6 +8,7 @@ export type Product = {
   extracted_price?: number;
   rating?: number | undefined;
   reviews?: number;
+  retailer?: string;
 };
 
 export type SerpResult = {

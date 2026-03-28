@@ -29,7 +29,10 @@ export default async function pullProductsFromSerp(
     return [
       ...(retailerData?.featured_products || []),
       ...(retailerData?.organic_results || []),
-    ].map((item) => normalizeProduct(retailer, item));
+    ].map((item) => ({
+      ...normalizeProduct(retailer, item),
+      retailer,
+    }));
   });
 
   console.log("raw data:", data);
