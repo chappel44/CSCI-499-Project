@@ -16,6 +16,7 @@ export type SortByType =
   | "price-desc"
   | "rating-asc"
   | "rating-desc"
+  | "reviews-desc"
   | "title-asc"
   | "title-desc"
   | "discount-desc";
@@ -33,6 +34,12 @@ type MyContextType = {
   setAddedIds: React.Dispatch<React.SetStateAction<Set<string>>>;
   sortBy: string;
   setSortBy: React.Dispatch<React.SetStateAction<SortByType>>;
+  minPrice: string;
+  setMinPrice: React.Dispatch<React.SetStateAction<string>>;
+  maxPrice: string;
+  setMaxPrice: React.Dispatch<React.SetStateAction<string>>;
+  selectedRetailers: string[];
+  setSelectedRetailers: React.Dispatch<React.SetStateAction<string[]>>;
 };
 
 export function SearchProvider({ children }: MyProviderProps) {
@@ -42,6 +49,9 @@ export function SearchProvider({ children }: MyProviderProps) {
   const [keyword, setKeyword] = useState("");
   const [addedIds, setAddedIds] = useState<Set<string>>(new Set());
   const [sortBy, setSortBy] = useState<SortByType>("none");
+  const [minPrice, setMinPrice] = useState("");
+  const [maxPrice, setMaxPrice] = useState("");
+  const [selectedRetailers, setSelectedRetailers] = useState<string[]>([]);
 
   const { userId } = useUser();
 
@@ -81,6 +91,12 @@ export function SearchProvider({ children }: MyProviderProps) {
         setAddedIds,
         sortBy,
         setSortBy,
+        minPrice,
+        setMinPrice,
+        maxPrice,
+        setMaxPrice,
+        selectedRetailers,
+        setSelectedRetailers,
       }}
     >
       {children}

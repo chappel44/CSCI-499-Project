@@ -1,3 +1,4 @@
+import { useCallback } from "react";
 import { useWishlist } from "../../../Contexts/WishListContext";
 import { supabase } from "../../../supabase-client";
 
@@ -5,8 +6,9 @@ export function useSearchOtherWishlist() {
   const { setOtherLoading, setOtherItems, setOtherNotFound, otherUsername } =
     useWishlist();
 
-  const searchOtherWishlist = async () => {
-    if (!otherUsername.trim()) return;
+  const searchOtherWishlist = useCallback(async (usernameOverride?: string) => {
+    const usernameToSearch = usernameOverride?.trim() || otherUsername.trim();
+    if (!usernameToSearch) return;
 
     setOtherLoading(true);
     setOtherItems(null);
@@ -15,7 +17,7 @@ export function useSearchOtherWishlist() {
     const { data: profileData, error: profileError } = await supabase
       .from("profiles")
       .select("id")
-      .ilike("username", otherUsername.trim())
+      .ilike("username", usernameToSearch)
       .single();
 
     if (profileError || !profileData) {
@@ -39,7 +41,12 @@ export function useSearchOtherWishlist() {
 
     setOtherItems(wishlistData);
     setOtherLoading(false);
-  };
+  }, [
+    otherUsername,
+    setOtherItems,
+    setOtherLoading,
+    setOtherNotFound,
+  ]);
 
   return { searchOtherWishlist };
 }

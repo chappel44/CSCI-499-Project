@@ -11,7 +11,7 @@ export default function DisplaySortingButtons({
 
   return (
     <div
-      className="relative z-10 mt-3 px-6 flex justify-center items-center gap-2 flex-wrap"
+      className="wishlist-sort-row relative z-10 mt-3 px-6 flex justify-center items-center gap-2 flex-wrap"
       style={{
         opacity: visible ? 1 : 0,
         transform: visible ? "translateY(0)" : "translateY(8px)",
@@ -34,7 +34,7 @@ export default function DisplaySortingButtons({
             <button
               key={option}
               onClick={() => setSortBy(option)}
-              className="px-3 py-1 rounded-lg text-xs font-semibold transition"
+              className="wishlist-sort-button px-3 py-1 rounded-lg text-xs font-semibold transition"
               style={
                 sortBy === option
                   ? {
@@ -66,7 +66,7 @@ export default function DisplaySortingButtons({
         />
         <label
           htmlFor="filterDrop"
-          className="text-xs text-gray-600 cursor-pointer select-none"
+          className="wishlist-filter-label text-xs text-gray-600 cursor-pointer select-none"
         >
           🔥 Price drops only
         </label>

@@ -23,12 +23,12 @@ export default function FAQSection() {
 
   return (
     <div
-      className="w-full max-w-md rounded-2xl p-5"
+      className="wishlist-faq-card w-full max-w-md rounded-2xl p-5"
       style={{
         background: "rgba(255,255,255,0.55)",
         backdropFilter: "blur(14px)",
         border: "1px solid rgba(255,255,255,0.75)",
-        boxShadow: "0 4px 24px rgba(0,0,0,0.06)",
+        boxShadow: "0 12px 40px rgba(31,38,135,0.14)",
       }}
     >
       <h3 className="text-base font-bold text-gray-900 mb-3">FAQ</h3>
@@ -36,7 +36,7 @@ export default function FAQSection() {
         {faqItems.map((faq, index) => (
           <div
             key={index}
-            className="rounded-xl overflow-hidden"
+            className="wishlist-faq-item rounded-xl overflow-hidden"
             style={{
               background: "rgba(240,244,255,0.6)",
               border: "1px solid rgba(0,170,255,0.1)",
@@ -44,7 +44,7 @@ export default function FAQSection() {
           >
             <button
               onClick={() => setOpenFaq(openFaq === index ? null : index)}
-              className="w-full text-left px-4 py-3 flex justify-between items-center transition font-medium text-sm text-gray-800 hover:bg-white/40"
+              className="wishlist-faq-question w-full text-left px-4 py-3 flex justify-between items-center transition font-medium text-sm text-gray-800 hover:bg-white/40"
             >
               {faq.question}
               <svg
@@ -65,8 +65,11 @@ export default function FAQSection() {
             </button>
             {openFaq === index && (
               <div
-                className="px-4 py-3 text-sm text-gray-600 bg-white/60 border-t"
-                style={{ borderColor: "rgba(0,170,255,0.1)" }}
+                className="wishlist-faq-answer px-4 py-3 text-sm text-gray-600 border-t"
+                style={{
+                  background: "rgba(255,255,255,0.6)",
+                  borderColor: "rgba(0,170,255,0.1)",
+                }}
               >
                 {faq.answer}
               </div>

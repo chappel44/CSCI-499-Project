@@ -36,6 +36,10 @@ export const useSortedProducts = (
         sorted.sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0));
         break;
 
+      case "reviews-desc":
+        sorted.sort((a, b) => (b.reviews ?? 0) - (a.reviews ?? 0));
+        break;
+
       case "title-asc":
         sorted.sort((a, b) => a.title.localeCompare(b.title));
         break;

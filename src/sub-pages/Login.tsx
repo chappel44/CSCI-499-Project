@@ -1,7 +1,12 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "../supabase-client";
 import { useUser } from "../Contexts/UserContext";
+
+const LOGIN_ATTEMPT_LIMIT = 5;
+const LOGIN_COOLDOWN_SECONDS = 30;
+const LOGIN_FAIL_KEY = "login-failed-attempts";
+const LOGIN_LOCK_KEY = "login-locked-until";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -9,28 +14,80 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [welcomeUsername, setWelcomeUsername] = useState<string | null>(null); // for welcome message
+  const [cooldownRemaining, setCooldownRemaining] = useState(0);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const navigate = useNavigate();
-  const { setUserId, setUsername } = useUser();
+
+  const { setUserId } = useUser();
+
+  useEffect(() => {
+    const lockedUntil = Number(window.sessionStorage.getItem(LOGIN_LOCK_KEY));
+    if (!lockedUntil) return;
+
+    const nextRemaining = Math.max(
+      Math.ceil((lockedUntil - Date.now()) / 1000),
+      0
+    );
+    setCooldownRemaining(nextRemaining);
+  }, []);
+
+  useEffect(() => {
+    if (cooldownRemaining <= 0) return;
+
+    const timer = window.setInterval(() => {
+      setCooldownRemaining((prev) => {
+        if (prev <= 1) {
+          window.clearInterval(timer);
+          window.sessionStorage.removeItem(LOGIN_LOCK_KEY);
+          window.sessionStorage.removeItem(LOGIN_FAIL_KEY);
+          return 0;
+        }
+
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => window.clearInterval(timer);
+  }, [cooldownRemaining]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
+    if (loading || cooldownRemaining > 0) return;
 
-    console.log("Logging in with:", { email, password });
-    console.log("Form submitted!");
+    setErrorMessage(null);
+    setLoading(true);
 
     // connected with supabase
     const { data, error } = await supabase.auth.signInWithPassword({
-      email,
+      email: email.trim(),
       password,
     });
     if (error) {
-      alert(error.message);
+      const failedAttempts =
+        Number(window.sessionStorage.getItem(LOGIN_FAIL_KEY) ?? "0") + 1;
+      window.sessionStorage.setItem(LOGIN_FAIL_KEY, failedAttempts.toString());
+
+      if (failedAttempts >= LOGIN_ATTEMPT_LIMIT) {
+        const lockedUntil = Date.now() + LOGIN_COOLDOWN_SECONDS * 1000;
+        window.sessionStorage.setItem(LOGIN_LOCK_KEY, lockedUntil.toString());
+        setCooldownRemaining(LOGIN_COOLDOWN_SECONDS);
+        setErrorMessage(
+          `Too many attempts. Please wait ${LOGIN_COOLDOWN_SECONDS}s before trying again.`
+        );
+      } else {
+        setErrorMessage("Invalid email or password.");
+      }
+
       setLoading(false);
+      return;
     }
+
+    window.sessionStorage.removeItem(LOGIN_FAIL_KEY);
+    window.sessionStorage.removeItem(LOGIN_LOCK_KEY);
+
     const username = data.user?.user_metadata?.username ?? "there";
-    setUserId(data?.session?.user?.id || "");
-    setUsername(username);
+
+    setUserId(data?.user?.id);
     setWelcomeUsername(username); // show welcome message before redirecting
     setTimeout(() => {
       navigate("/"); // bring user to homepage on successful login can do navigate(-1) to go to last page
@@ -71,12 +128,6 @@ export default function Login() {
       <div className="w-full max-w-sm">
         {/* Card */}
         <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
-          {/* Top accent bar */}
-          <div
-            className="h-1 w-full"
-            style={{ background: "linear-gradient(90deg,#00AAFF,#6B30FF)" }}
-          />
-
           <div className="px-8 py-10 flex flex-col items-center">
             {/* Logo */}
             <div className="flex items-center gap-2.5 mb-2">
@@ -122,8 +173,7 @@ export default function Login() {
               <span
                 className="text-2xl font-extrabold tracking-tight"
                 style={{
-                  background:
-                    "linear-gradient(90deg,#1A1A2E 43%,#0088DD 44%,#6B30FF 100%)",
+                  background: "linear-gradient(90deg,#00AAFF,#6B30FF)",
                   WebkitBackgroundClip: "text",
                   WebkitTextFillColor: "transparent",
                   backgroundClip: "text",
@@ -170,12 +220,12 @@ export default function Login() {
                   <label className="text-xs font-semibold text-gray-600 uppercase tracking-wide">
                     Password
                   </label>
-                  <button
-                    type="button"
+                  <Link
+                    to="/forgot-password"
                     className="text-xs text-blue-500 hover:underline"
                   >
                     Forgot password?
-                  </button>
+                  </Link>
                 </div>
                 <div className="relative">
                   <input
@@ -230,10 +280,14 @@ export default function Login() {
                 </div>
               </div>
 
+              {errorMessage && (
+                <p className="text-xs text-red-500">{errorMessage}</p>
+              )}
+
               {/* Submit */}
               <button
                 type="submit"
-                disabled={loading}
+                disabled={loading || cooldownRemaining > 0}
                 className="w-full mt-1 py-2.5 rounded-xl text-white text-sm font-semibold transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed hover:opacity-90 shadow-md"
                 style={{ background: "linear-gradient(90deg,#00AAFF,#6B30FF)" }}
               >
@@ -260,6 +314,8 @@ export default function Login() {
                     </svg>
                     Signing in...
                   </>
+                ) : cooldownRemaining > 0 ? (
+                  `Wait ${cooldownRemaining}s`
                 ) : (
                   "Sign In"
                 )}

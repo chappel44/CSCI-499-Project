@@ -10,7 +10,7 @@ import pullProductsFromSerp from "../search-hooks/pullProductsFromSerp";
  * update search results, and manage loading / pagination.
  */
 export function useSearchProducts() {
-  const { keyword, setProducts } = useSearchContext();
+  const { keyword, setProducts, selectedRetailers } = useSearchContext();
 
   return async function searchProducts(
     setLoading: (loading: boolean) => void,
@@ -26,25 +26,32 @@ export function useSearchProducts() {
       const userId = user.user?.id;
 
       // Save search term
+      /*
       const { error } = await supabase
         .from("search_history")
         .insert({ search_term: keyword, user_id: userId });
+      
       if (error) console.error(error.message);
       setOpenPage(-1);
-
+      */
       // Normalize keyword & clean old searches
       const normalizedKeyword = normalizeKeyword(keyword);
-      deleteOldSearches(normalizedKeyword);
+      //deleteOldSearches(normalizedKeyword);
 
       // Check cache first
-      const pulledFromCache = await checkCache(normalizedKeyword, setProducts);
+      /*const pulledFromCache = await checkCache(normalizedKeyword, setProducts);
       if (pulledFromCache) {
         setOpenPage(0);
         return;
-      }
+      }*/
 
       // If cache miss, fetch from SERP
-      await pullProductsFromSerp(keyword, normalizedKeyword, setProducts);
+      await pullProductsFromSerp(
+        keyword,
+        normalizedKeyword,
+        setProducts,
+        selectedRetailers
+      );
       setOpenPage(0);
     } catch (err) {
       console.error(err);

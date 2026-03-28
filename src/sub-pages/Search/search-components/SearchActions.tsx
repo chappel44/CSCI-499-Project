@@ -1,5 +1,5 @@
 import { useSearchProducts } from "../search-custom-hooks/searchProducts";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useSearchContext } from "../../../Contexts/useSearchContext";
 import SearchInput from "./search-action-components/SearchInput";
 import RetailerDropdown from "./search-action-components/RetailerDropdown";
@@ -10,8 +10,28 @@ interface SearchActionsProps {
 
 export default function SearchActions({ visible }: SearchActionsProps) {
   const [loading, setLoading] = useState(false);
-  const { setOpenPage } = useSearchContext();
+  const [priceFiltersOpen, setPriceFiltersOpen] = useState(false);
+  const pricePanelRef = useRef<HTMLDivElement>(null);
+  const { setOpenPage, minPrice, setMinPrice, maxPrice, setMaxPrice } =
+    useSearchContext();
   const searchProducts = useSearchProducts();
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        pricePanelRef.current &&
+        !pricePanelRef.current.contains(event.target as Node)
+      ) {
+        setPriceFiltersOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
 
   return (
     <form
@@ -69,6 +89,67 @@ export default function SearchActions({ visible }: SearchActionsProps) {
             )}
           </button>
           <RetailerDropdown />
+          <div className="relative" ref={pricePanelRef}>
+            <button
+              type="button"
+              onClick={() => setPriceFiltersOpen((open) => !open)}
+              className="px-4 py-2.5 rounded-xl text-sm font-semibold transition hover:opacity-90 shadow-md"
+              style={{
+                background: "linear-gradient(90deg,#00AAFF,#6B30FF)",
+                color: "#fff",
+              }}
+            >
+              Set Price
+            </button>
+
+            {priceFiltersOpen && (
+              <div
+                className="search-price-panel absolute top-full left-1/2 -translate-x-1/2 mt-2 p-3 rounded-2xl border shadow-lg flex gap-2 z-50"
+                style={{
+                  background: "rgba(255,255,255,0.88)",
+                  backdropFilter: "blur(16px)",
+                  borderColor: "rgba(0,0,0,0.08)",
+                }}
+              >
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  placeholder="Min price"
+                  value={minPrice}
+                  onChange={(e) => {
+                    setMinPrice(e.target.value);
+                    setOpenPage(0);
+                  }}
+                  className="search-price-input w-32 px-4 py-2.5 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition"
+                  style={{
+                    background: "rgba(255,255,255,0.7)",
+                    backdropFilter: "blur(12px)",
+                    border: "1px solid rgba(255,255,255,0.85)",
+                    boxShadow: "0 2px 16px rgba(0,0,0,0.06)",
+                  }}
+                />
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  placeholder="Max price"
+                  value={maxPrice}
+                  onChange={(e) => {
+                    setMaxPrice(e.target.value);
+                    setOpenPage(0);
+                  }}
+                  className="search-price-input w-32 px-4 py-2.5 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition"
+                  style={{
+                    background: "rgba(255,255,255,0.7)",
+                    backdropFilter: "blur(12px)",
+                    border: "1px solid rgba(255,255,255,0.85)",
+                    boxShadow: "0 2px 16px rgba(0,0,0,0.06)",
+                  }}
+                />
+              </div>
+            )}
+          </div>
         </div>
         {/* Retailer Dropdown */}
       </div>

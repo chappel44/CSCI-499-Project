@@ -4,26 +4,35 @@ import type { Product } from "../search-structures/SearchStructure";
 export default async function pullProductsFromSerp(
   keyword: string,
   normalizedKeyword: string,
-  setProducts: (products: Product[]) => void
+  setProducts: (products: Product[]) => void,
+  selectedRetailers: string[] // receive from context at call site
 ) {
   console.log("Pulling results from api");
-  const res = await fetch(`/api/search?keyword=${encodeURIComponent(keyword)}`);
+
+  const res = await fetch(
+    `/api/search?keyword=${encodeURIComponent(
+      keyword
+    )}&engines=${selectedRetailers.join(",")}`
+  );
 
   if (!res.ok) throw new Error(`Server error: ${res.status}`);
 
   const data = await res.json();
 
-  const allProducts = [
-    ...(data.featured_products || []),
-    ...(data.organic_results || []),
-  ];
+  // Merge results from all retailers
+  const allProducts = data.results.flatMap(
+    ({ data: retailerData }: { data: any }) => [
+      ...(retailerData?.featured_products || []),
+      ...(retailerData?.organic_results || []),
+    ]
+  );
 
   const { error: jsonInsertError } = await supabase
     .from("cached_searches")
     .insert([
       {
-        search_term: normalizedKeyword, // your normalized keyword
-        search_json: data, // the parsed JSON object
+        search_term: normalizedKeyword,
+        search_json: data,
       },
     ]);
 

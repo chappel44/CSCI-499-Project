@@ -19,7 +19,7 @@ export default function PaginationButtons({
             <button
               key={index}
               onClick={() => setOpenPage(index)}
-              className="w-9 h-9 rounded-xl text-sm font-semibold transition cursor-pointer"
+              className="search-page-button w-9 h-9 rounded-xl text-sm font-semibold transition cursor-pointer"
               style={
                 openPage === index
                   ? {
@@ -32,7 +32,7 @@ export default function PaginationButtons({
                       background: "rgba(255,255,255,0.65)",
                       backdropFilter: "blur(8px)",
                       border: "1px solid rgba(255,255,255,0.85)",
-                      color: "#6B7280",
+                      color: "#4B5563",
                     }
               }
             >

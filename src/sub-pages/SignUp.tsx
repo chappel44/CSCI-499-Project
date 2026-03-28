@@ -2,45 +2,111 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom"; // so that we can send to Login Page :)
 import { supabase } from "../supabase-client";
 
+const SIGNUP_COOLDOWN_SECONDS = 45;
+const SIGNUP_FAIL_LIMIT = 4;
+const SIGNUP_FAIL_KEY = "signup-failed-attempts";
+const SIGNUP_LOCK_KEY = "signup-locked-until";
+
 export default function SignUp() {
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [signUpSucces, setSignUpSucess] = useState(false);
+  const [signUpSuccess, setSignUpSuccess] = useState(false); // Tracks whether signup succeeded so we can show the confirmation modal.
   const [okClicked, setOkClicked] = useState(false);
+  const [cooldownRemaining, setCooldownRemaining] = useState(0);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const lockedUntil = Number(window.sessionStorage.getItem(SIGNUP_LOCK_KEY));
+    if (!lockedUntil) return;
+
+    const nextRemaining = Math.max(
+      Math.ceil((lockedUntil - Date.now()) / 1000),
+      0
+    );
+    setCooldownRemaining(nextRemaining);
+  }, []);
+
+  useEffect(() => {
+    if (cooldownRemaining <= 0) return;
+
+    const timer = window.setInterval(() => {
+      setCooldownRemaining((prev) => {
+        if (prev <= 1) {
+          window.clearInterval(timer);
+          window.sessionStorage.removeItem(SIGNUP_LOCK_KEY);
+          window.sessionStorage.removeItem(SIGNUP_FAIL_KEY);
+          return 0;
+        }
+
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => window.clearInterval(timer);
+  }, [cooldownRemaining]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
-    console.log("Signing up with:", { username, email, password });
-    console.log("Form submitted!");
+    if (loading || cooldownRemaining > 0) return; // Prevents duplicate requests if the user clicks submit more than once.
 
-    // connected with supabase
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: { username }, // stores username in raw_user_meta_data so the trigger can pick it up
-      },
-    });
-    if (error) {
-      alert("Sign up failed: " + error.message);
-      setLoading(false);
-    } else {
-      //navigate("/"); // same as login, sends to main page
-      setSignUpSucess(true);
+    setLoading(true);
+    setErrorMessage(null);
+
+    try {
+      const { error } = await supabase.auth.signUp({
+        email: email.trim(),
+        password,
+        options: {
+          data: { username: username.trim() }, // stores username in raw_user_meta_data so the trigger can pick it up
+        },
+      });
+
+      if (error) {
+        const failedAttempts =
+          Number(window.sessionStorage.getItem(SIGNUP_FAIL_KEY) ?? "0") + 1;
+        window.sessionStorage.setItem(
+          SIGNUP_FAIL_KEY,
+          failedAttempts.toString()
+        );
+
+        if (failedAttempts >= SIGNUP_FAIL_LIMIT) {
+          const lockedUntil = Date.now() + SIGNUP_COOLDOWN_SECONDS * 1000;
+          window.sessionStorage.setItem(
+            SIGNUP_LOCK_KEY,
+            lockedUntil.toString()
+          );
+          setCooldownRemaining(SIGNUP_COOLDOWN_SECONDS);
+          setErrorMessage(
+            `Too many sign up attempts. Please wait ${SIGNUP_COOLDOWN_SECONDS}s and try again.`
+          );
+        } else {
+          setErrorMessage(
+            "We could not create the account with those details."
+          );
+        }
+
+        return; // Exit early on Supabase errors and let finally reset the loading state.
+      }
+
+      window.sessionStorage.removeItem(SIGNUP_FAIL_KEY);
+      window.sessionStorage.removeItem(SIGNUP_LOCK_KEY);
+      setSignUpSuccess(true); // Opens the success modal after a successful signup request.
+    } finally {
+      setLoading(false); // Always re-enable the submit button, even if signup fails or succeeds.
     }
   };
 
   const displaySignUpAlert = () => {
     return (
-      <div className="fixed inset-0 flex items-center justify-center bg-gray-100 z-20">
+      <div className="fixed inset-0 flex items-center justify-center bg-gray-900 z-10">
         <div className="bg-white rounded-lg p-6 w-80 shadow-xl">
           <p className="text-center mb-4 text-black">
-            <strong className="text-3xl">Sign up successful! 🎉</strong> <br />
+            <strong className="text-3xl">Sign up successful!</strong> <br />
             Check your email to confirm your account. <br />
             Look for a message from <strong>Supabase</strong> and click the
             verification link.
@@ -48,7 +114,7 @@ export default function SignUp() {
           <button
             onClick={() => {
               setOkClicked(true);
-              setSignUpSucess(false);
+              setSignUpSuccess(false); // Closes the success modal after the user confirms it.
             }}
             className="w-full rounded bg-black text-white py-2 cursor-pointer hover:opacity-80"
           >
@@ -71,28 +137,24 @@ export default function SignUp() {
     !username.trim() ||
     password.length < 8 ||
     !/\d/.test(password) ||
-    !/[@$!%*?&]/.test(password);
+    !/[@$!%*?&]/.test(password) ||
+    confirmPassword !== password ||
+    cooldownRemaining > 0;
 
   useEffect(() => {
     if (okClicked) {
-      navigate("/");
+      navigate("/login");
     }
-  }, [okClicked]);
+  }, [okClicked, navigate]); // Includes navigate to satisfy the effect dependency requirements.
 
   return (
     <>
-      {signUpSucces && displaySignUpAlert()}
-
+      {signUpSuccess && displaySignUpAlert()}{" "}
+      {/* Only render the modal after a successful signup. */}
       <div className="min-h-screen bg-gray-100 flex items-center justify-center px-4">
         <div className="w-full max-w-sm">
           {/* Card */}
           <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
-            {/* Top accent bar */}
-            <div
-              className="h-1 w-full"
-              style={{ background: "linear-gradient(90deg,#00AAFF,#6B30FF)" }}
-            />
-
             <div className="px-8 py-10 flex flex-col items-center">
               {/* Logo */}
               <div className="flex items-center gap-2.5 mb-2">
@@ -138,8 +200,7 @@ export default function SignUp() {
                 <span
                   className="text-2xl font-extrabold tracking-tight"
                   style={{
-                    background:
-                      "linear-gradient(90deg,#1A1A2E 43%,#0088DD 44%,#6B30FF 100%)",
+                    background: "linear-gradient(90deg,#00AAFF,#6B30FF)",
                     WebkitBackgroundClip: "text",
                     WebkitTextFillColor: "transparent",
                     backgroundClip: "text",
@@ -172,7 +233,7 @@ export default function SignUp() {
                   </label>
                   <input
                     type="text"
-                    placeholder="yourname"
+                    placeholder="username"
                     required
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
@@ -272,6 +333,85 @@ export default function SignUp() {
                   )}
                 </div>
 
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-semibold text-gray-600 uppercase tracking-wide">
+                    Confirm Password
+                  </label>
+                  <div className="relative">
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      placeholder="••••••••"
+                      required
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      className={`w-full px-4 py-2.5 rounded-lg border text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition pr-10 ${
+                        confirmPassword.length > 0 &&
+                        confirmPassword !== password
+                          ? "border-red-300"
+                          : "border-gray-300"
+                      }`}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword((v) => !v)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition"
+                      tabIndex={-1}
+                    >
+                      {showPassword ? (
+                        <svg
+                          className="w-4 h-4"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                          strokeWidth={2}
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"
+                          />
+                        </svg>
+                      ) : (
+                        <svg
+                          className="w-4 h-4"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                          strokeWidth={2}
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                          />
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                          />
+                        </svg>
+                      )}
+                    </button>
+                  </div>
+                  {confirmPassword.length > 0 &&
+                    confirmPassword !== password && (
+                      <p className="text-xs text-red-400 mt-1">
+                        Passwords do not match
+                      </p>
+                    )}
+                </div>
+
+                {errorMessage && (
+                  <p className="text-xs text-red-500">{errorMessage}</p>
+                )}
+
+                {cooldownRemaining > 0 && (
+                  <p className="text-xs text-amber-600">
+                    Please wait {cooldownRemaining}s before trying to create
+                    another account.
+                  </p>
+                )}
+
                 {/* Submit */}
                 <button
                   type="submit"
@@ -280,8 +420,9 @@ export default function SignUp() {
                   style={{
                     background:
                       isInvalid || loading
-                        ? undefined
+                        ? "#E5E7EB"
                         : "linear-gradient(90deg,#00AAFF,#6B30FF)",
+                    color: isInvalid || loading ? "#6B7280" : "#FFFFFF",
                   }}
                 >
                   {loading ? (
@@ -307,6 +448,8 @@ export default function SignUp() {
                       </svg>
                       Creating account...
                     </>
+                  ) : cooldownRemaining > 0 ? (
+                    `Wait ${cooldownRemaining}s`
                   ) : (
                     "Create Account"
                   )}

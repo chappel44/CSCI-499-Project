@@ -7,6 +7,30 @@ dotenv.config();
 const app = express();
 const PORT = 3001;
 
+const engineConfig = (keyword) => ({
+  amazon: {
+    engine: "amazon",
+    amazon_domain: "amazon.com",
+    k: keyword,
+  },
+  walmart: {
+    engine: "walmart",
+    q: keyword,
+  },
+  ebay: {
+    engine: "ebay",
+    q: keyword,
+  },
+  home_depot: {
+    engine: "home_depot",
+    q: keyword,
+  },
+  google_shopping: {
+    engine: "google_shopping",
+    q: keyword,
+  },
+});
+
 app.use(express.json());
 
 // CORS
@@ -18,25 +42,53 @@ app.use((req, res, next) => {
 });
 
 app.get("/api/search", async (req, res) => {
-  const keyword = req.query.keyword;
+  const { keyword, engines } = req.query;
+
   if (!keyword) return res.status(400).json({ error: "Missing keyword" });
 
-  try {
-    const response = await axios.get("https://serpapi.com/search.json", {
-      params: {
-        engine: "amazon", // Can also use "google_shopping"
-        amazon_domain: "amazon.com",
-        k: keyword,
-        api_key: process.env.SERPAPI_KEY,
-      },
-    });
+  const config = engineConfig(keyword);
 
-    const featured = response.data.featured_products || [];
-    const organic = response.data.organic_results || [];
+  // Parse engines from comma-separated string, fallback to amazon
+  const selectedEngines = engines
+    ? engines.split(",").filter((e) => config[e])
+    : ["amazon"];
+
+  if (selectedEngines.length === 0) {
+    return res.status(400).json({ error: "No valid engines provided" });
+  }
+
+  try {
+    const requests = selectedEngines.map((engine) =>
+      axios
+        .get("https://serpapi.com/search.json", {
+          params: {
+            ...config[engine],
+            api_key: process.env.SERPAPI_KEY,
+          },
+        })
+        .then((r) => ({
+          retailer: engine,
+          featured_products: r.data.featured_products || [],
+          organic_results: r.data.organic_results || [],
+        }))
+        .catch((err) => ({
+          retailer: engine,
+          error: err.message,
+          featured_products: [],
+          organic_results: [],
+        }))
+    );
+
+    const results = await Promise.all(requests);
+
+    // Optionally also provide a flat merged list for convenience
+    const allFeatured = results.flatMap((r) => r.featured_products);
+    const allOrganic = results.flatMap((r) => r.organic_results);
 
     res.json({
-      featured_products: featured,
-      organic_results: organic,
+      results, // per-retailer breakdown
+      featured_products: allFeatured, // merged across all retailers
+      organic_results: allOrganic, // merged across all retailers
     });
   } catch (err) {
     console.error("Search API error:", err.message);
