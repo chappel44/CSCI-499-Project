@@ -8,7 +8,7 @@ export default async function pullProductsFromSerp(
   selectedRetailers: string[] // receive from context at call site
 ) {
   console.log("Pulling results from api");
-
+  console.log(selectedRetailers.join(","));
   const res = await fetch(
     `/api/search?keyword=${encodeURIComponent(
       keyword

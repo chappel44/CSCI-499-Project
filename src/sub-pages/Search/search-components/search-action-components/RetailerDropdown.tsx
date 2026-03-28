@@ -34,9 +34,9 @@ export default function RetailerDropdown() {
     };
   }, [openPage]);
 
-  const toggleRetailer = (label: string) => {
+  const toggleRetailer = (id: string) => {
     setSelectedRetailers((prev) =>
-      prev.includes(label) ? prev.filter((r) => r !== label) : [...prev, label]
+      prev.includes(id) ? prev.filter((r) => r !== id) : [...prev, id]
     );
   };
 
@@ -83,11 +83,11 @@ export default function RetailerDropdown() {
         }}
       >
         {retailers.map((retailer) => {
-          const isSelected = selectedRetailers.includes(retailer.label);
+          const isSelected = selectedRetailers.includes(retailer.id);
           return (
             <button
               key={retailer.id}
-              onClick={() => toggleRetailer(retailer.label)}
+              onClick={() => toggleRetailer(retailer.id)}
               className="search-retailer-option flex items-center justify-between py-2.5 px-4 text-sm text-left text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition cursor-pointer"
             >
               <span>{retailer.label}</span>
