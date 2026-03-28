@@ -15,18 +15,14 @@ const engineConfig = (keyword) => ({
   },
   walmart: {
     engine: "walmart",
-    q: keyword,
+    query: keyword,
   },
   ebay: {
     engine: "ebay",
-    q: keyword,
+    _nkw: keyword,
   },
   home_depot: {
     engine: "home_depot",
-    q: keyword,
-  },
-  google_shopping: {
-    engine: "google_shopping",
     q: keyword,
   },
 });
@@ -42,6 +38,7 @@ app.use((req, res, next) => {
 });
 
 app.get("/api/search", async (req, res) => {
+  console.log("server running");
   const { keyword, engines } = req.query;
 
   if (!keyword) return res.status(400).json({ error: "Missing keyword" });

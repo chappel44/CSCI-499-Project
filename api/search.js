@@ -9,18 +9,14 @@ const engineConfig = (keyword) => ({
   },
   walmart: {
     engine: "walmart",
-    q: keyword,
+    query: keyword,
   },
   ebay: {
     engine: "ebay",
-    q: keyword,
+    _nkw: keyword,
   },
   home_depot: {
     engine: "home_depot",
-    q: keyword,
-  },
-  google_shopping: {
-    engine: "google_shopping",
     q: keyword,
   },
 });
