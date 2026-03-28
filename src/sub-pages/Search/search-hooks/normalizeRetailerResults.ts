@@ -22,20 +22,6 @@ export function normalizeWalmart(item: any): Product {
   };
 }
 
-export function normalizeAmazon(item: any): Product {
-  return {
-    product_id: item.asin,
-    title: item.title,
-    link: item.link,
-    thumbnail: item.thumbnail,
-    price: item.price?.raw,
-    old_price: item.price?.before_price,
-    extracted_price: item.price?.value,
-    rating: item.rating,
-    reviews: item.reviews,
-  };
-}
-
 export function normalizeEbay(item: any): Product {
   return {
     product_id: item.epid ?? item.item_id,
@@ -53,7 +39,6 @@ export function normalizeEbay(item: any): Product {
 
 const normalizerMap: Record<string, (item: any) => Product> = {
   walmart: normalizeWalmart,
-  amazon: normalizeAmazon,
   ebay: normalizeEbay,
 };
 
