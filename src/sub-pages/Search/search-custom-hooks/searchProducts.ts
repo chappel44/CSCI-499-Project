@@ -1,7 +1,7 @@
 import { useSearchContext } from "../../../Contexts/useSearchContext";
-import { supabase } from "../../../supabase-client";
-import checkCache from "../search-hooks/checkCache";
-import deleteOldSearches from "../search-hooks/deleteOldSearch";
+//import { supabase } from "../../../supabase-client";
+//import checkCache from "../search-hooks/checkCache";
+//import deleteOldSearches from "../search-hooks/deleteOldSearch";
 import normalizeKeyword from "../search-hooks/normalizeKeyword";
 import pullProductsFromSerp from "../search-hooks/pullProductsFromSerp";
 
@@ -22,8 +22,8 @@ export function useSearchProducts() {
 
     try {
       // Get current user
-      const { data: user } = await supabase.auth.getUser();
-      const userId = user.user?.id;
+      //const { data: user } = await supabase.auth.getUser();
+      //const userId = user.user?.id;
 
       // Save search term
       /*
