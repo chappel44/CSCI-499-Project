@@ -94,7 +94,7 @@ const MOCK_LISTINGS: Listing[] = [
   { id:"j1",  user_id:"mock", title:"10K Gold 0.25ct Diamond Solitaire Ring – Size 7",   price:349.00, category:"jewellery", condition:"Used", seller_name:"Bob",   verified:true,  sold:false, save_count:33, created_at:t(2),  description:"10K gold solitaire 0.25ct round brilliant. Appraisal included.",    images:["/img21.jpeg"], stock:1 },
   { id:"j2",  user_id:"mock", title:"14K Rose Gold Cuban Link Chain – 18in 4mm",         price:629.00, category:"jewellery", condition:"New",  seller_name:"Axel",  verified:true,  sold:false, save_count:15, created_at:t(5),  description:"Solid 14K rose gold Cuban chain. Hallmarked with certificate.",      images:["/img22.jpeg"], stock:1 },
   { id:"j3",  user_id:"mock", title:"Sterling Silver Hoop Earrings 40mm – Pair",         price:28.00,  category:"jewellery", condition:"New",  seller_name:"Chris", verified:false, sold:false, save_count:8,  created_at:t(9),  description:"925 sterling silver hoops. Hypoallergenic. Never worn.",             images:["/img23.jpeg"], stock:2 },
-  { id:"j4",  user_id:"mock", title:"14K White Gold Diamond Tennis Bracelet 1ct",        price:895.00, category:"jewellery", condition:"Used", seller_name:"Ryan",  verified:true,  sold:false, save_count:44, created_at:t(13), description:"14K white gold tennis bracelet 1ct total. Original box and appraisal.", images:["/img24.png"], stock:1 },
+  { id:"j4",  user_id:"mock", title:"14K White Gold Diamond Tennis Bracelet 1ct",        price:895.00, category:"jewellery", condition:"Used", seller_name:"Ryan",  verified:true,  sold:false, save_count:44, created_at:t(13), description:"14K white gold tennis bracelet 1ct total. Original box and appraisal.", images:["/img24.jpeg"], stock:1 },
   { id:"j5",  user_id:"mock", title:"Gold Plated Chunky Chain Necklace – 20in",          price:42.00,  category:"jewellery", condition:"Used", seller_name:"Luca",  verified:false, sold:false, save_count:6,  created_at:t(17), description:"Light tarnish on the clasp, chain itself perfect.",                  images:["/img25.jpeg"], stock:1 },
   { id:"j6",  user_id:"mock", title:"925 Silver Vintage Signet Ring – Size 9",           price:65.00,  category:"jewellery", condition:"Used", seller_name:"Finn",  verified:false, sold:false, save_count:11, created_at:t(21), description:"Engraved star design. Worn twice. No scratches.",                    images:["/img26.jpeg"], stock:1 },
   { id:"j7",  user_id:"mock", title:"14K Gold Stud Earrings 0.5ct Total Diamonds",      price:425.00, category:"jewellery", condition:"Used", seller_name:"Omar",  verified:true,  sold:false, save_count:29, created_at:t(26), description:"0.25ct each. Butterfly backs. Original jeweller box.",               images:["/img27.jpeg"], stock:1 },
@@ -158,16 +158,22 @@ function useCountdown(startSeconds: number, epochMs: number) {
 const fmt = (p: number) => "$" + Number(p).toLocaleString("en-US", { minimumFractionDigits: 2 });
 const isMock = (id: string) => /^[efjs]/.test(id) || /^p/.test(id);
 
-// ─── PromotedCard ─────────────────────────────────────────────
 function PromotedCard({
-  item, saved, onView, onToggleSave, onAddToCart,
+  item,
+  saved,
+  onView,
+  onToggleSave,
+  onAddToCart,
 }: {
-  item: Listing; saved: boolean;
-  onView: () => void; onToggleSave: (e: React.MouseEvent) => void; onAddToCart: (e: React.MouseEvent) => void;
+  item: Listing;
+  saved: boolean;
+  onView: () => void;
+  onToggleSave: (e: React.MouseEvent) => void;
+  onAddToCart: (e: React.MouseEvent) => void;
 }) {
   const countdown = useCountdown(PROMO_START_SECONDS, PROMO_EPOCH);
-  const c     = COND[item.condition] ?? COND["Used"];
-  const imgs  = Array.isArray(item.images) ? item.images : [];
+  const c = COND[item.condition] ?? COND["Used"];
+  const imgs = Array.isArray(item.images) ? item.images : [];
   const deals = SELLER_DEALS[item.seller_name ?? ""] ?? 0;
 
   return (
@@ -176,9 +182,14 @@ function PromotedCard({
       className="rounded-2xl overflow-hidden flex flex-col cursor-pointer transition-all duration-200 hover:-translate-y-1 relative"
       style={{
         width: 220,
-        background: "rgba(255,255,255,0.85)",
+
+        // ✅ theme-aware background
+        background: "var(--card)",
+
         border: "1.5px solid rgba(245,158,11,0.45)",
-        boxShadow: "0 4px 24px rgba(245,158,11,0.12), 0 2px 8px rgba(0,0,0,0.06)",
+
+       boxShadow:
+  "0 4px 24px rgba(245,158,11,0.18), 0 8px 40px rgba(0,0,0,0.35)"
       }}
     >
       {/* Promoted ribbon */}
@@ -261,29 +272,60 @@ function PromotedCard({
   );
 }
 
-// ─── TiltCard ─────────────────────────────────────────────────
-function TiltCard({ children, className, style }: { children: React.ReactNode; className?: string; style?: React.CSSProperties }) {
+function TiltCard({
+  children,
+  className,
+  style,
+}: {
+  children: React.ReactNode;
+  className?: string;
+  style?: React.CSSProperties;
+}) {
   const ref = useRef<HTMLDivElement>(null);
+
   const onMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    const el = ref.current; if (!el) return;
+    const el = ref.current;
+    if (!el) return;
+
     const { left, top, width, height } = el.getBoundingClientRect();
     const x = (e.clientX - left) / width - 0.5;
     const y = (e.clientY - top) / height - 0.5;
-    el.style.transform = `perspective(600px) rotateY(${x * 12}deg) rotateX(${-y * 12}deg) scale(1.03)`;
-    el.style.boxShadow = `${-x * 16}px ${y * 16}px 40px rgba(0,170,255,0.2),0 8px 28px rgba(107,48,255,0.13)`;
+
+    el.style.transform = `perspective(700px) rotateY(${x * 10}deg) rotateX(${-y * 10}deg) scale(1.03)`;
+
+    el.style.boxShadow = `
+      ${-x * 14}px ${y * 14}px 40px rgba(0,170,255,0.18),
+      0 8px 28px rgba(107,48,255,0.12)
+    `;
   };
+
   const onLeave = () => {
-    const el = ref.current; if (!el) return;
-    el.style.transform = "perspective(600px) rotateY(0deg) rotateX(0deg) scale(1)";
-    el.style.boxShadow = "0 4px 20px rgba(0,0,0,0.07)";
+    const el = ref.current;
+    if (!el) return;
+
+    el.style.transform =
+      "perspective(700px) rotateY(0deg) rotateX(0deg) scale(1)";
+
+    el.style.boxShadow = "0 4px 20px rgba(0,0,0,0.08)";
   };
+
   return (
-    <div ref={ref} className={className} style={{ ...style, transition: "transform 0.15s ease,box-shadow 0.15s ease", willChange: "transform" }} onMouseMove={onMove} onMouseLeave={onLeave}>
+    <div
+      ref={ref}
+      className={className}
+      onMouseMove={onMove}
+      onMouseLeave={onLeave}
+      style={{
+        ...style,
+        background: "var(--card)",
+        transition: "transform 0.15s ease, box-shadow 0.15s ease",
+        willChange: "transform",
+      }}
+    >
       {children}
     </div>
   );
 }
-
 // ─── Skeleton ─────────────────────────────────────────────────
 function Skeleton() {
   return (
