@@ -917,7 +917,7 @@ export default function Marketplace() {
         <MessageThread listingId={activeThread.listing_id} listingTitle={activeThread.listing_title} recipientId={activeThread.other_user_id} recipientName={activeThread.other_username} uid={uid} onClose={() => setActiveThread(null)} />
       )}
 
-      <div className="min-h-screen flex flex-col" style={{ background: "#f0f4ff" }}>
+      <div className="min-h-screen flex flex-col" style={{ background: "var(--bg)" }}>
         {/* BG orbs */}
         <div className="fixed inset-0 pointer-events-none" style={{ zIndex: 0 }}>
           <div style={{ position:"absolute", top:"-10%", left:"-5%", width:"55vw", height:"55vw", maxWidth:700, maxHeight:700, background:"radial-gradient(circle,rgba(0,170,255,0.16) 0%,transparent 70%)", borderRadius:"50%", filter:"blur(50px)" }} />
