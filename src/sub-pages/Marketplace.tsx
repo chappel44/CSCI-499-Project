@@ -3,12 +3,16 @@ import { Search, Plus, X, Camera, Filter, Trash2 } from "lucide-react";
 import { supabase } from "../supabase-client";
 
 export default function Marketplace() {
-  const [items, setItems] = useState<any[]>([]);
-  const [selectedItem, setSelectedItem] = useState<any>(null);
-  const [isPostModalOpen, setIsPostModalOpen] = useState(false);
-  const [loggedIn, setLoggedIn] = useState(false);
-  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true); // <-- Now being used!
+    const [items, setItems] = useState<any[]>([]);
+    
+    const [searchQuery, setSearchQuery] = useState(""); // for Search
+    const [selectedCategory, setSelectedCategory] = useState("all"); // for filter
+
+    const [selectedItem, setSelectedItem] = useState<any>(null);
+    const [isPostModalOpen, setIsPostModalOpen] = useState(false);
+    const [loggedIn, setLoggedIn] = useState(false);
+    const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+    const [loading, setLoading] = useState(true); 
   
   const [formData, setFormData] = useState({
     title: "",
@@ -27,17 +31,43 @@ export default function Marketplace() {
     fetchListings();
   }, []);
 
-  const fetchListings = async () => {
+    useEffect(() => {
+        const delayDebounceFN = setTimeout(() => {
+            fetchListings();
+    }, 300);
+
+    return () => clearTimeout(delayDebounceFN);
+    }, [searchQuery, selectedCategory]);
+
+    const fetchListings = async () => {
     setLoading(true);
-    const { data, error } = await supabase
-      .from("marketplace_listings")
-      .select("*")
-      .eq("sold", false)
-      .order("created_at", { ascending: false });
-    
+
+    // 1. Start the base query WITHOUT .order()
+    let query = supabase
+        .from("marketplace_listings")
+        .select("*")
+        .eq("sold", false);
+
+    // 2. Apply Search Filter
+    if (searchQuery) {
+        query = query.or(`title.ilike.%${searchQuery}%,description.ilike.%${searchQuery}%`);
+    }
+
+    // 3. Apply Catergory Filter
+    if (selectedCategory && selectedCategory !== "all") {
+        query = query.eq("category", selectedCategory);
+    }
+
+    // 4. NOW apply the order at the very end
+    query = query.order("created_at", { ascending: false });
+
+    const { data, error } = await query;
+  
     if (!error && data) setItems(data);
+    if (error) console.error("Error fetching listings:", error.message);
+  
     setLoading(false);
-  };
+    }; 
 
   const handlePostItem = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -117,14 +147,30 @@ export default function Marketplace() {
             <input
               type="text"
               placeholder="Search items..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full pl-12 pr-4 py-3.5 bg-white/70 backdrop-blur-md border border-gray-200/60 rounded-2xl shadow-sm focus:ring-2 focus:ring-blue-400 outline-none transition-all"
             />
           </div>
 
           <div className="flex gap-4 justify-center">
-            <button className="flex items-center justify-center gap-2 px-6 py-3.5 rounded-2xl font-bold text-gray-700 bg-white/70 backdrop-blur-md border border-gray-200/60 shadow-sm hover:bg-white active:scale-95 transition-all">
-              <Filter size={20} /> Filter
-            </button>
+            <div className="relative">
+                <select
+                    value={selectedCategory}
+                    onChange={((e) => setSelectedCategory(e.target.value))}
+                    className="flex items-center justify-center gap-2 px-10 py-3.5 rounded-2xl font-bold text-gray-700 bg-white/70 backdrop-blur-md border border-gray-200/60 shadow-sm hover:bg-white active:scale-95 transition-all appearance-none cursor-pointer outline-none focus:ring-2 focus:ring-blue-400"
+                >
+                    <option value="all">All Categories</option>            
+                    <option value="electronics">Electronics</option>            
+                    <option value="home">Home</option>            
+                    <option value="fashion">Fashion</option>            
+                    <option value="toys">Toys</option>            
+                    <option value="books">Books</option>            
+                    <option value="sports">Sports</option>            
+                    <option value="other"> Other</option>
+                </select>
+                <Filter size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" />
+            </div>
 
             {loggedIn && (
               <button
