@@ -917,7 +917,7 @@ export default function Marketplace() {
         <MessageThread listingId={activeThread.listing_id} listingTitle={activeThread.listing_title} recipientId={activeThread.other_user_id} recipientName={activeThread.other_username} uid={uid} onClose={() => setActiveThread(null)} />
       )}
 
-      <div className="min-h-screen flex flex-col" style={{ background: "var(--bg)" }}>
+      <div className="min-h-screen flex flex-col" style={{ }}>
         {/* BG orbs */}
         <div className="fixed inset-0 pointer-events-none" style={{ zIndex: 0 }}>
           <div style={{ position:"absolute", top:"-10%", left:"-5%", width:"55vw", height:"55vw", maxWidth:700, maxHeight:700, background:"radial-gradient(circle,rgba(0,170,255,0.16) 0%,transparent 70%)", borderRadius:"50%", filter:"blur(50px)" }} />
@@ -1083,53 +1083,162 @@ export default function Marketplace() {
           </>
         )}
 
-        {/* Footer */}
-        <div className="relative z-10 mx-4 md:mx-8 mb-4">
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
-            <a href="" target="_blank" rel="noopener noreferrer" className="flex items-center gap-4 px-5 py-4 rounded-2xl group transition-all duration-200 hover:-translate-y-0.5" style={{ background: "rgba(255,255,255,0.55)", backdropFilter: "blur(14px)", border: "1px solid rgba(88,101,242,0.18)", boxShadow: "0 4px 20px rgba(88,101,242,0.07)", textDecoration: "none" }}>
-              <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: "rgba(88,101,242,0.10)" }}>
-                <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none"><path d="M20.317 4.37a19.791 19.791 0 00-4.885-1.515.074.074 0 00-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 00-5.487 0 12.64 12.64 0 00-.617-1.25.077.077 0 00-.079-.037A19.736 19.736 0 003.677 4.37a.07.07 0 00-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 00.031.057 19.9 19.9 0 005.993 3.03.078.078 0 00.084-.028c.462-.63.874-1.295 1.226-1.994a.076.076 0 00-.041-.106 13.107 13.107 0 01-1.872-.892.077.077 0 01-.008-.128 10.2 10.2 0 00.372-.292.074.074 0 01.077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 01.078.01c.12.098.246.198.373.292a.077.077 0 01-.006.127 12.299 12.299 0 01-1.873.892.077.077 0 00-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 00.084.028 19.839 19.839 0 006.002-3.03.077.077 0 00.032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 00-.031-.03z" fill="#5865F2"/></svg>
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-bold text-gray-800 group-hover:text-indigo-600 transition-colors">Join our Discord</p>
-                <p className="text-xs text-gray-400">Chat with the community</p>
-              </div>
-              <svg className="w-4 h-4 text-gray-300 group-hover:text-indigo-400 transition-colors flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>
-            </a>
+            {/* Footer */}
+<div className="relative z-10 mx-4 md:mx-8 mb-4">
+  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
 
-            <a href="" target="_blank" rel="noopener noreferrer" className="flex items-center gap-4 px-5 py-4 rounded-2xl group transition-all duration-200 hover:-translate-y-0.5" style={{ background: "rgba(255,255,255,0.55)", backdropFilter: "blur(14px)", border: "1px solid rgba(225,48,108,0.15)", boxShadow: "0 4px 20px rgba(225,48,108,0.06)", textDecoration: "none" }}>
-              <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: "rgba(225,48,108,0.08)" }}>
-                <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none">
-                  <rect x="2" y="2" width="20" height="20" rx="5" stroke="url(#ig-grad)" strokeWidth="2"/>
-                  <circle cx="12" cy="12" r="4" stroke="url(#ig-grad)" strokeWidth="2"/>
-                  <circle cx="17.5" cy="6.5" r="1" fill="#E1306C"/>
-                  <defs><linearGradient id="ig-grad" x1="2" y1="22" x2="22" y2="2" gradientUnits="userSpaceOnUse"><stop stopColor="#F58529"/><stop offset="0.5" stopColor="#E1306C"/><stop offset="1" stopColor="#833AB4"/></linearGradient></defs>
-                </svg>
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-bold text-gray-800 group-hover:text-pink-600 transition-colors">Follow on Instagram</p>
-                <p className="text-xs text-gray-400">Updates and new drops</p>
-              </div>
-              <svg className="w-4 h-4 text-gray-300 group-hover:text-pink-400 transition-colors flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>
-            </a>
+    {/* Discord */}
+    <a
+      href=""
+      target="_blank"
+      rel="noopener noreferrer"
+      className="flex items-center gap-4 px-5 py-4 rounded-2xl group transition-all duration-200 hover:-translate-y-0.5"
+      style={{
+        background: "var(--card)",
+        backdropFilter: "blur(14px)",
+        border: "1px solid rgba(88,101,242,0.18)",
+        boxShadow: "0 4px 20px rgba(88,101,242,0.06)",
+        textDecoration: "none"
+      }}
+    >
+      <div
+        className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+        style={{ background: "rgba(88,101,242,0.10)" }}
+      >
+        <svg className="w-5 h-5" viewBox="0 0 24 24" fill="#5865F2">
+  <path d="M20.317 4.37a19.791 19.791 0 00-4.885-1.515l-.21.42a18.27 18.27 0 00-5.486 0l-.21-.42A19.79 19.79 0 003.68 4.37C1.4 7.24.6 10.05.9 12.83c1.6 1.2 3.15 1.92 4.66 2.4.36-.5.68-1.03.95-1.59-.52-.2-1.02-.45-1.49-.75.12-.09.24-.18.35-.27 2.87 1.3 6 1.3 8.84 0 .11.09.23.18.35.27-.47.3-.97.55-1.49.75.27.56.59 1.09.95 1.59 1.51-.48 3.06-1.2 4.66-2.4.35-3.12-.58-5.9-2.3-8.46zM9 12.2c-.72 0-1.3-.66-1.3-1.47 0-.81.58-1.47 1.3-1.47s1.3.66 1.3 1.47c0 .81-.58 1.47-1.3 1.47zm6 0c-.72 0-1.3-.66-1.3-1.47 0-.81.58-1.47 1.3-1.47s1.3.66 1.3 1.47c0 .81-.58 1.47-1.3 1.47z"/>
+</svg>
+      </div>
 
-            <div className="flex items-center gap-4 px-5 py-4 rounded-2xl" style={{ background: "rgba(255,255,255,0.55)", backdropFilter: "blur(14px)", border: "1px solid rgba(0,170,255,0.15)", boxShadow: "0 4px 20px rgba(0,170,255,0.07)" }}>
-              <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: "linear-gradient(135deg,rgba(0,170,255,0.12),rgba(107,48,255,0.12))" }}>
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="url(#sell-grad)" strokeWidth={2}>
-                  <defs><linearGradient id="sell-grad" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#00AAFF"/><stop offset="100%" stopColor="#6B30FF"/></linearGradient></defs>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
-                </svg>
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-bold text-gray-800">Start selling</p>
-                <p className="text-xs text-gray-400">List for free, get verified</p>
-              </div>
-              <button onClick={() => { if (!uid) { navigate("/login"); return; } setShowSell(true); window.scrollTo({ top: 0, behavior: "smooth" }); }} className="px-3.5 py-2 rounded-xl text-xs font-bold text-white hover:opacity-90 transition flex-shrink-0" style={{ background: GRAD, border: "none" }}>
-                List Item
-              </button>
-            </div>
-          </div>
-        </div>
+      <div className="flex-1 min-w-0">
+        <p style={{ color: "var(--text)" }} className="text-sm font-bold">
+          Join our Discord
+        </p>
+        <p style={{ color: "var(--muted)" }} className="text-xs">
+          Chat with the community
+        </p>
+      </div>
+
+      <svg
+        className="w-4 h-4 flex-shrink-0"
+        style={{ color: "var(--muted)" }}
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+        strokeWidth={2}
+      >
+        <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+      </svg>
+    </a>
+
+    {/* Instagram */}
+    <a
+      href=""
+      target="_blank"
+      rel="noopener noreferrer"
+      className="flex items-center gap-4 px-5 py-4 rounded-2xl group transition-all duration-200 hover:-translate-y-0.5"
+      style={{
+        background: "var(--card)",
+        backdropFilter: "blur(14px)",
+        border: "1px solid rgba(225,48,108,0.15)",
+        boxShadow: "0 4px 20px rgba(225,48,108,0.05)",
+        textDecoration: "none"
+      }}
+    >
+      <div
+        className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+        style={{ background: "rgba(225,48,108,0.08)" }}
+      >
+        <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none">
+          <rect x="2" y="2" width="20" height="20" rx="5" stroke="#E1306C" strokeWidth="2"/>
+          <circle cx="12" cy="12" r="4" stroke="#E1306C" strokeWidth="2"/>
+          <circle cx="17.5" cy="6.5" r="1.2" fill="#E1306C"/>
+        </svg>
+      </div>
+
+      <div className="flex-1 min-w-0">
+        <p style={{ color: "var(--text)" }} className="text-sm font-bold">
+          Follow on Instagram
+        </p>
+        <p style={{ color: "var(--muted)" }} className="text-xs">
+          Updates and new drops
+        </p>
+      </div>
+
+      <svg
+        className="w-4 h-4 flex-shrink-0"
+        style={{ color: "var(--muted)" }}
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+        strokeWidth={2}
+      >
+        <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+      </svg>
+    </a>
+
+    {/* Start Selling */}
+    <div
+      className="flex items-center gap-4 px-5 py-4 rounded-2xl"
+      style={{
+        background: "var(--card)",
+        backdropFilter: "blur(14px)",
+        border: "1px solid rgba(0,170,255,0.15)",
+        boxShadow: "0 4px 20px rgba(0,170,255,0.06)"
+      }}
+    >
+      <div
+        className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+        style={{
+          background:
+            "linear-gradient(135deg, rgba(0,170,255,0.12), rgba(107,48,255,0.12))"
+        }}
+      >
+        <svg
+          className="w-5 h-5"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="url(#sell-grad)"
+          strokeWidth={2}
+        >
+          <defs>
+            <linearGradient id="sell-grad" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stopColor="#00AAFF" />
+              <stop offset="100%" stopColor="#6B30FF" />
+            </linearGradient>
+          </defs>
+
+          <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+        </svg>
+      </div>
+
+      <div className="flex-1 min-w-0">
+        <p style={{ color: "var(--text)" }} className="text-sm font-bold">
+          Start selling
+        </p>
+        <p style={{ color: "var(--muted)" }} className="text-xs">
+          List for free, get verified
+        </p>
+      </div>
+
+      <button
+        onClick={() => {
+          if (!uid) {
+            navigate("/login");
+            return;
+          }
+          setShowSell(true);
+          window.scrollTo({ top: 0, behavior: "smooth" });
+        }}
+        className="px-3.5 py-2 rounded-xl text-xs font-bold text-white hover:opacity-90 transition flex-shrink-0"
+        style={{ background: GRAD, border: "none" }}
+      >
+        List Item
+      </button>
+    </div>
+
+  </div>
+</div>
 
         <p className="relative z-10 text-xs text-gray-400 text-center pb-6">&copy; {new Date().getFullYear()} Verifind</p>
       </div>
