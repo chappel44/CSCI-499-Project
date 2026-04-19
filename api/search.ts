@@ -21,6 +21,10 @@ const engineConfig = (keyword) => ({
   },
 });
 
+type EngineResult =
+  | { retailer: string; data: any; error?: never }
+  | { retailer: string; error: string; data?: never };
+
 export default async function handler(req, res) {
   console.log("Handler called");
   res.setHeader("Access-Control-Allow-Origin", "*");
@@ -50,7 +54,7 @@ export default async function handler(req, res) {
     const config = engineConfig(keyword);
 
     const requests = selectedEngines.map(async (engine) => {
-      const data = axios
+      const result: EngineResult = await axios
         .get("https://serpapi.com/search.json", {
           params: {
             ...config[engine],
@@ -60,23 +64,24 @@ export default async function handler(req, res) {
         .then((r) => ({ retailer: engine, data: r.data }))
         .catch((err) => ({ retailer: engine, error: err.message })); // don't let one failure kill the rest
 
-      const { error: jsonInsertError } = await supabase
-        .from("cached_searches")
-        .insert([
-          {
-            search_term: keyword,
-            search_json: data,
-            retailer: engine,
-          },
-        ]);
+      if (!result.error) {
+        const { error: jsonInsertError } = await supabase
+          .from("cached_searches")
+          .insert([
+            {
+              search_term: keyword,
+              search_json: result,
+              retailer: engine,
+            },
+          ]);
 
-      if (jsonInsertError) {
-        console.error(jsonInsertError.message);
+        if (jsonInsertError) {
+          console.error(jsonInsertError);
+        }
       }
     });
 
     const results = await Promise.all(requests);
-
     res.status(200).json({ results });
   } catch (err) {
     console.error("Search error:", err);
