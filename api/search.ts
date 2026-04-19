@@ -49,7 +49,7 @@ export default async function handler(req, res) {
   try {
     const config = engineConfig(keyword);
 
-    const requests = selectedEngines.map((engine) => {
+    const requests = selectedEngines.map(async (engine) => {
       const data = axios
         .get("https://serpapi.com/search.json", {
           params: {
@@ -60,22 +60,19 @@ export default async function handler(req, res) {
         .then((r) => ({ retailer: engine, data: r.data }))
         .catch((err) => ({ retailer: engine, error: err.message })); // don't let one failure kill the rest
 
-      const insertSupabase = async () => {
-        const { error: jsonInsertError } = await supabase
-          .from("cached_searches")
-          .insert([
-            {
-              search_term: keyword,
-              search_json: data,
-              retailer: engine,
-            },
-          ]);
+      const { error: jsonInsertError } = await supabase
+        .from("cached_searches")
+        .insert([
+          {
+            search_term: keyword,
+            search_json: data,
+            retailer: engine,
+          },
+        ]);
 
-        if (jsonInsertError) {
-          console.error(jsonInsertError.message);
-        }
-      };
-      insertSupabase();
+      if (jsonInsertError) {
+        console.error(jsonInsertError.message);
+      }
     });
 
     const results = await Promise.all(requests);
