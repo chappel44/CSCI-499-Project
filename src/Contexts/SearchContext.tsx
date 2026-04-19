@@ -1,7 +1,7 @@
 import { createContext, useEffect, useState } from "react";
 import type { ReactNode } from "react";
 import type { Product } from "../sub-pages/Search/search-structures/SearchStructure";
-import { supabase } from "../supabase-client";
+import { supabase } from "../../supabase-client";
 import { useUser } from "./UserContext";
 
 export const SearchContext = createContext<MyContextType | null>(null);

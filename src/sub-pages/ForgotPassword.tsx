@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { supabase } from "../supabase-client";
+import { supabase } from "../../supabase-client";
 
 const RESET_COOLDOWN_SECONDS = 60;
 const RESET_COOLDOWN_KEY = "forgot-password-last-request-at";
@@ -13,7 +13,9 @@ export default function ForgotPassword() {
   const [cooldownRemaining, setCooldownRemaining] = useState(0);
 
   useEffect(() => {
-    const lastSentAt = Number(window.sessionStorage.getItem(RESET_COOLDOWN_KEY));
+    const lastSentAt = Number(
+      window.sessionStorage.getItem(RESET_COOLDOWN_KEY)
+    );
     if (!lastSentAt) return;
 
     const elapsedSeconds = Math.floor((Date.now() - lastSentAt) / 1000);
@@ -54,10 +56,7 @@ export default function ForgotPassword() {
       setErrorMessage(error.message);
     } else {
       setSent(true);
-      window.sessionStorage.setItem(
-        RESET_COOLDOWN_KEY,
-        Date.now().toString()
-      );
+      window.sessionStorage.setItem(RESET_COOLDOWN_KEY, Date.now().toString());
       setCooldownRemaining(RESET_COOLDOWN_SECONDS);
     }
 
@@ -129,7 +128,10 @@ export default function ForgotPassword() {
               Enter your email and we'll send you a reset link.
             </p>
 
-            <form onSubmit={handleSendReset} className="w-full flex flex-col gap-4">
+            <form
+              onSubmit={handleSendReset}
+              className="w-full flex flex-col gap-4"
+            >
               <div className="flex flex-col gap-1.5">
                 <label className="text-xs font-semibold text-gray-600 uppercase tracking-wide">
                   Email
@@ -156,7 +158,8 @@ export default function ForgotPassword() {
 
               {cooldownRemaining > 0 && (
                 <p className="text-xs text-amber-600">
-                  Please wait {cooldownRemaining}s before sending another reset link.
+                  Please wait {cooldownRemaining}s before sending another reset
+                  link.
                 </p>
               )}
 
@@ -169,8 +172,8 @@ export default function ForgotPassword() {
                 {loading
                   ? "Sending..."
                   : cooldownRemaining > 0
-                    ? `Wait ${cooldownRemaining}s`
-                    : "Send Reset Link"}
+                  ? `Wait ${cooldownRemaining}s`
+                  : "Send Reset Link"}
               </button>
             </form>
 

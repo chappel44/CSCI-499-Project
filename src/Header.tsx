@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { supabase } from "./supabase-client";
+import { supabase } from "../supabase-client";
 
 export default function Header() {
   const { pathname } = useLocation();

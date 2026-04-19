@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom"; // so that we can send to Login Page :)
-import { supabase } from "../supabase-client";
+import { supabase } from "../../supabase-client";
 
 const SIGNUP_COOLDOWN_SECONDS = 45;
 const SIGNUP_FAIL_LIMIT = 4;

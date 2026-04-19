@@ -1,4 +1,4 @@
-import { supabase } from "../../../supabase-client";
+import { supabase } from "../../../../supabase-client";
 import type { Product } from "../search-structures/SearchStructure";
 
 export default async function addToWishlist(

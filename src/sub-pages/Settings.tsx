@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import type { ChangeEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTheme, type ThemePreference } from "../Contexts/ThemeContext";
-import { supabase } from "../supabase-client";
+import { supabase } from "../../supabase-client";
 
 function formatMemberSince(dateString?: string) {
   if (!dateString) return "Unknown";
@@ -97,7 +97,9 @@ export default function Settings() {
   const handleCopyWishlistLink = async () => {
     if (!currentUsername.trim()) return;
 
-    const url = `${window.location.origin}/wish-list?user=${encodeURIComponent(currentUsername.trim())}`;
+    const url = `${window.location.origin}/wish-list?user=${encodeURIComponent(
+      currentUsername.trim()
+    )}`;
 
     try {
       await navigator.clipboard.writeText(url);
@@ -134,7 +136,9 @@ export default function Settings() {
       setAvatarMessage("Profile photo updated.");
     } catch (error) {
       const message =
-        error instanceof Error ? error.message : "Could not update profile photo.";
+        error instanceof Error
+          ? error.message
+          : "Could not update profile photo.";
       setAvatarMessage(message);
     } finally {
       event.target.value = "";
@@ -180,7 +184,8 @@ export default function Settings() {
 
     if (profileError) {
       setUsernameError(
-        "Saved to session but failed to sync to database: " + profileError.message
+        "Saved to session but failed to sync to database: " +
+          profileError.message
       );
       setUsernameLoading(false);
       return;
@@ -196,7 +201,10 @@ export default function Settings() {
   const requirements = [
     { label: "8+ characters", test: newPassword.length >= 8 },
     { label: "Contains a number", test: /\d/.test(newPassword) },
-    { label: "Contains a special character", test: /[@$!%*?&]/.test(newPassword) },
+    {
+      label: "Contains a special character",
+      test: /[@$!%*?&]/.test(newPassword),
+    },
   ];
 
   const passwordInvalid =
@@ -205,7 +213,8 @@ export default function Settings() {
     !/[@$!%*?&]/.test(newPassword) ||
     newPassword !== confirmPassword;
 
-  const passwordsMatch = confirmPassword.length > 0 && newPassword === confirmPassword;
+  const passwordsMatch =
+    confirmPassword.length > 0 && newPassword === confirmPassword;
 
   const handleSavePassword = async () => {
     if (passwordInvalid) return;
@@ -227,7 +236,9 @@ export default function Settings() {
     setPasswordLoading(false);
   };
 
-  const profileInitial = (currentUsername || profileEmail || "V").charAt(0).toUpperCase();
+  const profileInitial = (currentUsername || profileEmail || "V")
+    .charAt(0)
+    .toUpperCase();
 
   return (
     <div className="profile-page min-h-screen bg-gray-100 flex items-center justify-center px-4 py-10">
@@ -252,7 +263,9 @@ export default function Settings() {
                     ) : (
                       <div
                         className="flex h-full w-full items-center justify-center text-3xl font-black text-white"
-                        style={{ background: "linear-gradient(90deg,#00AAFF,#6B30FF)" }}
+                        style={{
+                          background: "linear-gradient(90deg,#00AAFF,#6B30FF)",
+                        }}
                       >
                         {profileInitial}
                       </div>
@@ -267,7 +280,8 @@ export default function Settings() {
                       {currentUsername || "Welcome to VeriFind"}
                     </h1>
                     <p className="mt-1 text-sm text-gray-500">
-                      Keep your profile updated so your wishlist is easier to share.
+                      Keep your profile updated so your wishlist is easier to
+                      share.
                     </p>
                   </div>
                 </div>
@@ -278,7 +292,9 @@ export default function Settings() {
                     onClick={() => fileInputRef.current?.click()}
                     disabled={avatarLoading}
                     className="rounded-xl px-4 py-2 text-sm font-semibold text-white shadow-md transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
-                    style={{ background: "linear-gradient(90deg,#00AAFF,#6B30FF)" }}
+                    style={{
+                      background: "linear-gradient(90deg,#00AAFF,#6B30FF)",
+                    }}
                   >
                     {avatarLoading ? "Saving Photo..." : "Add Profile Photo"}
                   </button>
@@ -327,7 +343,9 @@ export default function Settings() {
                     Public Wishlist
                   </p>
                   <p className="mt-2 text-sm font-semibold text-gray-800">
-                    {currentUsername.trim() ? `@${currentUsername}` : "Set a username"}
+                    {currentUsername.trim()
+                      ? `@${currentUsername}`
+                      : "Set a username"}
                   </p>
                 </div>
               </div>
@@ -337,9 +355,12 @@ export default function Settings() {
           <div className="profile-card bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
             <div className="px-8 py-8 flex flex-col gap-4">
               <div>
-                <h2 className="text-xl font-bold text-gray-900 mb-1">Appearance</h2>
+                <h2 className="text-xl font-bold text-gray-900 mb-1">
+                  Appearance
+                </h2>
                 <p className="text-sm text-gray-400">
-                  Choose light, dark, or follow your device's Display & Brightness settings.
+                  Choose light, dark, or follow your device's Display &
+                  Brightness settings.
                 </p>
               </div>
 
@@ -358,25 +379,26 @@ export default function Settings() {
                       style={
                         isActive
                           ? {
-                              background: "linear-gradient(90deg,#00AAFF,#6B30FF)",
+                              background:
+                                "linear-gradient(90deg,#00AAFF,#6B30FF)",
                             }
                           : option === "light"
-                            ? {
-                                background: "#F8FAFC",
-                                color: "#0F172A",
-                                borderColor: "#CBD5E1",
-                              }
-                            : option === "system"
-                              ? {
-                                  background: "#EDE9FE",
-                                  color: "#312E81",
-                                  borderColor: "#C4B5FD",
-                                }
-                              : {
-                                  background: "#E0F2FE",
-                                  color: "#0C4A6E",
-                                  borderColor: "#7DD3FC",
-                                }
+                          ? {
+                              background: "#F8FAFC",
+                              color: "#0F172A",
+                              borderColor: "#CBD5E1",
+                            }
+                          : option === "system"
+                          ? {
+                              background: "#EDE9FE",
+                              color: "#312E81",
+                              borderColor: "#C4B5FD",
+                            }
+                          : {
+                              background: "#E0F2FE",
+                              color: "#0C4A6E",
+                              borderColor: "#7DD3FC",
+                            }
                       }
                     >
                       {option.charAt(0).toUpperCase() + option.slice(1)}
@@ -388,7 +410,8 @@ export default function Settings() {
               <p className="text-xs text-gray-500">
                 Active theme:{" "}
                 <span className="font-semibold text-gray-700">
-                  {resolvedTheme.charAt(0).toUpperCase() + resolvedTheme.slice(1)}
+                  {resolvedTheme.charAt(0).toUpperCase() +
+                    resolvedTheme.slice(1)}
                 </span>
               </p>
 
@@ -408,7 +431,9 @@ export default function Settings() {
         <div className="grid gap-5 lg:grid-cols-2">
           <div className="profile-card bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
             <div className="px-8 py-8 flex flex-col">
-              <h2 className="text-xl font-bold text-gray-900 mb-1">Change Username</h2>
+              <h2 className="text-xl font-bold text-gray-900 mb-1">
+                Change Username
+              </h2>
               <p className="text-sm text-gray-400 mb-6">
                 Current username:{" "}
                 <span className="font-semibold text-gray-700">
@@ -569,7 +594,9 @@ export default function Settings() {
                             req.test ? "text-green-500" : "text-gray-400"
                           }`}
                         >
-                          <span className="text-xs">{req.test ? "OK" : "-"}</span>
+                          <span className="text-xs">
+                            {req.test ? "OK" : "-"}
+                          </span>
                           {req.label}
                         </div>
                       ))}
@@ -591,7 +618,8 @@ export default function Settings() {
                         setPasswordSaved(false);
                       }}
                       className={`w-full px-4 py-2.5 rounded-lg border text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition pr-10 ${
-                        confirmPassword.length > 0 && confirmPassword !== newPassword
+                        confirmPassword.length > 0 &&
+                        confirmPassword !== newPassword
                           ? "border-red-300"
                           : "border-gray-300"
                       }`}
@@ -639,12 +667,17 @@ export default function Settings() {
                     </button>
                   </div>
 
-                  {confirmPassword.length > 0 && confirmPassword !== newPassword && (
-                    <p className="text-xs text-red-400 mt-1">Passwords do not match</p>
-                  )}
+                  {confirmPassword.length > 0 &&
+                    confirmPassword !== newPassword && (
+                      <p className="text-xs text-red-400 mt-1">
+                        Passwords do not match
+                      </p>
+                    )}
 
                   {passwordsMatch && (
-                    <p className="text-xs text-green-500 mt-1">Passwords match</p>
+                    <p className="text-xs text-green-500 mt-1">
+                      Passwords match
+                    </p>
                   )}
                 </div>
 
@@ -652,7 +685,9 @@ export default function Settings() {
                   onClick={handleSavePassword}
                   disabled={passwordLoading || passwordInvalid}
                   className="w-full py-2.5 rounded-xl text-white text-sm font-semibold transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-90 shadow-md"
-                  style={{ background: "linear-gradient(90deg,#00AAFF,#6B30FF)" }}
+                  style={{
+                    background: "linear-gradient(90deg,#00AAFF,#6B30FF)",
+                  }}
                 >
                   {passwordLoading ? (
                     <>

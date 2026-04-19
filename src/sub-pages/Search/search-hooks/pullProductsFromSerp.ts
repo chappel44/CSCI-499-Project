@@ -1,11 +1,9 @@
-import { supabase } from "../../../supabase-client";
 import type { Product } from "../search-structures/SearchStructure";
 import { normalizeProduct } from "./normalizeRetailerResults";
 
 export default async function pullProductsFromSerp(
   keyword: string,
-  normalizedKeyword: string,
-  setProducts: (products: Product[]) => void,
+  setProducts: React.Dispatch<React.SetStateAction<Product[]>>,
   selectedRetailers: string[] // receive from context at call site
 ) {
   console.log("Pulling results from api");
@@ -39,18 +37,5 @@ export default async function pullProductsFromSerp(
   console.log("results array:", data.results);
   console.log("first result:", data.results?.[0]);
 
-  const { error: jsonInsertError } = await supabase
-    .from("cached_searches")
-    .insert([
-      {
-        search_term: normalizedKeyword,
-        search_json: data,
-      },
-    ]);
-
-  if (jsonInsertError) {
-    console.error(jsonInsertError.message);
-  }
-
-  setProducts(allProducts);
+  setProducts((products) => [...products, ...allProducts]);
 }

@@ -1,6 +1,6 @@
 // /api/search.js
 import axios from "axios";
-
+import { supabase } from "../supabase-client";
 const engineConfig = (keyword) => ({
   amazon: {
     engine: "amazon",
@@ -49,18 +49,34 @@ export default async function handler(req, res) {
   try {
     const config = engineConfig(keyword);
 
-    const requests = selectedEngines.map(
-      (engine) =>
-        axios
-          .get("https://serpapi.com/search.json", {
-            params: {
-              ...config[engine],
-              api_key: process.env.SERPAPI_KEY,
+    const requests = selectedEngines.map((engine) => {
+      const data = axios
+        .get("https://serpapi.com/search.json", {
+          params: {
+            ...config[engine],
+            api_key: process.env.SERPAPI_KEY,
+          },
+        })
+        .then((r) => ({ retailer: engine, data: r.data }))
+        .catch((err) => ({ retailer: engine, error: err.message })); // don't let one failure kill the rest
+
+      const insertSupabase = async () => {
+        const { error: jsonInsertError } = await supabase
+          .from("cached_searches")
+          .insert([
+            {
+              search_term: keyword,
+              search_json: data,
+              retailer: engine,
             },
-          })
-          .then((r) => ({ retailer: engine, data: r.data }))
-          .catch((err) => ({ retailer: engine, error: err.message })) // don't let one failure kill the rest
-    );
+          ]);
+
+        if (jsonInsertError) {
+          console.error(jsonInsertError.message);
+        }
+      };
+      insertSupabase();
+    });
 
     const results = await Promise.all(requests);
 
