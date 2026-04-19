@@ -21,7 +21,7 @@ const engineConfig = (keyword) => ({
   },
 });
 
-type EngineResult =
+export type EngineResult =
   | { retailer: string; data: any; error?: never }
   | { retailer: string; error: string; data?: never };
 
@@ -76,6 +76,8 @@ export default async function handler(req, res) {
           ]);
 
         if (jsonInsertError) {
+          console.error("SUPABASE INSERT ERROR:", jsonInsertError);
+
           return res.status(400).json({
             error: { "SUPABASE INSERT ERROR": jsonInsertError.message },
           });

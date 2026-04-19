@@ -1,9 +1,19 @@
-// server.js
+// server.ts
 import express from "express";
 import axios from "axios";
 import dotenv from "dotenv";
-
 dotenv.config();
+import { createClient } from "@supabase/supabase-js";
+
+// Vite automatically uses .env locally or environment variables in production
+const supabaseUrl = process.env.VITE_SUPABASE_URL;
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+if (!supabaseUrl || !supabaseKey) {
+  throw new Error("Supabase URL and key are required!");
+}
+
+export const supabase = createClient(supabaseUrl, supabaseKey);
 const app = express();
 const PORT = 3001;
 
@@ -55,32 +65,44 @@ app.get("/api/search", async (req, res) => {
   }
 
   try {
-    const requests = selectedEngines.map((engine) =>
-      axios
+    const requests = selectedEngines.map(async (engine) => {
+      const result = await axios
         .get("https://serpapi.com/search.json", {
           params: {
             ...config[engine],
             api_key: process.env.SERPAPI_KEY,
           },
         })
-        .then((r) => ({
-          retailer: engine,
-          featured_products: r.data.featured_products || [],
-          organic_results: r.data.organic_results || [],
-        }))
-        .catch((err) => ({
-          retailer: engine,
-          error: err.message,
-          featured_products: [],
-          organic_results: [],
-        }))
-    );
+        .then((r) => ({ retailer: engine, data: r.data }))
+        .catch((err) => ({ retailer: engine, error: err.message })); // don't let one failure kill the rest
+
+      if (result.data) {
+        const { error: jsonInsertError } = await supabase
+          .from("cached_searches")
+          .insert([
+            {
+              search_term: keyword,
+              search_json: result,
+              retailer: engine,
+            },
+          ]);
+
+        if (jsonInsertError) {
+          console.error("SUPABASE INSERT ERROR:", jsonInsertError);
+
+          return res.status(400).json({
+            error: { "SUPABASE INSERT ERROR": jsonInsertError.message },
+          });
+        }
+      }
+    });
 
     const results = await Promise.all(requests);
 
     // Optionally also provide a flat merged list for convenience
-    const allFeatured = results.flatMap((r) => r.featured_products);
-    const allOrganic = results.flatMap((r) => r.organic_results);
+    const allFeatured = results.flatMap((r) => r?.featured_products || []);
+
+    const allOrganic = results.flatMap((r) => r?.organic_results || []);
 
     res.json({
       results, // per-retailer breakdown

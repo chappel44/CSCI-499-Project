@@ -22,8 +22,8 @@ export default async function pullProductsFromSerp(
   // Merge results from all retailers
   const allProducts = data.results.flatMap((result: any) => {
     const retailer =
-      result.retailer ?? result.engine ?? result.seller_name ?? "unknown";
-    const retailerData = result.data;
+      result?.retailer ?? result?.engine ?? result?.seller_name ?? "unknown";
+    const retailerData = result?.data;
     return [
       ...(retailerData?.featured_products || []),
       ...(retailerData?.organic_results || []),
