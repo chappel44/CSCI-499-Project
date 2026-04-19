@@ -64,7 +64,7 @@ export default async function handler(req, res) {
         .then((r) => ({ retailer: engine, data: r.data }))
         .catch((err) => ({ retailer: engine, error: err.message })); // don't let one failure kill the rest
 
-      if (!result.error) {
+      if (result.data) {
         const { error: jsonInsertError } = await supabase
           .from("cached_searches")
           .insert([
@@ -76,7 +76,9 @@ export default async function handler(req, res) {
           ]);
 
         if (jsonInsertError) {
-          console.error(jsonInsertError);
+          return res.status(400).json({
+            error: { "SUPABASE INSERT ERROR": jsonInsertError.message },
+          });
         }
       }
     });

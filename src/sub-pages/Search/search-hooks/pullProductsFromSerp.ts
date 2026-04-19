@@ -14,7 +14,7 @@ export default async function pullProductsFromSerp(
       keyword
     )}&engines=${selectedRetailers.join(",")}`
   );
-
+  console.log("RES", res);
   if (!res.ok) throw new Error(`Server error: ${res.status}`);
 
   const data = await res.json();
