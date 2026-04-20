@@ -23,6 +23,19 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
       setUsername(name);
       setUserId(id);
     });
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      const name = session?.user?.user_metadata?.username ?? null;
+      const id = session?.user?.id ?? null;
+      setUsername(name);
+      setUserId(id);
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
 
   return (
