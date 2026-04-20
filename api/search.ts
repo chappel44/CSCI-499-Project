@@ -1,6 +1,16 @@
 // /api/search.ts
 import axios from "axios";
-import { supabase } from "../supabase-client";
+import { createClient } from "@supabase/supabase-js";
+
+// Vite automatically uses .env locally or environment variables in production
+const supabaseUrl = process.env.VITE_SUPABASE_URL;
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+if (!supabaseUrl || !supabaseKey) {
+  throw new Error("Supabase URL and key are required!");
+}
+
+const supabase = createClient(supabaseUrl, supabaseKey);
 
 const engineConfig = (keyword: string) => ({
   amazon: {
