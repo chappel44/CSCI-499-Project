@@ -1,7 +1,8 @@
-// /api/search.js
+// /api/search.ts
 import axios from "axios";
 import { supabase } from "../supabase-client";
-const engineConfig = (keyword) => ({
+
+const engineConfig = (keyword: string) => ({
   amazon: {
     engine: "amazon",
     amazon_domain: "amazon.com",
@@ -21,11 +22,54 @@ const engineConfig = (keyword) => ({
   },
 });
 
-export type EngineResult =
-  | { retailer: string; data: any; error?: never }
-  | { retailer: string; error: string; data?: never };
+function normalizeWalmart(item: any) {
+  return {
+    product_id: item.product_id ?? item.us_item_id,
+    title: item.title,
+    link: item.product_page_url,
+    thumbnail: item.thumbnail,
+    price:
+      item.primary_offer?.offer_price != null
+        ? `$${item.primary_offer.offer_price}`
+        : undefined,
+    old_price:
+      item.primary_offer?.was_price != null
+        ? `$${item.primary_offer.was_price}`
+        : undefined,
+    extracted_price: item.primary_offer?.offer_price,
+    rating: item.rating,
+    reviews: item.reviews,
+  };
+}
 
-export default async function handler(req, res) {
+function normalizeEbay(item: any) {
+  return {
+    product_id: item.epid ?? item.item_id,
+    title: item.title,
+    link: item.link,
+    thumbnail: item.thumbnail,
+    price: item.price?.raw,
+    extracted_price: item.price?.extracted,
+    rating: item.rating,
+    reviews: item.reviews_count,
+  };
+}
+
+const normalizerMap: Record<string, (item: any) => any> = {
+  walmart: normalizeWalmart,
+  ebay: normalizeEbay,
+};
+
+function normalizeProduct(retailer: string, item: any) {
+  const normalizer = normalizerMap[retailer];
+  if (!normalizer) {
+    console.warn(`No normalizer found for retailer: ${retailer}`);
+    return item;
+  }
+  return normalizer(item);
+}
+
+export default async function handler(req: any, res: any) {
   console.log("Handler called");
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET,OPTIONS");
@@ -41,9 +85,8 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: "Please provide a search keyword" });
   }
 
-  // Parse engines from comma-separated string, fallback to amazon
   const selectedEngines = engines
-    ? engines.split(",").filter((e) => engineConfig(keyword)[e])
+    ? engines.split(",").filter((e: string) => engineConfig(keyword)[e])
     : ["amazon"];
 
   if (selectedEngines.length === 0) {
@@ -53,8 +96,8 @@ export default async function handler(req, res) {
   try {
     const config = engineConfig(keyword);
 
-    const requests = selectedEngines.map(async (engine) => {
-      const result: EngineResult = await axios
+    const requests = selectedEngines.map(async (engine: string) => {
+      const result = await axios
         .get("https://serpapi.com/search.json", {
           params: {
             ...config[engine],
@@ -62,9 +105,9 @@ export default async function handler(req, res) {
           },
         })
         .then((r) => ({ retailer: engine, data: r.data }))
-        .catch((err) => ({ retailer: engine, error: err.message })); // don't let one failure kill the rest
+        .catch((err) => ({ retailer: engine, error: err.message }));
 
-      if (result.data) {
+      if ("data" in result && result.data) {
         const { error: jsonInsertError } = await supabase
           .from("cached_searches")
           .insert([
@@ -77,17 +120,47 @@ export default async function handler(req, res) {
 
         if (jsonInsertError) {
           console.error("SUPABASE INSERT ERROR:", jsonInsertError);
-
-          return res.status(400).json({
-            error: { "SUPABASE INSERT ERROR": jsonInsertError.message },
-          });
+          return null;
         }
+
+        // Read back from Supabase immediately
+        const { data: cachedSearch, error: fetchError } = await supabase
+          .from("cached_searches")
+          .select("search_json")
+          .eq("search_term", keyword)
+          .eq("retailer", engine)
+          .order("created_at", { ascending: false })
+          .limit(1);
+
+        if (fetchError || !cachedSearch?.length) {
+          console.error("Failed to read back from Supabase:", fetchError);
+          return null;
+        }
+
+        const raw = cachedSearch[0].search_json;
+        const searchData = raw.data;
+
+        const products = [
+          ...(searchData?.featured_products || []),
+          ...(searchData?.organic_results || []),
+        ].map((item) => ({
+          ...normalizeProduct(engine, item),
+          retailer: engine,
+        }));
+
+        console.log(`Products for ${engine}:`, products.length);
+        return { retailer: engine, products };
       }
+
+      return null;
     });
 
     const results = await Promise.all(requests);
-    res.status(200).json({ results });
-  } catch (err) {
+    const allProducts = results.flatMap((r) => r?.products || []);
+
+    console.log("Total products:", allProducts.length);
+    res.status(200).json({ products: allProducts });
+  } catch (err: any) {
     console.error("Search error:", err);
     res.status(500).json({ error: err.message });
   }

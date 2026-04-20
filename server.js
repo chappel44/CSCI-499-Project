@@ -5,6 +5,89 @@ import dotenv from "dotenv";
 dotenv.config();
 import { createClient } from "@supabase/supabase-js";
 
+function normalizeWalmart(item) {
+  return {
+    product_id: item.product_id ?? item.us_item_id,
+    title: item.title,
+    link: item.product_page_url,
+    thumbnail: item.thumbnail,
+    price:
+      item.primary_offer?.offer_price != null
+        ? `$${item.primary_offer.offer_price}`
+        : undefined,
+    old_price:
+      item.primary_offer?.was_price != null
+        ? `$${item.primary_offer.was_price}`
+        : undefined,
+    extracted_price: item.primary_offer?.offer_price,
+    rating: item.rating,
+    reviews: item.reviews,
+  };
+}
+
+function normalizeEbay(item) {
+  return {
+    product_id: item.epid ?? item.item_id,
+    title: item.title,
+    link: item.link,
+    thumbnail: item.thumbnail,
+    price: item.price?.raw,
+    extracted_price: item.price?.extracted,
+    rating: item.rating,
+    reviews: item.reviews_count,
+  };
+}
+
+const normalizerMap = {
+  walmart: normalizeWalmart,
+  ebay: normalizeEbay,
+};
+
+function normalizeProduct(retailer, item) {
+  const normalizer = normalizerMap[retailer];
+  if (!normalizer) {
+    console.warn(`No normalizer found for retailer: ${retailer}`);
+    return item;
+  }
+  return normalizer(item);
+}
+
+function normalizeKeyword(keyword) {
+  const stopWords = new Set([
+    "the",
+    "a",
+    "an",
+    "for",
+    "with",
+    "and",
+    "or",
+    "of",
+    "to",
+    "buy",
+    "best",
+    "cheap",
+    "new",
+    "online",
+    "sale",
+    "shop",
+  ]);
+
+  return keyword
+    .toLowerCase()
+    .replace(/[^\w\s]/g, "") // remove punctuation
+    .split(/\s+/) // split words
+    .filter((word) => word && !stopWords.has(word)) // remove stop words
+    .map((word) => {
+      // simple plural normalization
+      if (word.endsWith("s") && word.length > 3) {
+        return word.slice(0, -1);
+      }
+      return word;
+    })
+    .sort() // order words for consistent cache keys
+    .join(""); // <-- join without spaces
+}
+
 // Vite automatically uses .env locally or environment variables in production
 const supabaseUrl = process.env.VITE_SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -74,14 +157,16 @@ app.get("/api/search", async (req, res) => {
           },
         })
         .then((r) => ({ retailer: engine, data: r.data }))
-        .catch((err) => ({ retailer: engine, error: err.message })); // don't let one failure kill the rest
+        .catch((err) => ({ retailer: engine, error: err.message }));
 
       if (result.data) {
+        const normalizedKeyword = normalizeKeyword(keyword);
+
         const { error: jsonInsertError } = await supabase
           .from("cached_searches")
           .insert([
             {
-              search_term: keyword,
+              search_term: normalizedKeyword,
               search_json: result,
               retailer: engine,
             },
@@ -89,26 +174,45 @@ app.get("/api/search", async (req, res) => {
 
         if (jsonInsertError) {
           console.error("SUPABASE INSERT ERROR:", jsonInsertError);
-
-          return res.status(400).json({
-            error: { "SUPABASE INSERT ERROR": jsonInsertError.message },
-          });
+          return null;
         }
+
+        // Read back from Supabase immediately
+        const { data: cachedSearch, error: fetchError } = await supabase
+          .from("cached_searches")
+          .select("search_json")
+          .eq("search_term", normalizedKeyword)
+          .eq("retailer", engine)
+          .order("created_at", { ascending: false })
+          .limit(1);
+
+        if (fetchError || !cachedSearch?.length) {
+          console.error("Failed to read back from Supabase:", fetchError);
+          return null;
+        }
+
+        const raw = cachedSearch[0].search_json;
+        const searchData = raw.data;
+
+        const products = [
+          ...(searchData?.featured_products || []),
+          ...(searchData?.organic_results || []),
+        ].map((item) => ({
+          ...normalizeProduct(engine, item),
+          retailer: engine,
+        }));
+
+        return { retailer: engine, products };
       }
+
+      return null;
     });
 
     const results = await Promise.all(requests);
+    const allProducts = results.flatMap((r) => r?.products || []);
 
-    // Optionally also provide a flat merged list for convenience
-    const allFeatured = results.flatMap((r) => r?.featured_products || []);
-
-    const allOrganic = results.flatMap((r) => r?.organic_results || []);
-
-    res.json({
-      results, // per-retailer breakdown
-      featured_products: allFeatured, // merged across all retailers
-      organic_results: allOrganic, // merged across all retailers
-    });
+    console.log("Total products:", allProducts.length);
+    res.json({ products: allProducts });
   } catch (err) {
     console.error("Search API error:", err.message);
     res.status(500).json({ error: "Failed to fetch search results" });
