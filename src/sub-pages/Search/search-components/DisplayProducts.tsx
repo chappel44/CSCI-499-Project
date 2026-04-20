@@ -29,7 +29,7 @@ function RetailerIcon({ retailer }: { retailer?: string }) {
   if (!match)
     return (
       <span
-        className="text-xs font-medium px-1.5 py-0.5 rounded-md"
+        className="absolute top-0 right-0 text-xs font-medium px-1.5 py-0.5 rounded-md"
         style={{
           background: "rgba(0,0,0,0.06)",
           color: "#555",
@@ -41,7 +41,13 @@ function RetailerIcon({ retailer }: { retailer?: string }) {
     );
 
   const [, url] = match;
-  return <img src={url} alt={retailer} width={60} height={60} />;
+  return (
+    <img
+      src={url}
+      alt={retailer}
+      className="w-[100px] h-[50px]  object-contain "
+    />
+  );
 }
 
 export default function DisplayProducts({
@@ -92,6 +98,11 @@ export default function DisplayProducts({
               el.style.borderColor = "rgba(255,255,255,0.85)";
             }}
           >
+            {item.retailer && (
+              <div className="absolute bottom-1 right-1">
+                <RetailerIcon retailer={item.retailer} />
+              </div>
+            )}
             {item.thumbnail ? (
               <img
                 src={item.thumbnail}
@@ -110,11 +121,10 @@ export default function DisplayProducts({
 
             <div className="flex-1 flex flex-col gap-1 min-w-0">
               {/* Title row with retailer icon */}
-              <div className="flex items-center gap-1.5 min-w-0">
-                <h3 className="search-result-title text-sm font-semibold text-gray-900 line-clamp-2">
+              <div className="flex items-center gap-1.5 min-w-0 relative">
+                <h3 className="search-result-title text-sm font-semibold text-gray-900 line-clamp-2 ">
                   {item.title}
                 </h3>
-                {item.retailer && <RetailerIcon retailer={item.retailer} />}
               </div>
 
               <p className="search-result-copy text-gray-600 text-xs flex items-center gap-1.5">
@@ -140,9 +150,8 @@ export default function DisplayProducts({
                     className="cursor-pointer text-xs font-semibold px-3 py-1 rounded-lg text-white transition hover:scale-105 transition-all duration-300"
                     style={{
                       background:
-                        "linear-gradient(90deg,rgb(105, 107, 245),rgb(52, 55, 240))",
-                      boxShadow:
-                        "0 0 10px rgba(105, 107, 245, 0.4), 0 2px 10px rgba(52, 55, 240, 0.6)",
+                        "linear-gradient(90deg, rgb(59, 130, 246), rgb(37, 99, 235))",
+                      boxShadow: "0 1px 7px rgba(59, 130, 246, 0.25)",
                     }}
                   >
                     + Wishlist
@@ -167,9 +176,8 @@ export default function DisplayProducts({
                   className="text-xs font-semibold px-3 py-1 rounded-lg text-white hover:scale-105 transition-all duration-300"
                   style={{
                     background:
-                      "linear-gradient(90deg,rgb(156, 79, 223),rgb(143, 65, 245))",
-                    boxShadow:
-                      "0 0 10px rgba(145, 62, 218, 0.4), 0 2px 10px rgba(87, 47, 167, 0.6)",
+                      "linear-gradient(90deg, rgb(139, 92, 246), rgb(124, 58, 237))",
+                    boxShadow: "0 1px 8px rgba(139, 92, 246, .25)",
                   }}
                 >
                   View on Verifind ↗
