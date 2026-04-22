@@ -36,7 +36,7 @@ export default function DisplayProducts({
         return (
           <div
             key={index}
-            className="flex items-center mt-4 gap-4 p-4 rounded-2xl transition-all duration-200 hover:-translate-y-0.5"
+            className="search-result-card flex items-center mt-4 gap-4 p-4 rounded-2xl transition-all duration-200 hover:-translate-y-0.5"
             style={{
               background: "rgba(255,255,255,0.65)",
               backdropFilter: "blur(14px)",
@@ -66,7 +66,7 @@ export default function DisplayProducts({
               <img
                 src={item.thumbnail}
                 alt={item.title}
-                className="w-20 h-20 object-contain rounded-xl flex-shrink-0"
+                className="search-result-image w-20 h-20 object-contain rounded-xl flex-shrink-0"
                 style={{ background: "rgba(255,255,255,0.8)" }}
               />
             ) : (
@@ -79,16 +79,16 @@ export default function DisplayProducts({
             )}
 
             <div className="flex-1 flex flex-col gap-1 min-w-0">
-              <h3 className="text-sm font-semibold text-gray-900 line-clamp-2">
+              <h3 className="search-result-title text-sm font-semibold text-gray-900 line-clamp-2">
                 {item.title}
               </h3>
 
-              <p className="text-gray-600 text-xs flex items-center gap-1.5">
+              <p className="search-result-copy text-gray-600 text-xs flex items-center gap-1.5">
                 Rating: <StarRating rating={item?.rating ?? 0} size={14} />{" "}
                 <span className="text-gray-500/70">({item?.reviews})</span>
               </p>
 
-              <div className="text-sm font-bold text-gray-900">
+              <div className="search-result-title text-sm font-bold text-gray-900">
                 {getPrice(item)}{" "}
                 {item.old_price && (
                   <span className="text-gray-400 font-normal text-xs ml-1">

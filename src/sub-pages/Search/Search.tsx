@@ -13,23 +13,47 @@ import DisplayAdvancedSortingButtons from "./search-components/SearchSortingButt
 const itemsPerPage = 10;
 
 function Search() {
-  const { products, openPage, sortBy } = useSearchContext();
+  const { products, openPage, sortBy, minPrice, maxPrice } = useSearchContext();
   const [visible, setVisible] = useState(false);
+
+  const sortedProducts = useSortedProducts(products, sortBy);
+  const parsePrice = (price?: string, extractedPrice?: number) => {
+    if (typeof extractedPrice === "number") return extractedPrice;
+    if (!price) return null;
+
+    const match = price.match(/(\d+(\.\d+)?)/);
+    return match ? parseFloat(match[0]) : null;
+  };
+
+  const min = minPrice.trim() ? Number(minPrice) : null;
+  const max = maxPrice.trim() ? Number(maxPrice) : null;
+
+  const filteredProducts = sortedProducts.filter((product) => {
+    const parsedPrice = parsePrice(product.price, product.extracted_price);
+
+    if (parsedPrice === null) {
+      return min === null && max === null;
+    }
+
+    if (min !== null && !Number.isNaN(min) && parsedPrice < min) return false;
+    if (max !== null && !Number.isNaN(max) && parsedPrice > max) return false;
+
+    return true;
+  });
 
   const startIndex = openPage * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
-  const sortedProducts = useSortedProducts(products, sortBy);
-  const currentProducts = sortedProducts.slice(startIndex, endIndex);
+  const currentProducts = filteredProducts.slice(startIndex, endIndex);
 
   useEffect(() => {
     setTimeout(() => setVisible(true), 50);
   }, []);
 
   // Pagination
-  const totalPages = Math.ceil(products.length / itemsPerPage);
+  const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
   return (
     <section
-      className="min-h-screen overflow-x-hidden"
+      className="search-page min-h-screen overflow-x-hidden"
       style={{ background: "#f0f4ff" }}
     >
       {/* Mesh gradient background orbs */}
@@ -44,7 +68,7 @@ function Search() {
 
         <SearchSuggestions visible={visible} />
 
-        {products.length && <DisplayAdvancedSortingButtons visible={visible} />}
+        {products.length > 0 && <DisplayAdvancedSortingButtons visible={visible} />}
 
         <DisplayProducts key={openPage} currentProducts={currentProducts} />
 

@@ -1,6 +1,6 @@
 export default function DisplayBanner() {
   return (
-    <div className="relative z-10 w-full h-24 relative overflow-hidden rounded-b-3xl shadow-lg group mt-6">
+    <div className="wishlist-banner relative z-10 w-full h-24 relative overflow-hidden rounded-b-3xl shadow-lg group mt-6">
       <img
         src="https://xdzqkdoejtnthuzauewa.supabase.co/storage/v1/object/public/posts/posts/775c2b41-82ac-42a9-af0c-90331e29e66f.png"
         alt="Wishlist Banner"

@@ -15,6 +15,7 @@ export default function DisplayAdvancedSortingButtons({
     "price-asc",
     "price-desc",
     "rating-desc",
+    "reviews-desc",
     "title-asc",
     "title-desc",
     "discount-desc", // highest percentage drop
@@ -23,17 +24,18 @@ export default function DisplayAdvancedSortingButtons({
   // Label mapping for each option
   const labels: Record<string, string> = {
     none: "Default",
+    "reviews-desc": "Most Reviews",
     "price-asc": "Price ↑",
     "price-desc": "Price ↓",
     "rating-desc": "Rating ↑",
     "title-asc": "A–Z",
     "title-desc": "Z–A",
-    "discount-desc": "Price Drops First 🔥",
+    "discount-desc": "Biggest Discounts",
   };
 
   return (
     <div
-      className="relative z-10 mt-3 px-6 flex justify-center items-center gap-2 flex-wrap"
+      className="search-sort-row relative z-10 mt-3 px-6 flex justify-center items-center gap-2 flex-wrap"
       style={{
         opacity: visible ? 1 : 0,
         transform: visible ? "translateY(0)" : "translateY(8px)",
@@ -51,7 +53,7 @@ export default function DisplayAdvancedSortingButtons({
             setSortBy(option);
             setOpenPage(0);
           }}
-          className="px-3 py-1 rounded-lg text-xs font-semibold transition"
+          className="search-sort-button px-3 py-1 rounded-lg text-xs font-semibold transition"
           style={
             sortBy === option
               ? {

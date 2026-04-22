@@ -3,6 +3,13 @@ import { supabase } from "../../../supabase-client";
 import { Trash } from "lucide-react";
 import { useSearchContext } from "../../../Contexts/useSearchContext";
 
+type SearchHistoryItem = {
+  id: number;
+  search_term: string;
+  user_id: string;
+  created_at: string;
+};
+
 type DisplaySearchHistoryProps = {
   setIsFocused: React.Dispatch<SetStateAction<boolean>>;
 };
@@ -10,7 +17,7 @@ type DisplaySearchHistoryProps = {
 export default function DisplaySearchHistory({
   setIsFocused,
 }: DisplaySearchHistoryProps) {
-  const [searches, setSearches] = useState<any[]>([]);
+  const [searches, setSearches] = useState<SearchHistoryItem[]>([]);
 
   const { setKeyword } = useSearchContext();
 
@@ -23,8 +30,7 @@ export default function DisplaySearchHistory({
 
       const { data: searchHistory, error } = await supabase
         .from("search_history")
-        .select("id, search_term")
-        .limit(5)
+        .select("id, search_term, user_id, created_at")
         .order("created_at", { ascending: false })
         .eq("user_id", id);
 
@@ -33,26 +39,43 @@ export default function DisplaySearchHistory({
         return;
       }
 
-      setSearches(searchHistory || []);
+      const uniqueSearches =
+        searchHistory?.filter(
+          (search, index, self) =>
+            index ===
+            self.findIndex(
+              (item) =>
+                item.search_term.trim().toLowerCase() ===
+                search.search_term.trim().toLowerCase()
+            )
+        ).slice(0, 5) || [];
+
+      setSearches(uniqueSearches);
     }
 
     loadSearchHistory();
   }, []);
 
-  async function deleteSearch(id: number) {
-    // Delete the row from Supabase by id
+  async function deleteSearch(search: SearchHistoryItem) {
+    // Delete matching history rows for this user so duplicates do not come back on refresh
     const { error } = await supabase
       .from("search_history")
       .delete()
-      .eq("id", id);
+      .eq("user_id", search.user_id)
+      .ilike("search_term", search.search_term);
 
     if (error) {
       console.error("Failed to delete search:", error);
       return;
     }
 
-    // Update local state: remove the deleted row
-    setSearches((prev) => prev.filter((s) => s.id !== id));
+    setSearches((prev) =>
+      prev.filter(
+        (item) =>
+          item.search_term.trim().toLowerCase() !==
+          search.search_term.trim().toLowerCase()
+      )
+    );
   }
 
   return (
@@ -66,16 +89,16 @@ export default function DisplaySearchHistory({
                 setIsFocused(false);
               }}
               key={index}
-              className="flex items-center px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded cursor-pointer"
+              className="search-history-item flex items-center px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded cursor-pointer transition"
             >
               <span>{search.search_term}</span>
 
               <Trash
                 onClick={(e) => {
                   e.stopPropagation();
-                  deleteSearch(search.id);
+                  deleteSearch(search);
                 }}
-                className="h-4 w-4 text-gray-400 ml-auto hover:text-red-500"
+                className="h-4 w-4 text-gray-400 ml-auto hover:text-red-500 transition"
               />
             </div>
           ))}

@@ -15,7 +15,7 @@ export default function SearchInput() {
   };
   return (
     <div
-      className="flex flex-1 items-center gap-2 rounded-xl px-4 py-2.5 transition min-w-0 z-10"
+      className="search-input-shell flex flex-1 items-center gap-2 rounded-xl px-4 py-2.5 transition min-w-0 z-10"
       style={{
         background: "rgba(255,255,255,0.7)",
         backdropFilter: "blur(12px)",
@@ -35,7 +35,7 @@ export default function SearchInput() {
           onFocus={() => setIsFocused(true)}
           onChange={(e) => setKeyword(e.target.value)}
           placeholder="Search Verifind products"
-          className="flex-1 w-80 text-sm text-gray-900 placeholder-gray-400 focus:outline-none bg-transparent min-w-0"
+          className="search-input-field flex-1 w-80 text-sm text-gray-900 placeholder-gray-400 focus:outline-none bg-transparent min-w-0"
         />
         {isFocused && <DisplaySearchHistory setIsFocused={setIsFocused} />}
       </div>

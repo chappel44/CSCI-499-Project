@@ -1,5 +1,6 @@
 import GreetUser from "../../SharedComponents/GreetUser";
 import ComingSoonCards from "./ComingSoonCards";
+import { motion } from "framer-motion";
 
 interface SearchHeadingProps {
   visible: boolean;
@@ -17,19 +18,21 @@ export default function SearchHeading({ visible }: SearchHeadingProps) {
     >
       <GreetUser visible={visible} />
 
-      <h1
-        className="text-4xl font-black mb-2 leading-tight"
+      <motion.h1
+        className="search-title text-4xl font-black mb-2 leading-tight"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: visible ? 1 : 0 }}
+        transition={{ duration: 0.7, ease: "easeOut" }}
         style={{
-          background:
-            "linear-gradient(135deg, #0f172a 0%, #0088DD 55%, #6B30FF 100%)",
+          background: "linear-gradient(90deg,#00AAFF,#6B30FF)",
           WebkitBackgroundClip: "text",
           WebkitTextFillColor: "transparent",
           backgroundClip: "text",
         }}
       >
         Verifind Product Search
-      </h1>
-      <p className="text-gray-400 text-sm font-medium">
+      </motion.h1>
+      <p className="search-subtitle text-gray-400 text-sm font-medium">
         Find and verify products instantly.
       </p>
 

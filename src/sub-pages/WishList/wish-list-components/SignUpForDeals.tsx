@@ -8,12 +8,12 @@ export default function SignUpForDeals() {
 
   return (
     <div
-      className="w-full max-w-md rounded-2xl p-5"
+      className="wishlist-deals-card w-full max-w-md rounded-2xl p-5"
       style={{
         background: "rgba(255,255,255,0.55)",
         backdropFilter: "blur(14px)",
         border: "1px solid rgba(255,255,255,0.75)",
-        boxShadow: "0 4px 24px rgba(0,0,0,0.06)",
+        boxShadow: "0 12px 40px rgba(31,38,135,0.14)",
       }}
     >
       <h3 className="text-base font-bold text-gray-900 mb-3">
@@ -28,7 +28,7 @@ export default function SignUpForDeals() {
             setDealEmail(e.target.value);
             setDealSent(false);
           }}
-          className="flex-1 px-4 py-2 rounded-xl text-sm focus:outline-none transition"
+          className="wishlist-deals-input flex-1 px-4 py-2 rounded-xl text-sm focus:outline-none transition"
           style={{
             background: "rgba(255,255,255,0.7)",
             border: "1px solid rgba(0,0,0,0.08)",
