@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
-import { Search, Plus, X, Camera, Filter, Trash2 } from "lucide-react";
 import { supabase } from "../supabase-client";
+import { MapPin, Search, Plus, X, Camera, Filter, Trash2 } from "lucide-react";
+import maplibregl from 'maplibre-gl'; // for map show
+import 'maplibre-gl/dist/maplibre-gl.css'; // for map show
 
 export default function Marketplace() {
     const [items, setItems] = useState<any[]>([]);
@@ -12,7 +14,9 @@ export default function Marketplace() {
     const [isPostModalOpen, setIsPostModalOpen] = useState(false);
     const [loggedIn, setLoggedIn] = useState(false);
     const [currentUserId, setCurrentUserId] = useState<string | null>(null);
-    const [loading, setLoading] = useState(true); 
+    const [loading, setLoading] = useState(true);
+    const [tempAddress, setTempAddress] = useState(""); // map state
+
   
   const [formData, setFormData] = useState({
     title: "",
@@ -20,9 +24,36 @@ export default function Marketplace() {
     category: "electronics",
     description: "",
     condition: "Good",
-    imageInput: "" 
+    imageInput: "",
+    location_name: "",
+    latitude: null as number | null,
+    longitude: null as number | null
   });
 
+    // map use effect
+    useEffect(() => {
+        if (selectedItem && selectedItem.latitude && selectedItem.longitude) {
+        // Small timeout ensures the modal DOM is ready before we mount the map
+        const timer = setTimeout(() => {
+            const map = new maplibregl.Map({
+            container: 'item-map', // ID of the div below
+            style: 'https://tiles.openfreemap.org/styles/liberty', // OpenFreeMap style
+            center: [selectedItem.longitude, selectedItem.latitude],
+            zoom: 14
+        });
+
+        new maplibregl.Marker({ color: "#6B30FF" })
+            .setLngLat([selectedItem.longitude, selectedItem.latitude])
+            .addTo(map);
+        }, 100);
+
+        return () => clearTimeout(timer);
+        }
+    }, [selectedItem]);
+
+
+
+    // user auth use effect
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
       setLoggedIn(!!data.session);
@@ -30,6 +61,9 @@ export default function Marketplace() {
     });
     fetchListings();
   }, []);
+    
+    
+    // search use effect
 
     useEffect(() => {
         const delayDebounceFN = setTimeout(() => {
@@ -42,23 +76,23 @@ export default function Marketplace() {
     const fetchListings = async () => {
     setLoading(true);
 
-    // 1. Start the base query WITHOUT .order()
+    // 1. start the base query
     let query = supabase
         .from("marketplace_listings")
         .select("*")
         .eq("sold", false);
 
-    // 2. Apply Search Filter
+    // 2. apply Search Filter
     if (searchQuery) {
         query = query.or(`title.ilike.%${searchQuery}%,description.ilike.%${searchQuery}%`);
     }
 
-    // 3. Apply Catergory Filter
+    // 3. apply Catergory Filter
     if (selectedCategory && selectedCategory !== "all") {
         query = query.eq("category", selectedCategory);
     }
 
-    // 4. NOW apply the order at the very end
+    // 4. apply the order at the very end
     query = query.order("created_at", { ascending: false });
 
     const { data, error } = await query;
@@ -86,7 +120,10 @@ export default function Marketplace() {
         category: formData.category, 
         condition: formData.condition,
         images: formData.imageInput ? [formData.imageInput] : [], 
-        sold: false
+        sold: false,
+        location_name: formData.location_name,
+        latitude: formData.latitude,
+        longitude: formData.longitude
       }
     ]);
 
@@ -94,8 +131,38 @@ export default function Marketplace() {
       alert("Error posting: " + error.message);
     } else {
       setIsPostModalOpen(false);
-      setFormData({ title: "", price: "", category: "electronics", description: "", condition: "Good", imageInput: "" });
+      setFormData({ 
+        title: "", 
+        price: "", 
+        category: "electronics", 
+        description: "", 
+        condition: "Good", 
+        imageInput: "",
+        location_name: "", // Added
+        latitude: null,    // Added
+        longitude: null    // Added
+      });
+      setTempAddress(""); // Clear the search input
       fetchListings(); 
+    }
+  };
+  const handleAddressLookup = async (address: string) => {
+    if (address.length < 5) return;
+
+    const API_KEY = import.meta.env.VITE_GEOCODIO_KEY;
+    const res = await fetch(
+        `https://api.geocod.io/v1.7/geocode?q=${encodeURIComponent(address)}&api_key=${API_KEY}`
+    );
+    const data = await res.json();
+
+    if (data.results?.length > 0) {
+        const result = data.results[0];
+        setFormData({
+        ...formData,
+        location_name: result.formatted_address,
+        latitude: result.location.lat,
+        longitude: result.location.lng
+        });
     }
   };
 
@@ -267,7 +334,31 @@ export default function Marketplace() {
                     <option value="Fair">Fair</option>
                   </select>
                 </div>
-
+                {/* Location find */}
+                <div className="flex flex-col gap-1.5">
+                    <label className="text-xs font-semibold text-gray-600 uppercase tracking-wide px-1">Location</label>
+                    <div className="flex gap-2">
+                        <div className="relative flex-1">
+                            <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                            <input 
+                                placeholder="Enter address (e.g. Brooklyn, NY)" 
+                                className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-400 outline-none transition-all" 
+                                value={tempAddress}
+                                onChange={(e) => setTempAddress(e.target.value)}
+                            />
+                        </div>
+                        <button 
+                            type="button"
+                            onClick={() => handleAddressLookup(tempAddress)}
+                            className="px-4 py-2 bg-gray-800 text-white rounded-xl font-bold text-xs hover:bg-black transition-all"
+                        >
+                            Find
+                        </button>
+                    </div>
+                    {formData.location_name && (
+                    <p className="text-[10px] text-green-600 font-bold px-1 italic">✓ Found: {formData.location_name}</p>
+                  )}
+                </div>
                 <div className="flex flex-col gap-1.5">
                   <label className="text-xs font-semibold text-gray-600 uppercase tracking-wide px-1">Image URL</label>
                   <div className="relative">
@@ -323,6 +414,21 @@ export default function Marketplace() {
                 <div>
                   <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider mb-2">Description</h3>
                   <p className="text-gray-600 leading-relaxed">{selectedItem.description || "No description provided by the seller."}</p>
+                </div>
+
+                <div>
+                    <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider mb-2">Location</h3>
+                    <div className="flex items-center gap-1 text-gray-500 mb-2">
+                        <MapPin size={14} className="text-blue-500" />
+                        <span className="text-sm font-medium">{selectedItem.location_name || "Location not provided"}</span>
+                    </div>
+  
+                    {selectedItem.latitude && (
+                        <div 
+                            id="item-map" 
+                            className="w-full h-48 rounded-2xl border border-gray-100 overflow-hidden shadow-inner bg-gray-50"
+                        />
+                        )}
                 </div>
                 
                 <div className="pt-6 border-t border-gray-100 flex items-center gap-3">
