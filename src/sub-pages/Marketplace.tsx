@@ -1,6 +1,6 @@
 ﻿import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Search, Plus, X, Camera, Trash2, MessageCircle, Inbox, Scale, Save } from "lucide-react";
+import { Search, Plus, X, Camera, Trash2, MessageCircle, Inbox, Scale, Save, ShieldAlert, UserX } from "lucide-react";
 import { supabase } from "../supabase-client";
 
 type Listing = {
@@ -37,12 +37,31 @@ type ListingDraft = {
   savedAt: string;
 };
 
+const REPORT_REASONS = [
+  { id: "counterfeit", label: "Counterfeit or fake item" },
+  { id: "scam", label: "Likely scam or misleading listing" },
+  { id: "prohibited", label: "Prohibited or unsafe item" },
+  { id: "harassment", label: "Harassment or abusive behavior" },
+  { id: "spam", label: "Spam or duplicate listing" },
+  { id: "other", label: "Other", requiresDetails: true },
+];
+
 function looksLikeMissingMessagingTables(message?: string) {
   if (!message) return false;
   const lower = message.toLowerCase();
   return (
     lower.includes("marketplace_conversations") ||
     lower.includes("marketplace_messages") ||
+    lower.includes("does not exist")
+  );
+}
+
+function looksLikeMissingSafetyTables(message?: string) {
+  if (!message) return false;
+  const lower = message.toLowerCase();
+  return (
+    lower.includes("marketplace_user_blocks") ||
+    lower.includes("marketplace_listing_reports") ||
     lower.includes("does not exist")
   );
 }
@@ -56,6 +75,7 @@ export default function Marketplace() {
   const [loggedIn, setLoggedIn] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [blockedSellerIds, setBlockedSellerIds] = useState<string[]>([]);
 
   const [searchTerm, setSearchTerm] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
@@ -63,6 +83,18 @@ export default function Marketplace() {
   const [isCompareModalOpen, setIsCompareModalOpen] = useState(false);
   const [drafts, setDrafts] = useState<ListingDraft[]>([]);
   const [isDraftsModalOpen, setIsDraftsModalOpen] = useState(false);
+  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
+  const [reportTargetListing, setReportTargetListing] = useState<Listing | null>(null);
+  const [selectedReportReason, setSelectedReportReason] = useState("");
+  const [reportOtherDetails, setReportOtherDetails] = useState("");
+  const [reportError, setReportError] = useState<string | null>(null);
+  const [reportSuccess, setReportSuccess] = useState<string | null>(null);
+  const [reportSubmitting, setReportSubmitting] = useState(false);
+  const [isBlockModalOpen, setIsBlockModalOpen] = useState(false);
+  const [blockTargetListing, setBlockTargetListing] = useState<Listing | null>(null);
+  const [blockError, setBlockError] = useState<string | null>(null);
+  const [blockSuccess, setBlockSuccess] = useState<string | null>(null);
+  const [blockSubmitting, setBlockSubmitting] = useState(false);
 
   const [formData, setFormData] = useState({
     title: "",
@@ -73,10 +105,51 @@ export default function Marketplace() {
     imageInput: "",
   });
 
+  const loadBlockedSellers = async (userId: string) => {
+    const { data, error } = await supabase
+      .from("marketplace_user_blocks")
+      .select("blocked_id")
+      .eq("blocker_id", userId);
+
+    if (error) {
+      if (!looksLikeMissingSafetyTables(error.message)) {
+        console.error("Unable to load blocked users:", error.message);
+      }
+      return;
+    }
+
+    const ids = (data || []).map((row: { blocked_id: string }) => row.blocked_id);
+    setBlockedSellerIds(ids);
+  };
+
+  const userIsBlockedBySeller = async (sellerId: string) => {
+    if (!currentUserId) return false;
+    const lookup = await supabase
+      .from("marketplace_user_blocks")
+      .select("id")
+      .eq("blocker_id", sellerId)
+      .eq("blocked_id", currentUserId)
+      .maybeSingle();
+
+    if (lookup.error) {
+      if (looksLikeMissingSafetyTables(lookup.error.message)) {
+        return false;
+      }
+      console.error("Unable to verify seller block status:", lookup.error.message);
+      return false;
+    }
+
+    return !!lookup.data;
+  };
+
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
+    supabase.auth.getSession().then(async ({ data }) => {
+      const userId = data.session?.user?.id || null;
       setLoggedIn(!!data.session);
-      setCurrentUserId(data.session?.user?.id || null);
+      setCurrentUserId(userId);
+      if (userId) {
+        await loadBlockedSellers(userId);
+      }
     });
     const storedDrafts = localStorage.getItem(DRAFTS_KEY);
     if (storedDrafts) {
@@ -109,9 +182,10 @@ export default function Marketplace() {
         item.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
         (item.description || "").toLowerCase().includes(searchTerm.toLowerCase());
       const matchesCategory = categoryFilter === "all" || item.category === categoryFilter;
-      return matchesSearch && matchesCategory;
+      const sellerIsBlocked = blockedSellerIds.includes(item.user_id);
+      return matchesSearch && matchesCategory && !sellerIsBlocked;
     });
-  }, [items, searchTerm, categoryFilter]);
+  }, [items, searchTerm, categoryFilter, blockedSellerIds]);
 
   const comparedItems = useMemo(() => {
     return items.filter((item) => compareIds.includes(item.id));
@@ -234,6 +308,17 @@ export default function Marketplace() {
       return;
     }
 
+    if (blockedSellerIds.includes(listing.user_id)) {
+      alert("You blocked this seller. Unblock them before sending a message.");
+      return;
+    }
+
+    const blockedBySeller = await userIsBlockedBySeller(listing.user_id);
+    if (blockedBySeller) {
+      alert("This seller has blocked you. You cannot start a conversation.");
+      return;
+    }
+
     const lookup = await supabase
       .from("marketplace_conversations")
       .select("*")
@@ -279,6 +364,148 @@ export default function Marketplace() {
 
     setSelectedItem(null);
     navigate(`/marketplace/inbox/${conversation.id}`);
+  };
+
+  const closeReportModal = () => {
+    setIsReportModalOpen(false);
+    setReportTargetListing(null);
+    setSelectedReportReason("");
+    setReportOtherDetails("");
+    setReportError(null);
+    setReportSuccess(null);
+    setReportSubmitting(false);
+  };
+
+  const openReportModal = (listing: Listing) => {
+    if (!loggedIn || !currentUserId) {
+      alert("Please log in to report a listing.");
+      return;
+    }
+
+    if (listing.user_id === currentUserId) {
+      alert("You cannot report your own listing.");
+      return;
+    }
+
+    setReportTargetListing(listing);
+    setSelectedReportReason("");
+    setReportOtherDetails("");
+    setReportError(null);
+    setReportSuccess(null);
+    setIsReportModalOpen(true);
+  };
+
+  const submitReport = async () => {
+    if (!reportTargetListing || !currentUserId) return;
+
+    if (!selectedReportReason) {
+      setReportError("Please select a reason.");
+      return;
+    }
+
+    const selected = REPORT_REASONS.find((reason) => reason.id === selectedReportReason);
+    if (!selected) {
+      setReportError("Please select a valid reason.");
+      return;
+    }
+
+    const details = reportOtherDetails.trim();
+    if (selected.requiresDetails && (details.length < 3 || details.length > 500)) {
+      setReportError("For 'Other', provide details between 3 and 500 characters.");
+      return;
+    }
+
+    setReportSubmitting(true);
+    setReportError(null);
+
+    const { error } = await supabase.from("marketplace_listing_reports").insert([
+      {
+        listing_id: reportTargetListing.id,
+        reporter_id: currentUserId,
+        seller_id: reportTargetListing.user_id,
+        reason: selected.label,
+        details: details || null,
+      },
+    ]);
+
+    if (error) {
+      if (looksLikeMissingSafetyTables(error.message)) {
+        setReportError(
+          "Report/block tables are not set up yet. Run src/sql/marketplace_messaging.sql in Supabase SQL Editor first."
+        );
+        setReportSubmitting(false);
+        return;
+      }
+      setReportError("Unable to submit report: " + error.message);
+      setReportSubmitting(false);
+      return;
+    }
+
+    setReportSuccess("Report submitted. Thank you for helping keep the marketplace safe.");
+    setReportSubmitting(false);
+  };
+
+  const closeBlockModal = () => {
+    setIsBlockModalOpen(false);
+    setBlockTargetListing(null);
+    setBlockError(null);
+    setBlockSuccess(null);
+    setBlockSubmitting(false);
+  };
+
+  const openBlockModal = (listing: Listing) => {
+    if (!loggedIn || !currentUserId) {
+      alert("Please log in to block a seller.");
+      return;
+    }
+
+    if (listing.user_id === currentUserId) {
+      alert("You cannot block yourself.");
+      return;
+    }
+
+    setBlockTargetListing(listing);
+    setBlockError(null);
+    setBlockSuccess(null);
+    setIsBlockModalOpen(true);
+  };
+
+  const submitBlockSeller = async () => {
+    if (!blockTargetListing || !currentUserId) return;
+
+    setBlockSubmitting(true);
+    setBlockError(null);
+
+    const { error } = await supabase.from("marketplace_user_blocks").insert([
+      {
+        blocker_id: currentUserId,
+        blocked_id: blockTargetListing.user_id,
+        reason: "Blocked seller messages",
+      },
+    ]);
+
+    if (error) {
+      const errorCode = (error as { code?: string }).code;
+      if (errorCode === "23505") {
+        setBlockSuccess("This seller is already blocked.");
+      } else if (looksLikeMissingSafetyTables(error.message)) {
+        setBlockError(
+          "Report/block tables are not set up yet. Run src/sql/marketplace_messaging.sql in Supabase SQL Editor first."
+        );
+        setBlockSubmitting(false);
+        return;
+      } else {
+        setBlockError("Unable to block seller: " + error.message);
+        setBlockSubmitting(false);
+        return;
+      }
+    } else {
+      setBlockSuccess("Seller blocked successfully.");
+    }
+
+    await loadBlockedSellers(currentUserId);
+    setBlockSubmitting(false);
+    setSelectedItem(null);
   };
 
   const formatPrice = (price: number) => {
@@ -622,12 +849,12 @@ export default function Marketplace() {
 
       {isCompareModalOpen && (
         <div className="fixed inset-0 z-[85] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md">
-          <div className="bg-white rounded-[2rem] w-full max-w-6xl max-h-[88vh] overflow-hidden shadow-2xl border border-gray-100">
-            <div className="p-5 border-b border-gray-100 flex items-center justify-between">
+          <div className="marketplace-compare-shell bg-white rounded-[2rem] w-full max-w-6xl max-h-[88vh] overflow-hidden shadow-2xl border border-gray-100">
+            <div className="marketplace-compare-header p-5 border-b border-gray-100 flex items-center justify-between">
               <h2 className="text-2xl font-black text-gray-900">Compare Listings</h2>
               <button
                 onClick={() => setIsCompareModalOpen(false)}
-                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                className="marketplace-compare-close p-2 hover:bg-gray-100 rounded-full transition-colors"
               >
                 <X className="text-gray-400" />
               </button>
@@ -639,27 +866,45 @@ export default function Marketplace() {
               </div>
             ) : (
               <div className="overflow-x-auto">
-                <div className="grid gap-4 p-5" style={{ gridTemplateColumns: `repeat(${comparedItems.length}, minmax(240px, 1fr))` }}>
+                <div className="grid gap-4 p-5" style={{ gridTemplateColumns: `repeat(${comparedItems.length}, minmax(260px, 1fr))` }}>
                   {comparedItems.map((item) => (
-                    <div key={item.id} className="rounded-2xl border border-gray-200 bg-gray-50 p-4">
+                    <div key={item.id} className="marketplace-compare-card rounded-2xl border border-gray-200 bg-gray-50 p-4">
                       <img
                         src={item.images?.[0] || "https://placehold.co/400x300/e2e8f0/64748b?text=No+Image"}
                         onError={(e) => {
                           e.currentTarget.src = "https://placehold.co/400x300/e2e8f0/64748b?text=Image+Unavailable";
                         }}
                         alt={item.title}
-                        className="w-full h-40 object-cover rounded-xl mb-3"
+                        className="marketplace-compare-image w-full h-40 object-cover rounded-xl mb-3"
                       />
-                      <h3 className="font-black text-gray-900 text-lg leading-tight">{item.title}</h3>
-                      <p className="text-2xl font-bold text-gray-900 mt-2">{formatPrice(item.price)}</p>
-                      <div className="mt-3 space-y-2 text-sm">
-                        <p><span className="font-semibold text-gray-700">Category:</span> {item.category}</p>
-                        <p><span className="font-semibold text-gray-700">Condition:</span> {item.condition}</p>
-                        <p className="text-gray-600"><span className="font-semibold text-gray-700">Description:</span> {item.description || "No description"}</p>
+                      <p className="marketplace-compare-label text-[10px] font-bold text-indigo-500 uppercase tracking-[0.18em]">
+                        {item.category}
+                      </p>
+                      <h3 className="marketplace-compare-title font-black text-gray-900 text-lg leading-tight mt-1">
+                        {item.title}
+                      </h3>
+                      <p className="marketplace-compare-price text-2xl font-bold text-gray-900 mt-2">
+                        {formatPrice(item.price)}
+                      </p>
+                      <div className="mt-3 space-y-3 text-sm">
+                        <div className="marketplace-compare-row flex items-start justify-between gap-3">
+                          <span className="marketplace-compare-key font-semibold text-gray-700">Condition</span>
+                          <span className="marketplace-compare-value text-gray-800">{item.condition}</span>
+                        </div>
+                        <div className="marketplace-compare-row flex items-start justify-between gap-3">
+                          <span className="marketplace-compare-key font-semibold text-gray-700">Category</span>
+                          <span className="marketplace-compare-value text-gray-800">{item.category}</span>
+                        </div>
+                        <div className="marketplace-compare-description rounded-xl border border-gray-200 bg-white px-3 py-2.5">
+                          <p className="marketplace-compare-key font-semibold text-gray-700 mb-1">Description</p>
+                          <p className="marketplace-compare-value text-gray-700 leading-relaxed line-clamp-5">
+                            {item.description || "No description"}
+                          </p>
+                        </div>
                       </div>
                       <button
                         onClick={() => toggleCompare(item.id)}
-                        className="w-full mt-4 py-2.5 rounded-xl text-red-600 border border-red-200 bg-red-50 font-bold"
+                        className="marketplace-compare-remove w-full mt-4 py-2.5 rounded-xl text-red-600 border border-red-200 bg-red-50 font-bold"
                       >
                         Remove from Compare
                       </button>
@@ -738,13 +983,198 @@ export default function Marketplace() {
                   </button>
                 </div>
               ) : (
-                <button
-                  onClick={() => startConversationForListing(selectedItem)}
-                  className="w-full py-5 bg-blue-600 text-white text-lg font-bold rounded-2xl hover:bg-blue-700 shadow-xl transition-all transform active:scale-95 mt-auto"
-                >
-                  Message Seller
-                </button>
+                <div className="mt-auto space-y-3">
+                  <button
+                    onClick={() => startConversationForListing(selectedItem)}
+                    disabled={blockedSellerIds.includes(selectedItem.user_id)}
+                    className="w-full py-5 bg-blue-600 text-white text-lg font-bold rounded-2xl hover:bg-blue-700 shadow-xl transition-all transform active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed"
+                  >
+                    {blockedSellerIds.includes(selectedItem.user_id) ? "Seller Blocked" : "Message Seller"}
+                  </button>
+                  <div className="grid grid-cols-2 gap-3">
+                    <button
+                      onClick={() => openReportModal(selectedItem)}
+                      className="w-full py-3.5 rounded-xl border border-amber-200 bg-amber-50 text-amber-700 font-bold hover:bg-amber-100 transition-all inline-flex items-center justify-center gap-2"
+                    >
+                      <ShieldAlert size={16} />
+                      Report
+                    </button>
+                    <button
+                      onClick={() => openBlockModal(selectedItem)}
+                      className="w-full py-3.5 rounded-xl border border-red-200 bg-red-50 text-red-700 font-bold hover:bg-red-100 transition-all inline-flex items-center justify-center gap-2"
+                    >
+                      <UserX size={16} />
+                      Block Seller
+                    </button>
+                  </div>
+                </div>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {isReportModalOpen && reportTargetListing && (
+        <div className="fixed inset-0 z-[95] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="report-modal-shell bg-white rounded-[2rem] w-full max-w-xl overflow-hidden shadow-2xl border border-gray-100">
+            <div className="p-6 md:p-7">
+              <div className="flex items-center justify-between gap-3 mb-5">
+                <h2 className="text-2xl font-black text-gray-900">Report Listing</h2>
+                <button
+                  onClick={closeReportModal}
+                  className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                >
+                  <X className="text-gray-500" />
+                </button>
+              </div>
+
+              {reportSuccess ? (
+                <div className="space-y-4">
+                  <div className="rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-700 text-sm p-4">
+                    {reportSuccess}
+                  </div>
+                  <button
+                    onClick={closeReportModal}
+                    className="w-full py-3 rounded-xl text-white font-bold"
+                    style={{ background: "linear-gradient(90deg,#00AAFF,#6B30FF)" }}
+                  >
+                    Close
+                  </button>
+                </div>
+              ) : (
+                <>
+                  <p className="text-sm text-gray-600 mb-2">
+                    Why are you reporting <span className="font-semibold text-gray-800">{reportTargetListing.title}</span>?
+                  </p>
+                  <p className="text-xs text-gray-500 mb-4">
+                    Choose one reason. Add details if needed.
+                  </p>
+
+                  <div className="space-y-2.5 mb-4">
+                    {REPORT_REASONS.map((reason) => (
+                      <button
+                        key={reason.id}
+                        type="button"
+                        onClick={() => {
+                          setSelectedReportReason(reason.id);
+                          setReportError(null);
+                        }}
+                        className={`report-reason-button w-full text-left px-4 py-3 rounded-xl border transition font-semibold ${
+                          selectedReportReason === reason.id
+                            ? "report-reason-selected border-blue-500 bg-blue-600 text-white shadow-sm"
+                            : "border-slate-200 bg-slate-50 text-slate-800 hover:bg-slate-100"
+                        }`}
+                      >
+                        {reason.label}
+                      </button>
+                    ))}
+                  </div>
+
+                  {selectedReportReason === "other" && (
+                    <div className="mb-4">
+                      <label className="text-xs font-semibold text-gray-600 uppercase tracking-wide px-1">
+                        Other Details
+                      </label>
+                      <textarea
+                        rows={4}
+                        value={reportOtherDetails}
+                        onChange={(e) => {
+                          setReportOtherDetails(e.target.value);
+                          setReportError(null);
+                        }}
+                        placeholder="Tell us what happened..."
+                        className="mt-1.5 w-full px-4 py-3 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-400 outline-none transition-all resize-none"
+                        maxLength={500}
+                      />
+                      <p className="text-[11px] text-gray-500 mt-1 text-right">
+                        {reportOtherDetails.trim().length}/500
+                      </p>
+                    </div>
+                  )}
+
+                  {reportError && (
+                    <div className="rounded-xl border border-red-200 bg-red-50 text-red-700 text-sm p-3 mb-4">
+                      {reportError}
+                    </div>
+                  )}
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <button
+                      type="button"
+                      onClick={closeReportModal}
+                      className="report-cancel-button w-full py-3 rounded-xl border border-slate-200 text-slate-700 font-bold bg-slate-50 hover:bg-slate-100 transition-all"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      onClick={submitReport}
+                      disabled={reportSubmitting}
+                      className="w-full py-3 rounded-xl text-white font-bold disabled:opacity-70 disabled:cursor-not-allowed"
+                      style={{ background: "linear-gradient(90deg,#00AAFF,#6B30FF)" }}
+                    >
+                      {reportSubmitting ? "Submitting..." : "Submit Report"}
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {isBlockModalOpen && blockTargetListing && (
+        <div className="fixed inset-0 z-[96] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="report-modal-shell bg-white rounded-[2rem] w-full max-w-lg overflow-hidden shadow-2xl border border-gray-100">
+            <div className="p-6 md:p-7">
+              <div className="flex items-center justify-between gap-3 mb-4">
+                <h2 className="text-2xl font-black text-gray-900">Block Seller</h2>
+                <button
+                  onClick={closeBlockModal}
+                  className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                >
+                  <X className="text-gray-500" />
+                </button>
+              </div>
+
+              <p className="text-sm text-gray-700">
+                Block <span className="font-semibold">{blockTargetListing.title}</span> seller? You
+                won&apos;t be able to message each other, and their listings will be hidden for you.
+              </p>
+              <p className="text-xs text-gray-500 mt-2">
+                You can always unblock them later in Settings under <span className="font-semibold">Blocked Users</span>.
+              </p>
+
+              {blockError && (
+                <div className="rounded-xl border border-red-200 bg-red-50 text-red-700 text-sm p-3 mt-4">
+                  {blockError}
+                </div>
+              )}
+
+              {blockSuccess && (
+                <div className="rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-700 text-sm p-3 mt-4">
+                  {blockSuccess}
+                </div>
+              )}
+
+              <div className="grid grid-cols-2 gap-3 mt-5">
+                <button
+                  type="button"
+                  onClick={closeBlockModal}
+                  className="report-cancel-button w-full py-3 rounded-xl border border-slate-200 text-slate-700 font-bold bg-slate-50 hover:bg-slate-100 transition-all"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={submitBlockSeller}
+                  disabled={blockSubmitting}
+                  className="w-full py-3 rounded-xl text-white font-bold disabled:opacity-70 disabled:cursor-not-allowed"
+                  style={{ background: "linear-gradient(90deg,#00AAFF,#6B30FF)" }}
+                >
+                  {blockSubmitting ? "Blocking..." : "Block Seller"}
+                </button>
+              </div>
             </div>
           </div>
         </div>
