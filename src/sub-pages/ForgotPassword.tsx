@@ -4,6 +4,19 @@ import { supabase } from "../supabase-client";
 
 const RESET_COOLDOWN_SECONDS = 60;
 const RESET_COOLDOWN_KEY = "forgot-password-last-request-at";
+const DEFAULT_RESET_PATH = "/reset-password";
+
+const getResetRedirectUrl = () => {
+  const configured = (
+    import.meta.env as Record<string, string | undefined>
+  ).VITE_PASSWORD_RESET_REDIRECT_URL;
+
+  if (configured && configured.trim()) {
+    return configured.trim();
+  }
+
+  return `${window.location.origin}${DEFAULT_RESET_PATH}`;
+};
 
 export default function ForgotPassword() {
   const [email, setEmail] = useState("");
@@ -47,17 +60,14 @@ export default function ForgotPassword() {
     setErrorMessage(null);
 
     const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
-      redirectTo: `${window.location.origin}/reset-password`,
+      redirectTo: getResetRedirectUrl(),
     });
 
     if (error) {
       setErrorMessage(error.message);
     } else {
       setSent(true);
-      window.sessionStorage.setItem(
-        RESET_COOLDOWN_KEY,
-        Date.now().toString()
-      );
+      window.sessionStorage.setItem(RESET_COOLDOWN_KEY, Date.now().toString());
       setCooldownRemaining(RESET_COOLDOWN_SECONDS);
     }
 
@@ -72,13 +82,7 @@ export default function ForgotPassword() {
             <div className="flex items-center gap-2.5 mb-6">
               <svg width="32" height="32" viewBox="0 0 52 52" fill="none">
                 <defs>
-                  <linearGradient
-                    id="forgot-lg"
-                    x1="0%"
-                    y1="0%"
-                    x2="100%"
-                    y2="100%"
-                  >
+                  <linearGradient id="forgot-lg" x1="0%" y1="0%" x2="100%" y2="100%">
                     <stop offset="0%" stopColor="#00AAFF" />
                     <stop offset="100%" stopColor="#6B30FF" />
                   </linearGradient>
@@ -122,11 +126,9 @@ export default function ForgotPassword() {
               </span>
             </div>
 
-            <h2 className="text-xl font-bold text-gray-900 mb-1 self-start">
-              Reset your password
-            </h2>
+            <h2 className="text-xl font-bold text-gray-900 mb-1 self-start">Forgot Password</h2>
             <p className="text-sm text-gray-400 mb-6 self-start">
-              Enter your email and we'll send you a reset link.
+              Enter your email and we will send a reset link.
             </p>
 
             <form onSubmit={handleSendReset} className="w-full flex flex-col gap-4">
@@ -144,13 +146,11 @@ export default function ForgotPassword() {
                 />
               </div>
 
-              {errorMessage && (
-                <p className="text-xs text-red-500">{errorMessage}</p>
-              )}
+              {errorMessage && <p className="text-xs text-red-500">{errorMessage}</p>}
 
               {sent && (
                 <p className="text-xs text-green-600">
-                  Reset link sent. Check your email for the next step.
+                  Reset link sent. Check your inbox for the next step.
                 </p>
               )}
 
@@ -181,7 +181,7 @@ export default function ForgotPassword() {
             </div>
 
             <p className="text-sm text-gray-500">
-              Remembered it?{" "}
+              Back to{" "}
               <Link
                 to="/login"
                 className="font-semibold hover:underline"
@@ -192,7 +192,7 @@ export default function ForgotPassword() {
                   backgroundClip: "text",
                 }}
               >
-                Back to Login
+                Login
               </Link>
             </p>
           </div>

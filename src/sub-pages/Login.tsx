@@ -31,6 +31,14 @@ export default function Login() {
   }, []);
 
   useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => {
+      if (data.session) {
+        navigate("/");
+      }
+    });
+  }, [navigate]);
+
+  useEffect(() => {
     if (cooldownRemaining <= 0) return;
 
     const timer = window.setInterval(() => {
@@ -90,6 +98,26 @@ export default function Login() {
     setTimeout(() => {
       navigate("/"); // bring user to homepage on successful login can do navigate(-1) to go to last page
     }, 1800);
+  };
+
+  const handleGoogleSignIn = async () => {
+    if (loading) return;
+
+    setErrorMessage(null);
+    setLoading(true);
+
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo: `${window.location.origin}/login`,
+        queryParams: { prompt: "select_account" },
+      },
+    });
+
+    if (error) {
+      setErrorMessage(error.message);
+      setLoading(false);
+    }
   };
 
   // welcome screen shown briefly after login
@@ -326,6 +354,39 @@ export default function Login() {
               <span className="text-xs text-gray-400">or</span>
               <div className="flex-1 h-px bg-gray-200" />
             </div>
+
+            <button
+              type="button"
+              onClick={handleGoogleSignIn}
+              disabled={loading}
+              title="Sign in using Gmail"
+              aria-label="Sign in using Gmail"
+              className="w-11 h-11 rounded-full border border-gray-300 text-sm font-semibold text-gray-700 transition hover:bg-gray-50 flex items-center justify-center mx-auto disabled:opacity-60 disabled:cursor-not-allowed"
+            >
+              <svg
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                aria-hidden="true"
+              >
+                <path
+                  d="M21.35 11.1H12v2.98h5.36c-.52 1.67-2.07 2.86-4.14 2.86a4.89 4.89 0 1 1 0-9.78 4.4 4.4 0 0 1 3.12 1.22l2.29-2.3A7.85 7.85 0 0 0 12.9 4a8.03 8.03 0 1 0 .32 16c4.64 0 7.72-3.25 7.72-7.84 0-.53-.05-.92-.13-1.06h.54z"
+                  fill="#4285F4"
+                />
+                <path
+                  d="M5.4 14.3l-.62 2.3A8 8 0 0 1 4 12c0-1.42.37-2.76 1.02-3.93l2.1 1.54A4.87 4.87 0 0 0 6.76 12c0 .8.19 1.56.54 2.3z"
+                  fill="#34A853"
+                />
+                <path
+                  d="M12.9 20a7.9 7.9 0 0 1-5.98-2.74l2.48-1.92c.7.5 1.57.8 2.5.8 2.04 0 3.58-1.16 4.13-2.8h2.97A8.03 8.03 0 0 1 12.9 20z"
+                  fill="#FBBC05"
+                />
+                <path
+                  d="M6.92 6.74A7.9 7.9 0 0 1 12.9 4c2.18 0 4.03.8 5.41 2.13l-2.38 2.4a4.44 4.44 0 0 0-3.03-1.2c-1.95 0-3.59 1.25-4.2 3l-2.78-2.16z"
+                  fill="#EA4335"
+                />
+              </svg>
+            </button>
 
             {/* Sign up link */}
             <p className="text-sm text-gray-500">
