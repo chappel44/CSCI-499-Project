@@ -1,5 +1,5 @@
 import type { SetStateAction } from "react";
-import { supabase } from "../../../supabase-client";
+import { supabase } from "../../../../supabase-client";
 
 export default async function handleDealSignup(
   dealEmail: string,

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { supabase } from "./supabase-client";
+import { supabase } from "../supabase-client";
 
 export default function Header() {
   const { pathname } = useLocation();
@@ -17,11 +17,13 @@ export default function Header() {
       setHeaderAvatarUrl(data.session?.user.user_metadata?.avatar_url ?? "");
     });
 
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
-      setLoggedIn(!!session);
-      setHeaderUsername(session?.user.user_metadata?.username ?? "");
-      setHeaderAvatarUrl(session?.user.user_metadata?.avatar_url ?? "");
-    });
+    const { data: listener } = supabase.auth.onAuthStateChange(
+      (_event, session) => {
+        setLoggedIn(!!session);
+        setHeaderUsername(session?.user.user_metadata?.username ?? "");
+        setHeaderAvatarUrl(session?.user.user_metadata?.avatar_url ?? "");
+      }
+    );
 
     return () => listener.subscription.unsubscribe();
   }, []);
@@ -72,7 +74,9 @@ export default function Header() {
               ) : (
                 <div
                   className="flex h-full w-full items-center justify-center text-base font-black text-white"
-                  style={{ background: "linear-gradient(90deg,#00AAFF,#6B30FF)" }}
+                  style={{
+                    background: "linear-gradient(90deg,#00AAFF,#6B30FF)",
+                  }}
                 >
                   {profileInitial}
                 </div>
@@ -89,7 +93,10 @@ export default function Header() {
             </motion.span>
           </Link>
         ) : (
-          <Link to="/" className="flex items-center gap-2.5 group flex-shrink-0">
+          <Link
+            to="/"
+            className="flex items-center gap-2.5 group flex-shrink-0"
+          >
             <svg width="28" height="28" viewBox="0 0 52 52" fill="none">
               <defs>
                 <linearGradient id="hdr-lg" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -175,7 +182,7 @@ export default function Header() {
           {loggedIn ? (
             <button
               onClick={handleSignOut}
-              className="px-5 py-2 rounded-xl text-sm font-semibold text-white transition hover:opacity-90 shadow-md border border-white/20"
+              className="px-5 py-2 cursor-pointer rounded-xl text-sm font-semibold text-white transition hover:opacity-90 shadow-md border border-white/20"
               style={{ background: "linear-gradient(90deg,#00AAFF,#6B30FF)" }}
             >
               Sign Out

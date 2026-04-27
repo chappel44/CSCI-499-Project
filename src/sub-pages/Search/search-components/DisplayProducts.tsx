@@ -11,6 +11,45 @@ interface DisplayProductsProps {
   currentProducts: Product[];
 }
 
+function RetailerIcon({ retailer }: { retailer?: string }) {
+  const normalized = retailer?.toLowerCase();
+
+  const logoMap: Record<string, string> = {
+    walmart:
+      "https://upload.wikimedia.org/wikipedia/commons/thumb/0/0b/Walmart_logo_%282025%3B_Alt%29.svg/1280px-Walmart_logo_%282025%3B_Alt%29.svg.png",
+    amazon:
+      "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a9/Amazon_logo.svg/960px-Amazon_logo.svg.png?_=20250504041148",
+    ebay: "https://cdn.simpleicons.org/ebay/E53238",
+  };
+
+  const match = Object.entries(logoMap).find(([key]) =>
+    normalized?.includes(key)
+  );
+
+  if (!match)
+    return (
+      <span
+        className="absolute top-0 right-0 text-xs font-medium px-1.5 py-0.5 rounded-md"
+        style={{
+          background: "rgba(0,0,0,0.06)",
+          color: "#555",
+          fontSize: "10px",
+        }}
+      >
+        {retailer}
+      </span>
+    );
+
+  const [, url] = match;
+  return (
+    <img
+      src={url}
+      alt={retailer}
+      className="w-[100px] h-[50px]  object-contain "
+    />
+  );
+}
+
 export default function DisplayProducts({
   currentProducts,
 }: DisplayProductsProps) {
@@ -20,7 +59,6 @@ export default function DisplayProducts({
 
   const { userId } = useUser();
 
-  // retrigger animation when results change
   useEffect(() => {
     setVisible(false);
     const t = setTimeout(() => setVisible(true), 30);
@@ -42,10 +80,8 @@ export default function DisplayProducts({
               backdropFilter: "blur(14px)",
               border: "1px solid rgba(255,255,255,0.85)",
               boxShadow: "0 2px 16px rgba(0,0,0,0.06)",
-
               opacity: visible ? 1 : 0,
               transform: visible ? "translateY(0)" : "translateY(16px)",
-
               transition: "opacity 0.5s ease, transform 0.5s ease",
               transitionDelay: `${index * 150}ms`,
               willChange: "transform, opacity",
@@ -62,6 +98,11 @@ export default function DisplayProducts({
               el.style.borderColor = "rgba(255,255,255,0.85)";
             }}
           >
+            {item.retailer && (
+              <div className="absolute bottom-1 right-1">
+                <RetailerIcon retailer={item.retailer} />
+              </div>
+            )}
             {item.thumbnail ? (
               <img
                 src={item.thumbnail}
@@ -79,9 +120,12 @@ export default function DisplayProducts({
             )}
 
             <div className="flex-1 flex flex-col gap-1 min-w-0">
-              <h3 className="search-result-title text-sm font-semibold text-gray-900 line-clamp-2">
-                {item.title}
-              </h3>
+              {/* Title row with retailer icon */}
+              <div className="flex items-center gap-1.5 min-w-0 relative">
+                <h3 className="search-result-title text-sm font-semibold text-gray-900 line-clamp-2 ">
+                  {item.title}
+                </h3>
+              </div>
 
               <p className="search-result-copy text-gray-600 text-xs flex items-center gap-1.5">
                 Rating: <StarRating rating={item?.rating ?? 0} size={14} />{" "}
@@ -103,9 +147,11 @@ export default function DisplayProducts({
                     onClick={() =>
                       addToWishlist(userId, item, setAddedIds, navigate)
                     }
-                    className="text-xs font-semibold px-3 py-1 rounded-lg text-white transition hover:opacity-90"
+                    className="cursor-pointer text-xs font-semibold px-3 py-1 rounded-lg text-white transition hover:scale-105 transition-all duration-300"
                     style={{
-                      background: "linear-gradient(90deg,#00AAFF,#6B30FF)",
+                      background:
+                        "linear-gradient(90deg, rgb(59, 130, 246), rgb(37, 99, 235))",
+                      boxShadow: "0 1px 7px rgba(59, 130, 246, 0.25)",
                     }}
                   >
                     + Wishlist
@@ -127,9 +173,11 @@ export default function DisplayProducts({
                   href={`${item.link}?tag=yourtag-20`}
                   target="_blank"
                   rel="noreferrer"
-                  className="text-xs font-semibold px-3 py-1 rounded-lg text-white hover:opacity-90"
+                  className="text-xs font-semibold px-3 py-1 rounded-lg text-white hover:scale-105 transition-all duration-300"
                   style={{
-                    background: "linear-gradient(90deg,#00AAFF,#6B30FF)",
+                    background:
+                      "linear-gradient(90deg, rgb(139, 92, 246), rgb(124, 58, 237))",
+                    boxShadow: "0 1px 8px rgba(139, 92, 246, .25)",
                   }}
                 >
                   View on Verifind ↗

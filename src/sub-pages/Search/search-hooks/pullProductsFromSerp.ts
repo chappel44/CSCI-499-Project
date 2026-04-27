@@ -1,35 +1,29 @@
-import { supabase } from "../../../supabase-client";
 import type { Product } from "../search-structures/SearchStructure";
 
 export default async function pullProductsFromSerp(
   keyword: string,
-  normalizedKeyword: string,
-  setProducts: (products: Product[]) => void
-) {
+  selectedRetailers: string[]
+): Promise<Product[]> {
   console.log("Pulling results from api");
-  const res = await fetch(`/api/search?keyword=${encodeURIComponent(keyword)}`);
+  console.log(selectedRetailers.join(","));
+
+  if (!selectedRetailers || selectedRetailers.length === 0) {
+    return [];
+  }
+
+  const res = await fetch(
+    `/api/search?keyword=${encodeURIComponent(
+      keyword
+    )}&engines=${selectedRetailers.join(",")}`
+  );
 
   if (!res.ok) throw new Error(`Server error: ${res.status}`);
 
   const data = await res.json();
 
-  const allProducts = [
-    ...(data.featured_products || []),
-    ...(data.organic_results || []),
-  ];
+  console.log("raw data:", data);
+  console.log("results array:", data.results);
+  console.log("first result:", data.results?.[0]);
 
-  const { error: jsonInsertError } = await supabase
-    .from("cached_searches")
-    .insert([
-      {
-        search_term: normalizedKeyword, // your normalized keyword
-        search_json: data, // the parsed JSON object
-      },
-    ]);
-
-  if (jsonInsertError) {
-    console.error(jsonInsertError.message);
-  }
-
-  setProducts(allProducts);
+  return data.products ?? [];
 }

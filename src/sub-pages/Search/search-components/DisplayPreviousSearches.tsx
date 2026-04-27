@@ -1,5 +1,5 @@
 import { useEffect, useState, type SetStateAction } from "react";
-import { supabase } from "../../../supabase-client";
+import { supabase } from "../../../../supabase-client";
 import { Trash } from "lucide-react";
 import { useSearchContext } from "../../../Contexts/useSearchContext";
 
@@ -40,15 +40,17 @@ export default function DisplaySearchHistory({
       }
 
       const uniqueSearches =
-        searchHistory?.filter(
-          (search, index, self) =>
-            index ===
-            self.findIndex(
-              (item) =>
-                item.search_term.trim().toLowerCase() ===
-                search.search_term.trim().toLowerCase()
-            )
-        ).slice(0, 5) || [];
+        searchHistory
+          ?.filter(
+            (search, index, self) =>
+              index ===
+              self.findIndex(
+                (item) =>
+                  item.search_term.trim().toLowerCase() ===
+                  search.search_term.trim().toLowerCase()
+              )
+          )
+          .slice(0, 5) || [];
 
       setSearches(uniqueSearches);
     }

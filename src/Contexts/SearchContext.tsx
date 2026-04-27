@@ -1,7 +1,7 @@
 import { createContext, useEffect, useState } from "react";
 import type { ReactNode } from "react";
 import type { Product } from "../sub-pages/Search/search-structures/SearchStructure";
-import { supabase } from "../supabase-client";
+import { supabase } from "../../supabase-client";
 import { useUser } from "./UserContext";
 
 export const SearchContext = createContext<MyContextType | null>(null);
@@ -38,6 +38,8 @@ type MyContextType = {
   setMinPrice: React.Dispatch<React.SetStateAction<string>>;
   maxPrice: string;
   setMaxPrice: React.Dispatch<React.SetStateAction<string>>;
+  selectedRetailers: string[];
+  setSelectedRetailers: React.Dispatch<React.SetStateAction<string[]>>;
 };
 
 export function SearchProvider({ children }: MyProviderProps) {
@@ -49,6 +51,7 @@ export function SearchProvider({ children }: MyProviderProps) {
   const [sortBy, setSortBy] = useState<SortByType>("none");
   const [minPrice, setMinPrice] = useState("");
   const [maxPrice, setMaxPrice] = useState("");
+  const [selectedRetailers, setSelectedRetailers] = useState<string[]>([]);
 
   const { userId } = useUser();
 
@@ -92,6 +95,8 @@ export function SearchProvider({ children }: MyProviderProps) {
         setMinPrice,
         maxPrice,
         setMaxPrice,
+        selectedRetailers,
+        setSelectedRetailers,
       }}
     >
       {children}

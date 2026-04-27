@@ -1,16 +1,13 @@
+import { supabase } from "../../../../supabase-client";
 import { useSearchContext } from "../../../Contexts/useSearchContext";
-import { supabase } from "../../../supabase-client";
 import checkCache from "../search-hooks/checkCache";
-import deleteOldSearches from "../search-hooks/deleteOldSearch";
 import normalizeKeyword from "../search-hooks/normalizeKeyword";
 import pullProductsFromSerp from "../search-hooks/pullProductsFromSerp";
+import type { Product } from "../search-structures/SearchStructure";
 
-/**
- * Custom hook to search products using keyword from context,
- * update search results, and manage loading / pagination.
- */
 export function useSearchProducts() {
-  const { keyword, setProducts } = useSearchContext();
+  const { keyword, setProducts, selectedRetailers, setSelectedRetailers } =
+    useSearchContext();
 
   return async function searchProducts(
     setLoading: (loading: boolean) => void,
@@ -21,31 +18,51 @@ export function useSearchProducts() {
     setLoading(true);
 
     try {
-      // Get current user
       const { data: user } = await supabase.auth.getUser();
       const userId = user.user?.id;
 
-      // Save search term
       const { error } = await supabase
         .from("search_history")
         .insert({ search_term: keyword, user_id: userId });
+
       if (error) console.error(error.message);
       setOpenPage(-1);
 
-      // Normalize keyword & clean old searches
       const normalizedKeyword = normalizeKeyword(keyword);
-      deleteOldSearches(normalizedKeyword);
 
-      // Check cache first
-      const pulledFromCache = await checkCache(normalizedKeyword, setProducts);
-      if (pulledFromCache) {
-        setOpenPage(0);
-        return;
+      const allProducts: Product[] = [];
+
+      const retailersNeedingFetch = (
+        await Promise.all(
+          selectedRetailers.map(async (retailer) => {
+            const cachedProducts = await checkCache(
+              normalizedKeyword,
+              retailer
+            );
+            if (cachedProducts) {
+              allProducts.push(...cachedProducts); // collect cache hits
+              return null;
+            }
+            return retailer; // cache miss, needs serp fetch
+          })
+        )
+      ).filter(Boolean) as string[];
+      console.log("Retailers needing fetch", retailersNeedingFetch);
+      if (retailersNeedingFetch.length > 0) {
+        const serpProducts = await pullProductsFromSerp(
+          keyword,
+          retailersNeedingFetch
+        );
+        console.log("serpProducts returned:", serpProducts);
+        console.log("serpProducts length:", serpProducts?.length);
+        allProducts.push(...serpProducts); // collect serp results
       }
-
-      // If cache miss, fetch from SERP
-      await pullProductsFromSerp(keyword, normalizedKeyword, setProducts);
+      console.log("allProducts before setProducts:", allProducts);
+      setProducts((prev) => [...prev, ...allProducts]); // single state update
+      setSelectedRetailers(retailersNeedingFetch);
       setOpenPage(0);
+
+      console.log("All products collected:", allProducts);
     } catch (err) {
       console.error(err);
       alert("Error fetching products");

@@ -12,7 +12,7 @@ import type {
   PricePoint,
   WatchMeta,
 } from "../sub-pages/WishList/wish-list-structures/wishListStructs";
-import { supabase } from "../supabase-client";
+import { supabase } from "../../supabase-client";
 import { useLocation, useNavigate } from "react-router-dom";
 
 type WishlistContextType = {
@@ -81,7 +81,10 @@ export function WishlistProvider({ children }: { children: ReactNode }) {
   const [filterDropOnly, setFilterDropOnly] = useState(false);
   const [watchMeta, setWatchMeta] = useState<Record<string, WatchMeta>>({});
 
-  const updateWatchMeta = (itemId: string, updates: Partial<WatchMeta> | null) => {
+  const updateWatchMeta = (
+    itemId: string,
+    updates: Partial<WatchMeta> | null
+  ) => {
     setWatchMeta((prev) => {
       if (updates === null) {
         const next = { ...prev };
@@ -144,7 +147,9 @@ export function WishlistProvider({ children }: { children: ReactNode }) {
 
       if (!userId) return;
 
-      const saved = window.localStorage.getItem(`wishlist-watch-meta:${userId}`);
+      const saved = window.localStorage.getItem(
+        `wishlist-watch-meta:${userId}`
+      );
       if (!saved) {
         setWatchMeta({});
         return;

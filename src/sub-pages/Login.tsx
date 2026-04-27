@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { supabase } from "../supabase-client";
+import { supabase } from "../../supabase-client";
 import { useUser } from "../Contexts/UserContext";
 
 const LOGIN_ATTEMPT_LIMIT = 5;
@@ -17,6 +17,7 @@ export default function Login() {
   const [cooldownRemaining, setCooldownRemaining] = useState(0);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const navigate = useNavigate();
+
   const { setUserId } = useUser();
 
   useEffect(() => {
@@ -85,6 +86,7 @@ export default function Login() {
     window.sessionStorage.removeItem(LOGIN_LOCK_KEY);
 
     const username = data.user?.user_metadata?.username ?? "there";
+
     setUserId(data?.user?.id);
     setWelcomeUsername(username); // show welcome message before redirecting
     setTimeout(() => {

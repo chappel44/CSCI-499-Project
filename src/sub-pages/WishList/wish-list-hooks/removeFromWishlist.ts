@@ -1,5 +1,5 @@
 import type { SetStateAction } from "react";
-import { supabase } from "../../../supabase-client";
+import { supabase } from "../../../../supabase-client";
 import type { EnrichedItem } from "../wish-list-structures/wishListStructs";
 
 export async function removeFromWishlist(

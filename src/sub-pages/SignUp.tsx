@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom"; // so that we can send to Login Page :)
-import { supabase } from "../supabase-client";
+import { supabase } from "../../supabase-client";
 
 const SIGNUP_COOLDOWN_SECONDS = 45;
 const SIGNUP_FAIL_LIMIT = 4;
@@ -69,17 +69,25 @@ export default function SignUp() {
       if (error) {
         const failedAttempts =
           Number(window.sessionStorage.getItem(SIGNUP_FAIL_KEY) ?? "0") + 1;
-        window.sessionStorage.setItem(SIGNUP_FAIL_KEY, failedAttempts.toString());
+        window.sessionStorage.setItem(
+          SIGNUP_FAIL_KEY,
+          failedAttempts.toString()
+        );
 
         if (failedAttempts >= SIGNUP_FAIL_LIMIT) {
           const lockedUntil = Date.now() + SIGNUP_COOLDOWN_SECONDS * 1000;
-          window.sessionStorage.setItem(SIGNUP_LOCK_KEY, lockedUntil.toString());
+          window.sessionStorage.setItem(
+            SIGNUP_LOCK_KEY,
+            lockedUntil.toString()
+          );
           setCooldownRemaining(SIGNUP_COOLDOWN_SECONDS);
           setErrorMessage(
             `Too many sign up attempts. Please wait ${SIGNUP_COOLDOWN_SECONDS}s and try again.`
           );
         } else {
-          setErrorMessage("We could not create the account with those details.");
+          setErrorMessage(
+            "We could not create the account with those details."
+          );
         }
 
         return; // Exit early on Supabase errors and let finally reset the loading state.
@@ -95,7 +103,7 @@ export default function SignUp() {
 
   const displaySignUpAlert = () => {
     return (
-      <div className="fixed inset-0 flex items-center justify-center bg-gray-100 z-20">
+      <div className="fixed inset-0 flex items-center justify-center bg-gray-900 z-10">
         <div className="bg-white rounded-lg p-6 w-80 shadow-xl">
           <p className="text-center mb-4 text-black">
             <strong className="text-3xl">Sign up successful!</strong> <br />
@@ -141,8 +149,8 @@ export default function SignUp() {
 
   return (
     <>
-      {signUpSuccess && displaySignUpAlert()} {/* Only render the modal after a successful signup. */}
-
+      {signUpSuccess && displaySignUpAlert()}{" "}
+      {/* Only render the modal after a successful signup. */}
       <div className="min-h-screen bg-gray-100 flex items-center justify-center px-4">
         <div className="w-full max-w-sm">
           {/* Card */}
@@ -337,7 +345,8 @@ export default function SignUp() {
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
                       className={`w-full px-4 py-2.5 rounded-lg border text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition pr-10 ${
-                        confirmPassword.length > 0 && confirmPassword !== password
+                        confirmPassword.length > 0 &&
+                        confirmPassword !== password
                           ? "border-red-300"
                           : "border-gray-300"
                       }`}
@@ -384,11 +393,12 @@ export default function SignUp() {
                       )}
                     </button>
                   </div>
-                  {confirmPassword.length > 0 && confirmPassword !== password && (
-                    <p className="text-xs text-red-400 mt-1">
-                      Passwords do not match
-                    </p>
-                  )}
+                  {confirmPassword.length > 0 &&
+                    confirmPassword !== password && (
+                      <p className="text-xs text-red-400 mt-1">
+                        Passwords do not match
+                      </p>
+                    )}
                 </div>
 
                 {errorMessage && (
@@ -397,7 +407,8 @@ export default function SignUp() {
 
                 {cooldownRemaining > 0 && (
                   <p className="text-xs text-amber-600">
-                    Please wait {cooldownRemaining}s before trying to create another account.
+                    Please wait {cooldownRemaining}s before trying to create
+                    another account.
                   </p>
                 )}
 

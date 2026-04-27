@@ -10,7 +10,8 @@ const retailers = [
 
 export default function RetailerDropdown() {
   const [searchOptionsOpen, setSearchOptionsOpen] = useState(false);
-  const [selectedRetailer, setSelectedRetailer] = useState("");
+  const { selectedRetailers, setSelectedRetailers } = useSearchContext();
+
   const dropdownRef = useRef<HTMLDivElement>(null);
   const { openPage } = useSearchContext();
 
@@ -33,6 +34,12 @@ export default function RetailerDropdown() {
     };
   }, [openPage]);
 
+  const toggleRetailer = (id: string) => {
+    setSelectedRetailers((prev) =>
+      prev.includes(id) ? prev.filter((r) => r !== id) : [...prev, id]
+    );
+  };
+
   return (
     <div className="relative z-40" ref={dropdownRef}>
       <button
@@ -44,7 +51,7 @@ export default function RetailerDropdown() {
         }}
         onClick={() => setSearchOptionsOpen(!searchOptionsOpen)}
       >
-        <span>{selectedRetailer || "Select Retailer"}</span>
+        <span>Select Retailers</span>
         <svg
           className={`w-3.5 h-3.5 transition-transform duration-200 ${
             searchOptionsOpen ? "rotate-180" : ""
@@ -75,18 +82,33 @@ export default function RetailerDropdown() {
           borderColor: "rgba(0,0,0,0.08)",
         }}
       >
-        {retailers.map((retailer) => (
-          <button
-            key={retailer.id}
-            onClick={() => {
-              setSearchOptionsOpen(false);
-              setSelectedRetailer(retailer.label);
-            }}
-            className="search-retailer-option py-2.5 px-4 text-sm text-left text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition cursor-pointer"
-          >
-            {retailer.label}
-          </button>
-        ))}
+        {retailers.map((retailer) => {
+          const isSelected = selectedRetailers.includes(retailer.id);
+          return (
+            <button
+              key={retailer.id}
+              onClick={() => toggleRetailer(retailer.id)}
+              className="search-retailer-option flex items-center justify-between py-2.5 px-4 text-sm text-left text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition cursor-pointer"
+            >
+              <span>{retailer.label}</span>
+              {isSelected && (
+                <svg
+                  className="w-4 h-4 text-blue-600 shrink-0"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2.5}
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M5 13l4 4L19 7"
+                  />
+                </svg>
+              )}
+            </button>
+          );
+        })}
       </div>
     </div>
   );
