@@ -37,6 +37,7 @@ export default function Header() {
     { to: "/search", label: "Search" },
     { to: "/wish-list", label: "Wish List" },
     { to: "/marketplace", label: "Marketplace" },
+    ...(loggedIn ? [{ to: "/messages", label: "Messages" }] : []),
     { to: "/what-is-verifind", label: "What is Verifind?" },
   ];
 
@@ -45,8 +46,9 @@ export default function Header() {
     pathname === "/signup" ||
     pathname === "/forgot-password" ||
     pathname === "/reset-password" ||
-    pathname === "/profile" ||
-    pathname === "/settings"
+    pathname.startsWith("/profile") ||
+    pathname === "/settings" ||
+    pathname === "/blocked-users"
   ) {
     return null;
   }
@@ -150,7 +152,11 @@ export default function Header() {
 
         <nav className="hidden md:flex items-center gap-1">
           {navLinks.map(({ to, label }) => {
-            const active = pathname === to;
+            const active =
+              pathname === to ||
+              (to === "/messages" &&
+                (pathname.startsWith("/messages") ||
+                  pathname.startsWith("/marketplace/inbox")));
             return (
               <Link
                 key={to}
@@ -210,7 +216,11 @@ export default function Header() {
 
       <div className="md:hidden fixed bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-1 px-3 py-2 bg-white/90 backdrop-blur-xl border border-gray-200/60 rounded-2xl shadow-xl z-50">
         {navLinks.map(({ to, label }) => {
-          const active = pathname === to;
+          const active =
+            pathname === to ||
+            (to === "/messages" &&
+              (pathname.startsWith("/messages") ||
+                pathname.startsWith("/marketplace/inbox")));
           return (
             <Link
               key={to}
@@ -219,7 +229,7 @@ export default function Header() {
             >
               <span
                 className={`absolute inset-0 rounded-xl transition-opacity duration-500 ${
-                  pathname === to ? "opacity-100" : "opacity-0"
+                  active ? "opacity-100" : "opacity-0"
                 }`}
                 style={{ background: "linear-gradient(90deg,#00AAFF,#6B30FF)" }}
               />

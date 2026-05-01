@@ -1,20 +1,69 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "../../supabase-client";
-import { MapPin, Search, Plus, X, Camera, Filter, Trash2 } from "lucide-react";
+import {
+  MapPin,
+  Search,
+  Plus,
+  X,
+  Camera,
+  Filter,
+  Trash2,
+  MessageCircle,
+  ShieldAlert,
+  UserX,
+} from "lucide-react";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 
+type MarketplaceListing = {
+  id: string;
+  user_id: string;
+  title: string;
+  description: string | null;
+  price: number;
+  category: string;
+  condition: string;
+  images: string[] | null;
+  sold: boolean;
+  location_name: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  seller_name: string | null;
+};
+
+const REPORT_REASONS = [
+  { id: "counterfeit", label: "Counterfeit or fake item" },
+  { id: "scam", label: "Likely scam or misleading listing" },
+  { id: "prohibited", label: "Prohibited or unsafe item" },
+  { id: "harassment", label: "Harassment or abusive behavior" },
+  { id: "spam", label: "Spam or duplicate listing" },
+  { id: "other", label: "Other", requiresDetails: true },
+];
+
 export default function Marketplace() {
-  const [items, setItems] = useState<any[]>([]);
+  const navigate = useNavigate();
+  const [items, setItems] = useState<MarketplaceListing[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
 
-  const [selectedItem, setSelectedItem] = useState<any>(null);
+  const [selectedItem, setSelectedItem] = useState<MarketplaceListing | null>(
+    null
+  );
   const [isPostModalOpen, setIsPostModalOpen] = useState(false);
   const [loggedIn, setLoggedIn] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [tempAddress, setTempAddress] = useState("");
+  const [blockedSellerIds, setBlockedSellerIds] = useState<string[]>([]);
+  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
+  const [isBlockModalOpen, setIsBlockModalOpen] = useState(false);
+  const [reportReason, setReportReason] = useState("");
+  const [reportDetails, setReportDetails] = useState("");
+  const [actionMessage, setActionMessage] = useState<string | null>(null);
+  const [blockMessage, setBlockMessage] = useState<string | null>(null);
+  const [reportMessage, setReportMessage] = useState<string | null>(null);
+  const [actionLoading, setActionLoading] = useState(false);
 
   const [formData, setFormData] = useState({
     title: "",
@@ -29,44 +78,7 @@ export default function Marketplace() {
     longitude: null as number | null,
   });
 
-  // map use effect
-  useEffect(() => {
-    if (selectedItem && selectedItem.latitude && selectedItem.longitude) {
-      const timer = setTimeout(() => {
-        const map = new maplibregl.Map({
-          container: "item-map",
-          style: "https://tiles.openfreemap.org/styles/liberty",
-          center: [selectedItem.longitude, selectedItem.latitude],
-          zoom: 14,
-        });
-
-        new maplibregl.Marker({ color: "#6B30FF" })
-          .setLngLat([selectedItem.longitude, selectedItem.latitude])
-          .addTo(map);
-      }, 100);
-
-      return () => clearTimeout(timer);
-    }
-  }, [selectedItem]);
-
-  // user auth use effect
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      setLoggedIn(!!data.session);
-      setCurrentUserId(data.session?.user?.id || null);
-    });
-    fetchListings();
-  }, []);
-
-  // search use effect
-  useEffect(() => {
-    const delayDebounceFN = setTimeout(() => {
-      fetchListings();
-    }, 300);
-    return () => clearTimeout(delayDebounceFN);
-  }, [searchQuery, selectedCategory]);
-
-  const fetchListings = async () => {
+  const fetchListings = useCallback(async () => {
     setLoading(true);
 
     let query = supabase
@@ -87,10 +99,81 @@ export default function Marketplace() {
     query = query.order("created_at", { ascending: false });
 
     const { data, error } = await query;
-    if (!error && data) setItems(data);
+    if (!error && data) {
+      setItems(
+        (data as MarketplaceListing[]).filter(
+          (item) => !blockedSellerIds.includes(item.user_id)
+        )
+      );
+    }
     if (error) console.error("Error fetching listings:", error.message);
     setLoading(false);
-  };
+  }, [blockedSellerIds, searchQuery, selectedCategory]);
+
+  // map use effect
+  useEffect(() => {
+    if (selectedItem && selectedItem.latitude && selectedItem.longitude) {
+      const latitude = selectedItem.latitude;
+      const longitude = selectedItem.longitude;
+      const timer = setTimeout(() => {
+        const map = new maplibregl.Map({
+          container: "item-map",
+          style: "https://tiles.openfreemap.org/styles/liberty",
+          center: [longitude, latitude],
+          zoom: 14,
+        });
+
+        new maplibregl.Marker({ color: "#6B30FF" })
+          .setLngLat([longitude, latitude])
+          .addTo(map);
+      }, 100);
+
+      return () => clearTimeout(timer);
+    }
+  }, [selectedItem]);
+
+  // user auth use effect
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => {
+      setLoggedIn(!!data.session);
+      setCurrentUserId(data.session?.user?.id || null);
+    });
+  }, []);
+
+  useEffect(() => {
+    if (!currentUserId) {
+      const timer = window.setTimeout(() => setBlockedSellerIds([]), 0);
+      return () => window.clearTimeout(timer);
+    }
+
+    const fetchBlockedSellers = async () => {
+      const { data, error } = await supabase
+        .from("marketplace_user_blocks")
+        .select("blocked_id")
+        .eq("blocker_id", currentUserId);
+
+      if (error) {
+        console.error("Error fetching blocked users:", error.message);
+        return;
+      }
+
+      setBlockedSellerIds(
+        (data ?? [])
+          .map((row) => row.blocked_id)
+          .filter((id): id is string => Boolean(id))
+      );
+    };
+
+    fetchBlockedSellers();
+  }, [currentUserId]);
+
+  // search use effect
+  useEffect(() => {
+    const delayDebounceFN = setTimeout(() => {
+      fetchListings();
+    }, 300);
+    return () => clearTimeout(delayDebounceFN);
+  }, [fetchListings]);
 
   const handlePostItem = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -180,6 +263,158 @@ export default function Marketplace() {
     }
   };
 
+  const requireSignedIn = () => {
+    if (loggedIn && currentUserId) return true;
+    alert("Please log in first.");
+    return false;
+  };
+
+  const handleOpenMessage = async () => {
+    if (!selectedItem || !requireSignedIn()) return;
+    if (currentUserId === selectedItem.user_id) {
+      navigate("/marketplace/inbox");
+      return;
+    }
+    if (blockedSellerIds.includes(selectedItem.user_id)) {
+      setActionMessage("You blocked this seller. Unblock them before messaging.");
+      return;
+    }
+
+    setActionLoading(true);
+    setActionMessage(null);
+
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      setActionMessage("Please log in first.");
+      setActionLoading(false);
+      return;
+    }
+
+    const { data: existingConversation, error: findError } = await supabase
+      .from("marketplace_conversations")
+      .select("id")
+      .eq("listing_id", selectedItem.id)
+      .eq("buyer_id", user.id)
+      .eq("seller_id", selectedItem.user_id)
+      .maybeSingle();
+
+    if (findError) {
+      setActionMessage("Could not start conversation: " + findError.message);
+      setActionLoading(false);
+      return;
+    }
+
+    let conversationId = existingConversation?.id as string | undefined;
+
+    if (!conversationId) {
+      const { data: newConversation, error: conversationError } = await supabase
+        .from("marketplace_conversations")
+        .insert({
+          listing_id: selectedItem.id,
+          buyer_id: user.id,
+          seller_id: selectedItem.user_id,
+          last_message_at: new Date().toISOString(),
+        })
+        .select("id")
+        .single();
+
+      if (conversationError) {
+        setActionMessage(
+          "Could not create conversation: " + conversationError.message
+        );
+        setActionLoading(false);
+        return;
+      }
+
+      conversationId = newConversation.id;
+    }
+
+    setActionLoading(false);
+    setSelectedItem(null);
+    navigate(`/marketplace/inbox/${conversationId}`);
+  };
+
+  const handleBlockSeller = async () => {
+    if (!selectedItem || !requireSignedIn()) return;
+    if (currentUserId === selectedItem.user_id) {
+      setActionMessage("You cannot block yourself.");
+      return;
+    }
+
+    setActionLoading(true);
+    setActionMessage(null);
+    setBlockMessage(null);
+
+    const { error } = await supabase.from("marketplace_user_blocks").upsert(
+      {
+        blocker_id: currentUserId,
+        blocked_id: selectedItem.user_id,
+        reason: "Blocked seller messages",
+      },
+      { onConflict: "blocker_id,blocked_id" }
+    );
+
+    if (error) {
+      setBlockMessage("Could not block seller: " + error.message);
+      setActionLoading(false);
+      return;
+    }
+
+    setBlockedSellerIds((ids) => [...new Set([...ids, selectedItem.user_id])]);
+    setItems((existing) =>
+      existing.filter((item) => item.user_id !== selectedItem.user_id)
+    );
+    setSelectedItem(null);
+    setIsBlockModalOpen(false);
+    setActionMessage("Seller blocked.");
+    setActionLoading(false);
+  };
+
+  const handleReportListing = async () => {
+    if (!selectedItem || !requireSignedIn()) return;
+
+    const selectedReason = REPORT_REASONS.find(
+      (reason) => reason.id === reportReason
+    );
+    if (!selectedReason) {
+      setReportMessage("Please select a reason.");
+      return;
+    }
+
+    const details = reportDetails.trim();
+    if (selectedReason.requiresDetails && (details.length < 3 || details.length > 500)) {
+      setReportMessage("For 'Other', add details between 3 and 500 characters.");
+      return;
+    }
+
+    setActionLoading(true);
+    setActionMessage(null);
+    setReportMessage(null);
+
+    const { error } = await supabase.from("marketplace_listing_reports").insert({
+      reporter_id: currentUserId,
+      seller_id: selectedItem.user_id,
+      listing_id: selectedItem.id,
+      reason: selectedReason.label,
+      details: details || null,
+    });
+
+    if (error) {
+      setReportMessage("Could not submit report: " + error.message);
+      setActionLoading(false);
+      return;
+    }
+
+    setReportDetails("");
+    setReportReason("");
+    setIsReportModalOpen(false);
+    setActionMessage("Report submitted. Thanks for helping keep VeriFind safe.");
+    setActionLoading(false);
+  };
+
   const formatPrice = (price: number) => (price === 0 ? "Free" : `$${price}`);
 
   return (
@@ -221,6 +456,12 @@ export default function Marketplace() {
         <h1 className="marketplace-title text-4xl font-black mb-8 text-center text-gray-900 tracking-tight">
           Marketplace
         </h1>
+
+        {actionMessage && (
+          <div className="mx-auto mb-5 max-w-3xl rounded-2xl border border-blue-100 bg-white/70 px-4 py-3 text-sm font-semibold text-gray-600 shadow-sm backdrop-blur-md">
+            {actionMessage}
+          </div>
+        )}
 
         {/* Search, Filter & Post Bar */}
         <div className="mb-12 flex flex-col md:flex-row gap-4 max-w-3xl mx-auto">
@@ -581,10 +822,184 @@ export default function Marketplace() {
                   <Trash2 size={20} /> Delete Listing
                 </button>
               ) : (
-                <button className="w-full py-5 bg-blue-600 text-white text-lg font-bold rounded-2xl hover:bg-blue-700 shadow-xl">
-                  Message Seller
-                </button>
+                <div className="flex flex-col gap-3">
+                    <button
+                      onClick={handleOpenMessage}
+                      disabled={actionLoading}
+                    className="w-full py-5 bg-blue-600 text-white text-lg font-bold rounded-2xl hover:bg-blue-700 shadow-xl flex items-center justify-center gap-2 disabled:opacity-60"
+                  >
+                    <MessageCircle size={20} /> Message Seller
+                  </button>
+                  <div className="grid grid-cols-2 gap-3">
+                    <button
+                      onClick={() => {
+                        setActionMessage(null);
+                        setIsReportModalOpen(true);
+                      }}
+                      className="w-full py-3.5 rounded-xl border border-amber-200 bg-amber-50 text-amber-700 font-bold hover:bg-amber-100 transition-all inline-flex items-center justify-center gap-2"
+                    >
+                      <ShieldAlert size={16} /> Report
+                    </button>
+                    <button
+                      onClick={() => {
+                        setBlockMessage(null);
+                        setIsBlockModalOpen(true);
+                      }}
+                      disabled={actionLoading}
+                      className="w-full py-3.5 rounded-xl border border-red-200 bg-red-50 text-red-700 font-bold hover:bg-red-100 transition-all inline-flex items-center justify-center gap-2 disabled:opacity-60"
+                    >
+                      <UserX size={16} /> Block Seller
+                    </button>
+                  </div>
+                </div>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {isReportModalOpen && selectedItem && (
+        <div className="fixed inset-0 z-[95] flex items-center justify-center bg-black/60 px-4 backdrop-blur-sm">
+          <div className="report-modal-shell w-full max-w-2xl rounded-[2rem] border border-cyan-500/20 bg-[#0b1733]/95 p-7 shadow-2xl">
+            <div className="mb-8 flex items-center justify-between gap-4">
+              <h2 className="text-3xl font-black text-slate-100">
+                Report Listing
+              </h2>
+              <button
+                onClick={() => setIsReportModalOpen(false)}
+                className="rounded-full p-2 text-slate-300 hover:bg-white/10 hover:text-white"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <p className="mb-5 text-base text-slate-300">
+              Choose a reason to report this listing.
+            </p>
+
+            <div className="space-y-3 mb-5">
+              {REPORT_REASONS.map((reason) => (
+                <button
+                  key={reason.id}
+                  type="button"
+                  onClick={() => {
+                    setReportReason(reason.id);
+                    setReportMessage(null);
+                  }}
+                  className={`report-reason-button w-full rounded-xl border px-5 py-4 text-left text-lg font-semibold transition ${
+                    reportReason === reason.id
+                      ? "report-reason-selected border-cyan-300/60 bg-blue-600 text-white shadow-sm"
+                      : "border-cyan-500/30 bg-[#13284d] text-slate-100 hover:bg-[#17325f]"
+                  }`}
+                >
+                  {reason.label}
+                </button>
+              ))}
+            </div>
+
+            {reportReason === "other" && (
+              <div className="mb-5">
+                <label className="mb-2 block text-xs font-bold uppercase tracking-wide text-slate-300">
+                  Details
+                </label>
+                <textarea
+                  rows={4}
+                  value={reportDetails}
+                  onChange={(e) => {
+                    setReportDetails(e.target.value);
+                    setReportMessage(null);
+                  }}
+                  className="w-full resize-none rounded-2xl border border-cyan-500/25 bg-[#0c1b37] px-4 py-3 text-sm text-slate-100 outline-none placeholder:text-slate-400 focus:ring-2 focus:ring-cyan-400"
+                  placeholder="Tell us what happened..."
+                  maxLength={500}
+                />
+              </div>
+            )}
+
+            {reportMessage && (
+              <div className="mb-5 rounded-xl border border-amber-300/30 bg-amber-400/10 p-3 text-sm text-amber-100">
+                {reportMessage}
+              </div>
+            )}
+
+            <div className="grid grid-cols-2 gap-4">
+              <button
+                type="button"
+                onClick={() => setIsReportModalOpen(false)}
+                className="report-cancel-button w-full rounded-xl border border-cyan-500/30 bg-[#13284d] py-4 text-lg font-bold text-slate-100 transition hover:bg-[#17325f]"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleReportListing}
+                disabled={actionLoading}
+                className="flex w-full items-center justify-center gap-2 rounded-xl py-4 text-lg font-bold text-white shadow-lg transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+                style={{
+                  background: "linear-gradient(90deg,#00AAFF,#6B30FF)",
+                }}
+              >
+                {actionLoading ? "Submitting..." : "Submit Report"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {isBlockModalOpen && selectedItem && (
+        <div className="fixed inset-0 z-[96] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="report-modal-shell bg-white rounded-[2rem] w-full max-w-lg overflow-hidden shadow-2xl border border-gray-100">
+            <div className="p-6 md:p-7">
+              <div className="flex items-center justify-between gap-3 mb-4">
+                <h2 className="text-2xl font-black text-gray-900">
+                  Block Seller
+                </h2>
+                <button
+                  onClick={() => setIsBlockModalOpen(false)}
+                  className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                >
+                  <X className="text-gray-500" />
+                </button>
+              </div>
+
+              <p className="text-sm text-gray-700">
+                Block{" "}
+                <span className="font-semibold">
+                  {selectedItem.seller_name || "this seller"}
+                </span>
+                ? You will not be able to message each other, and their
+                listings will be hidden for you.
+              </p>
+              <p className="text-xs text-gray-500 mt-2">
+                You can unblock them later from Profile under{" "}
+                <span className="font-semibold">Blocked Users</span>.
+              </p>
+
+              {blockMessage && (
+                <div className="rounded-xl border border-gray-200 bg-gray-50 text-sm text-gray-700 p-3 mt-4">
+                  {blockMessage}
+                </div>
+              )}
+
+              <div className="grid grid-cols-2 gap-3 mt-5">
+                <button
+                  type="button"
+                  onClick={() => setIsBlockModalOpen(false)}
+                  className="report-cancel-button w-full py-3 rounded-xl border border-slate-200 text-slate-700 font-bold bg-slate-50 hover:bg-slate-100 transition-all"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleBlockSeller}
+                  disabled={actionLoading}
+                  className="w-full py-3 rounded-xl text-white font-bold disabled:opacity-70 disabled:cursor-not-allowed"
+                  style={{
+                    background: "linear-gradient(90deg,#00AAFF,#6B30FF)",
+                  }}
+                >
+                  {actionLoading ? "Blocking..." : "Block Seller"}
+                </button>
+              </div>
             </div>
           </div>
         </div>

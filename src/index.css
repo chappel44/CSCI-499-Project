@@ -422,6 +422,42 @@ html[data-theme="dark"] .profile-secondary-button:hover {
   border-color: rgba(145, 168, 206, 0.42) !important;
 }
 
+html[data-theme="dark"] .blocked-users-message {
+  background: rgba(16, 38, 61, 0.86) !important;
+  border-color: rgba(82, 170, 255, 0.34) !important;
+  color: #d9ecff !important;
+}
+
+html[data-theme="dark"] .blocked-users-empty {
+  background: rgba(12, 25, 44, 0.78) !important;
+  border-color: rgba(124, 149, 187, 0.34) !important;
+  color: #c7d8f1 !important;
+}
+
+html[data-theme="dark"] .blocked-user-card {
+  background: rgba(14, 30, 53, 0.88) !important;
+  border-color: rgba(124, 149, 187, 0.4) !important;
+}
+
+html[data-theme="dark"] .blocked-user-name {
+  color: #f1f7ff !important;
+}
+
+html[data-theme="dark"] .blocked-user-meta {
+  color: #bfd1ee !important;
+}
+
+html[data-theme="dark"] .blocked-user-unblock-button {
+  background: rgba(120, 29, 29, 0.26) !important;
+  border-color: rgba(248, 113, 113, 0.48) !important;
+  color: #fecaca !important;
+}
+
+html[data-theme="dark"] .blocked-user-unblock-button:hover {
+  background: rgba(153, 27, 27, 0.4) !important;
+  color: #fee2e2 !important;
+}
+
 html[data-theme="dark"] .marketplace-page {
   background:
     radial-gradient(circle at top left, rgba(0, 170, 255, 0.14), transparent 32%),
@@ -486,4 +522,37 @@ html[data-theme="dark"] .marketplace-chip {
 
 html[data-theme="dark"] .marketplace-seller-badge {
   box-shadow: 0 10px 24px rgba(0, 0, 0, 0.25) !important;
+}
+
+html[data-theme="dark"] .report-modal-shell {
+  background: rgba(9, 18, 34, 0.96) !important;
+  border-color: rgba(124, 149, 187, 0.32) !important;
+}
+
+html[data-theme="dark"] .report-reason-button {
+  background: rgba(18, 33, 58, 0.95) !important;
+  border-color: rgba(124, 149, 187, 0.38) !important;
+  color: #eaf2ff !important;
+}
+
+html[data-theme="dark"] .report-reason-button:hover {
+  background: rgba(30, 50, 84, 0.95) !important;
+  color: #ffffff !important;
+}
+
+html[data-theme="dark"] .report-reason-button.report-reason-selected {
+  background: linear-gradient(90deg, #0284c7, #4338ca) !important;
+  border-color: rgba(125, 211, 252, 0.68) !important;
+  color: #ffffff !important;
+}
+
+html[data-theme="dark"] .report-cancel-button {
+  background: rgba(18, 33, 58, 0.95) !important;
+  border-color: rgba(124, 149, 187, 0.38) !important;
+  color: #eaf2ff !important;
+}
+
+html[data-theme="dark"] .report-cancel-button:hover {
+  background: rgba(30, 50, 84, 0.95) !important;
+  color: #ffffff !important;
 }
