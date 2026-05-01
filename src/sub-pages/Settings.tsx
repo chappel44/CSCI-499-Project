@@ -566,7 +566,7 @@ export default function Settings() {
               </div>
 
               {newPassword.length > 0 && (
-                <div className="rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3">
+                <div className="profile-status-panel rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3">
                   {requirements.map((req) => (
                     <p
                       key={req.label}

@@ -410,6 +410,12 @@ html[data-theme="dark"] .profile-tip-card {
   border-color: rgba(82, 170, 255, 0.24) !important;
 }
 
+html[data-theme="dark"] .profile-status-panel {
+  background: rgba(12, 25, 44, 0.9) !important;
+  border-color: rgba(124, 149, 187, 0.32) !important;
+  color: #cfe0fb !important;
+}
+
 html[data-theme="dark"] .profile-secondary-button {
   background: rgba(19, 30, 49, 0.78) !important;
   color: #dbe7f7 !important;
@@ -527,6 +533,12 @@ html[data-theme="dark"] .marketplace-seller-badge {
 html[data-theme="dark"] .report-modal-shell {
   background: rgba(9, 18, 34, 0.96) !important;
   border-color: rgba(124, 149, 187, 0.32) !important;
+}
+
+html[data-theme="dark"] .report-status-message {
+  background: rgba(16, 38, 61, 0.86) !important;
+  border-color: rgba(82, 170, 255, 0.34) !important;
+  color: #d9ecff !important;
 }
 
 html[data-theme="dark"] .report-reason-button {

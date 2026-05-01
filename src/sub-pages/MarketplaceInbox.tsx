@@ -618,7 +618,7 @@ export default function MarketplaceInbox() {
                 You can always unblock them in Settings under <span className="font-semibold">Blocked Users</span>.
               </p>
               {blockMessage && (
-                <div className="rounded-xl border border-gray-200 bg-gray-50 text-sm text-gray-700 p-3 mt-4">
+                <div className="report-status-message rounded-xl border border-gray-200 bg-gray-50 text-sm text-gray-700 p-3 mt-4">
                   {blockMessage}
                 </div>
               )}
