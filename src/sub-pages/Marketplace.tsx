@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "../../supabase-client";
 import {
   MapPin,
@@ -276,7 +276,9 @@ export default function Marketplace() {
       return;
     }
     if (blockedSellerIds.includes(selectedItem.user_id)) {
-      setActionMessage("You blocked this seller. Unblock them before messaging.");
+      setActionMessage(
+        "You blocked this seller. Unblock them before messaging."
+      );
       return;
     }
 
@@ -385,8 +387,13 @@ export default function Marketplace() {
     }
 
     const details = reportDetails.trim();
-    if (selectedReason.requiresDetails && (details.length < 3 || details.length > 500)) {
-      setReportMessage("For 'Other', add details between 3 and 500 characters.");
+    if (
+      selectedReason.requiresDetails &&
+      (details.length < 3 || details.length > 500)
+    ) {
+      setReportMessage(
+        "For 'Other', add details between 3 and 500 characters."
+      );
       return;
     }
 
@@ -394,13 +401,15 @@ export default function Marketplace() {
     setActionMessage(null);
     setReportMessage(null);
 
-    const { error } = await supabase.from("marketplace_listing_reports").insert({
-      reporter_id: currentUserId,
-      seller_id: selectedItem.user_id,
-      listing_id: selectedItem.id,
-      reason: selectedReason.label,
-      details: details || null,
-    });
+    const { error } = await supabase
+      .from("marketplace_listing_reports")
+      .insert({
+        reporter_id: currentUserId,
+        seller_id: selectedItem.user_id,
+        listing_id: selectedItem.id,
+        reason: selectedReason.label,
+        details: details || null,
+      });
 
     if (error) {
       setReportMessage("Could not submit report: " + error.message);
@@ -411,7 +420,9 @@ export default function Marketplace() {
     setReportDetails("");
     setReportReason("");
     setIsReportModalOpen(false);
-    setActionMessage("Report submitted. Thanks for helping keep VeriFind safe.");
+    setActionMessage(
+      "Report submitted. Thanks for helping keep VeriFind safe."
+    );
     setActionLoading(false);
   };
 
@@ -823,9 +834,9 @@ export default function Marketplace() {
                 </button>
               ) : (
                 <div className="flex flex-col gap-3">
-                    <button
-                      onClick={handleOpenMessage}
-                      disabled={actionLoading}
+                  <button
+                    onClick={handleOpenMessage}
+                    disabled={actionLoading}
                     className="w-full py-5 bg-blue-600 text-white text-lg font-bold rounded-2xl hover:bg-blue-700 shadow-xl flex items-center justify-center gap-2 disabled:opacity-60"
                   >
                     <MessageCircle size={20} /> Message Seller
@@ -966,8 +977,8 @@ export default function Marketplace() {
                 <span className="font-semibold">
                   {selectedItem.seller_name || "this seller"}
                 </span>
-                ? You will not be able to message each other, and their
-                listings will be hidden for you.
+                ? You will not be able to message each other, and their listings
+                will be hidden for you.
               </p>
               <p className="text-xs text-gray-500 mt-2">
                 You can unblock them later from Profile under{" "}
@@ -1006,12 +1017,16 @@ export default function Marketplace() {
       )}
 
       <div
-        className="relative z-10 w-full py-10 mt-auto flex justify-center"
+        className="relative z-10 w-full py-10 mt-auto flex justify-center items-center gap-4"
         style={{ borderTop: "1px solid rgba(0,170,255,0.1)" }}
       >
         <p className="text-xs text-gray-400">
           &copy; {new Date().getFullYear()} Verifind. All rights reserved.
         </p>
+        <p className="text-gray-400">•</p>
+        <Link to="/privacy-policy" className="text-xs text-gray-400">
+          Privacy Policy
+        </Link>
       </div>
     </div>
   );

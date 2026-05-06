@@ -6,6 +6,7 @@ import SearchHeading from "./search-components/SearchHeading";
 import SearchSuggestions from "./search-components/SearchSuggestions";
 import SearchActions from "./search-components/SearchActions";
 import ApplyGradientOrbs from "../SharedComponents/ApplyGradientOrbs";
+import { Link } from "react-router-dom";
 
 const itemsPerPage = 10;
 const GRAD = "linear-gradient(135deg,#00AAFF,#6B30FF)";
@@ -314,6 +315,18 @@ function Search() {
             <AdBanner />
           </div>
         </div>
+      </div>
+      <div
+        className="relative z-10 w-full py-10 mt-auto flex justify-center items-center gap-4"
+        style={{ borderTop: "1px solid rgba(0,170,255,0.1)" }}
+      >
+        <p className="text-xs text-gray-400">
+          &copy; {new Date().getFullYear()} Verifind. All rights reserved.
+        </p>
+        <p className="text-gray-400">•</p>
+        <Link to="/privacy-policy" className="text-xs text-gray-400">
+          Privacy Policy
+        </Link>
       </div>
     </section>
   );
