@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { useWishlist } from "../../Contexts/WishListContext";
 import ApplyGradientOrbs from "../SharedComponents/ApplyGradientOrbs";
 import { SearchOtherWishlist } from "./wish-list-components/SearchOtherWishlists";
@@ -89,9 +89,18 @@ function WishList() {
         {/* FAQ */}
         <FAQSection />
 
-        <p className="text-xs text-gray-400 mt-2">
-          &copy; {new Date().getFullYear()} Verifind
-        </p>
+        <div
+          className="relative z-10 w-full py-10 mt-auto flex justify-center items-center gap-4"
+          style={{ borderTop: "1px solid rgba(0,170,255,0.1)" }}
+        >
+          <p className="text-xs text-gray-400">
+            &copy; {new Date().getFullYear()} Verifind. All rights reserved.
+          </p>
+          <p className="text-gray-400">•</p>
+          <Link to="/privacy-policy" className="text-xs text-gray-400">
+            Privacy Policy
+          </Link>
+        </div>
       </div>
     </div>
   );

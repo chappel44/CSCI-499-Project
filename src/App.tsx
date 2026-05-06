@@ -12,6 +12,7 @@ import Marketplace from "./sub-pages/Marketplace";
 import MarketplaceInbox from "./sub-pages/MarketplaceInbox";
 import BlockedUsers from "./sub-pages/BlockedUsers";
 import Layout from "./Contexts/Layout";
+import PrivacyPolicy from "./sub-pages/PrivacyPolicy";
 
 function App() {
   return (
@@ -24,12 +25,16 @@ function App() {
           <Route path="/wish-list" element={<WishList />} />
           <Route path="/marketplace" element={<Marketplace />} />
           <Route path="/messages" element={<MarketplaceInbox />} />
-          <Route path="/messages/:conversationId" element={<MarketplaceInbox />} />
+          <Route
+            path="/messages/:conversationId"
+            element={<MarketplaceInbox />}
+          />
           <Route path="/marketplace/inbox" element={<MarketplaceInbox />} />
           <Route
             path="/marketplace/inbox/:conversationId"
             element={<MarketplaceInbox />}
           />
+          <Route path="/privacy-policy" element={<PrivacyPolicy />} />
           <Route path="/what-is-verifind" element={<WhatIsVerifind />} />
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<SignUp />} />
