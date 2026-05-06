@@ -59,6 +59,7 @@ export function useSearchProducts() {
         allProducts.push(...serpProducts); // collect serp results
       }
       console.log("allProducts before setProducts:", allProducts);
+      setProducts([]);
       setProducts((prev) => [...prev, ...allProducts]); // single state update
       setSelectedRetailers(retailersNeedingFetch);
       setOpenPage(0);
