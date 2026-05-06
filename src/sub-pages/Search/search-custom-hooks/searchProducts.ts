@@ -47,6 +47,7 @@ export function useSearchProducts() {
           })
         )
       ).filter(Boolean) as string[];
+
       console.log("Retailers needing fetch", retailersNeedingFetch);
       if (retailersNeedingFetch.length > 0) {
         const serpProducts = await pullProductsFromSerp(

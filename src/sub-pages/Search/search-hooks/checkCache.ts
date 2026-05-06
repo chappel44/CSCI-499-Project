@@ -35,6 +35,7 @@ export default async function checkCache(
   const newProducts: Product[] = [
     ...(searchData?.featured_products || []),
     ...(searchData?.organic_results || []),
+    ...(searchData?.shopping_results || []),
   ].map((item) => ({
     ...normalizeProduct(retailer, item),
     retailer,

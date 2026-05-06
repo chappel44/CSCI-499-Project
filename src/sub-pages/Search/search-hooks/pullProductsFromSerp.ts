@@ -11,6 +11,14 @@ export default async function pullProductsFromSerp(
     return [];
   }
 
+  console.log("engines string being sent:", selectedRetailers.join(","));
+  console.log(
+    "full URL:",
+    `/api/search?keyword=${encodeURIComponent(
+      keyword
+    )}&engines=${selectedRetailers.join(",")}`
+  );
+
   const res = await fetch(
     `/api/search?keyword=${encodeURIComponent(
       keyword

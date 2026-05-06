@@ -20,6 +20,8 @@ function RetailerIcon({ retailer }: { retailer?: string }) {
     amazon:
       "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a9/Amazon_logo.svg/960px-Amazon_logo.svg.png?_=20250504041148",
     ebay: "https://cdn.simpleicons.org/ebay/E53238",
+    "google-shopping":
+      "https://www.gstatic.com/images/branding/product/2x/shopping_48dp.png",
   };
 
   const match = Object.entries(logoMap).find(([key]) =>
