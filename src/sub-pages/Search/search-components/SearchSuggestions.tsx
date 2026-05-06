@@ -1,9 +1,4 @@
-import {
-  SearchIcon,
-  ShieldCheck,
-  ChevronDown,
-  ChevronUp,
-} from "lucide-react";
+import { SearchIcon, ShieldCheck, ChevronDown, ChevronUp } from "lucide-react";
 import { useState, useMemo } from "react";
 import { useSearchContext } from "../../../Contexts/useSearchContext";
 import { useTheme } from "../../../Contexts/ThemeContext";
@@ -14,14 +9,10 @@ interface SearchSuggestionsProps {
 
 const SEARCHES = ["AirPods", "Gaming Laptops", "Nike", "Nike Running Shoes"];
 
-export default function SearchSuggestions({
-  visible,
-}: SearchSuggestionsProps) {
+export default function SearchSuggestions({ visible }: SearchSuggestionsProps) {
   const { products, setKeyword } = useSearchContext();
   const { resolvedTheme } = useTheme();
   const [open, setOpen] = useState(false);
-
-  if (products.length > 0) return null;
 
   const isDark = resolvedTheme === "dark";
 
@@ -46,9 +37,11 @@ export default function SearchSuggestions({
     [isDark]
   );
 
+  if (products.length > 0) return null;
+
   return (
     <div
-      className="mt-4 w-full transition-all duration-500"
+      className="mt-4 w-full transition-all duration-500 z-5"
       style={{
         opacity: visible ? 1 : 0,
         transform: visible ? "translateY(0)" : "translateY(10px)",
@@ -57,7 +50,7 @@ export default function SearchSuggestions({
       <div
         className={`
           rounded-2xl overflow-hidden
-          border backdrop-blur-xl shadow-sm
+          border shadow-sm
           ${styles.container}
         `}
       >
@@ -73,9 +66,7 @@ export default function SearchSuggestions({
               Verified Product Data
             </span>
 
-            <span
-              className={`text-xs hidden sm:inline ${styles.textMuted}`}
-            >
+            <span className={`text-xs hidden sm:inline ${styles.textMuted}`}>
               — Real-time Verifind lookup
             </span>
           </div>
@@ -90,7 +81,9 @@ export default function SearchSuggestions({
         {/* Body */}
         {open && (
           <div
-            className={`px-4 pb-4 flex flex-col gap-3 border-t ${isDark ? "border-white/10" : "border-black/5"}`}
+            className={`px-4 pb-4 flex flex-col gap-3 border-t ${
+              isDark ? "border-white/10" : "border-black/5"
+            }`}
           >
             <p className={`text-xs pt-3 ${styles.textSecondary}`}>
               Search for any product — we pull live prices, ratings and seller
@@ -98,7 +91,7 @@ export default function SearchSuggestions({
             </p>
 
             {/* Suggestions */}
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-2 gap-2 z-5">
               {SEARCHES.map((item, index) => (
                 <button
                   key={item}
@@ -139,7 +132,8 @@ export default function SearchSuggestions({
               <ShieldCheck className="w-4 h-4 text-green-500 shrink-0" />
 
               <p className={`text-xs ${styles.textSecondary}`}>
-                Prices verified across Amazon, eBay, Walmart and Google Shopping.
+                Prices verified across Amazon, eBay, Walmart and Google
+                Shopping.
               </p>
             </div>
           </div>

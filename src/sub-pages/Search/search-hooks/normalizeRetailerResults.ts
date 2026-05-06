@@ -35,11 +35,27 @@ export function normalizeEbay(item: any): Product {
   };
 }
 
+export function normalizeGoogleShopping(item: any): Product {
+  return {
+    product_id: item.product_id,
+    title: item.title,
+    link: item.product_link,
+    thumbnail: item.thumbnail,
+    price: item.price,
+    extracted_price: item.extracted_price,
+    old_price: undefined,
+    rating: item.rating,
+    reviews: item.reviews,
+    retailer: "google-shopping",
+  };
+}
+
 // Add more retailers as needed...
 
 const normalizerMap: Record<string, (item: any) => Product> = {
   walmart: normalizeWalmart,
   ebay: normalizeEbay,
+  "google-shopping": normalizeGoogleShopping,
 };
 
 export function normalizeProduct(retailer: string, item: any): Product {

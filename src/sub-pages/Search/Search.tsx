@@ -11,9 +11,27 @@ const itemsPerPage = 10;
 const GRAD = "linear-gradient(135deg,#00AAFF,#6B30FF)";
 
 export const PROMO_TIERS = [
-  { name: "Basic", price: 2.99, period: "wk", desc: "Top of category", highlight: false },
-  { name: "Featured", price: 7.99, period: "wk", desc: "Homepage spotlight", highlight: true },
-  { name: "Premium", price: 14.99, period: "wk", desc: "Search + category + email", highlight: false },
+  {
+    name: "Basic",
+    price: 2.99,
+    period: "wk",
+    desc: "Top of category",
+    highlight: false,
+  },
+  {
+    name: "Featured",
+    price: 7.99,
+    period: "wk",
+    desc: "Homepage spotlight",
+    highlight: true,
+  },
+  {
+    name: "Premium",
+    price: 14.99,
+    period: "wk",
+    desc: "Search + category + email",
+    highlight: false,
+  },
 ];
 
 const SEARCH_PROMOS = [
@@ -81,9 +99,7 @@ function AdBanner() {
         className="w-full rounded-2xl flex flex-col items-center justify-center gap-3 p-5 hover:opacity-90 transition"
         style={{
           height: 560,
-          background: isDark
-            ? "rgba(24,24,27,0.6)"
-            : "rgba(255,255,255,0.5)",
+          background: isDark ? "rgba(24,24,27,0.6)" : "rgba(255,255,255,0.5)",
           backdropFilter: "blur(12px)",
           border: isDark
             ? "1.5px dashed rgba(168,85,247,0.25)"
@@ -101,7 +117,9 @@ function AdBanner() {
         >
           <svg
             className="w-6 h-6"
-            style={{ color: isDark ? "rgba(168,85,247,0.7)" : "rgba(107,48,255,0.5)" }}
+            style={{
+              color: isDark ? "rgba(168,85,247,0.7)" : "rgba(107,48,255,0.5)",
+            }}
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
@@ -117,7 +135,9 @@ function AdBanner() {
 
         <p
           className="text-[10px] font-black uppercase tracking-widest text-center"
-          style={{ color: isDark ? "rgba(168,85,247,0.6)" : "rgba(107,48,255,0.45)" }}
+          style={{
+            color: isDark ? "rgba(168,85,247,0.6)" : "rgba(107,48,255,0.45)",
+          }}
         >
           Advertise Here
         </p>
@@ -127,11 +147,11 @@ function AdBanner() {
         </p>
 
         <div
-  onClick={() =>
-    (window.location.href =
-      "mailto:verifind@gmail.com?subject=Advertising%20on%20Verifind")
-  }
-  className={`
+          onClick={() =>
+            (window.location.href =
+              "mailto:verifind@gmail.com?subject=Advertising%20on%20Verifind")
+          }
+          className={`
     mt-2 inline-flex items-center justify-center
     px-4 py-2 rounded-xl cursor-pointer transition
     text-[10px] font-semibold leading-none
@@ -142,9 +162,9 @@ function AdBanner() {
         : "bg-gradient-to-r from-[#00AAFF] to-[#6B30FF] shadow-[0_0_15px_rgba(107,48,255,0.25)] text-white"
     }
   `}
->
-  Get in Touch
-</div>
+        >
+          Get in Touch
+        </div>
       </a>
     </div>
   );
@@ -152,7 +172,7 @@ function AdBanner() {
 
 /* ---------------- PROMO CARD ---------------- */
 
-function SearchPromoCard({ item }: { item: typeof SEARCH_PROMOS[0] }) {
+function SearchPromoCard({ item }: { item: (typeof SEARCH_PROMOS)[0] }) {
   const countdown = useCountdown();
   const { resolvedTheme } = useTheme();
   const isDark = resolvedTheme === "dark";
@@ -161,9 +181,7 @@ function SearchPromoCard({ item }: { item: typeof SEARCH_PROMOS[0] }) {
     <div
       className="flex flex-col rounded-2xl overflow-hidden transition hover:-translate-y-0.5 cursor-pointer"
       style={{
-        background: isDark
-          ? "rgba(24,24,27,0.75)"
-          : "rgba(255,255,255,0.88)",
+        background: isDark ? "rgba(24,24,27,0.75)" : "rgba(255,255,255,0.88)",
         border: isDark
           ? "1.5px solid rgba(168,85,247,0.2)"
           : "1.5px solid rgba(245,158,11,0.35)",
@@ -180,9 +198,7 @@ function SearchPromoCard({ item }: { item: typeof SEARCH_PROMOS[0] }) {
         <span className="text-[8px] font-black text-white uppercase">
           {item.tier}
         </span>
-        <span className="text-[8px] font-mono text-white/80">
-          {countdown}
-        </span>
+        <span className="text-[8px] font-mono text-white/80">{countdown}</span>
       </div>
 
       <img
@@ -269,12 +285,20 @@ function Search() {
                       <button
                         key={i}
                         onClick={() => setOpenPage(i)}
-                        className="w-9 h-9 rounded-xl text-sm font-semibold"
+                        className="w-9 h-9 rounded-xl text-sm font-semibold cursor-pointer"
                         style={{
-                          background: isDark
-                            ? "rgba(39,39,42,0.8)"
-                            : "rgba(255,255,255,0.7)",
-                          color: isDark ? "#d4d4d8" : "#6B7280",
+                          background:
+                            openPage === i
+                              ? "linear-gradient(90deg, #00AAFF, #6B30FF)"
+                              : isDark
+                              ? "rgba(39,39,42,0.8)"
+                              : "rgba(255,255,255,0.7)",
+                          color:
+                            openPage === i
+                              ? "#fff"
+                              : isDark
+                              ? "#d4d4d8"
+                              : "#6B7280",
                         }}
                       >
                         {i + 1}
