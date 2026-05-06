@@ -197,6 +197,7 @@ export default async function handler(req: any, res: any) {
         const products = [
           ...(searchData?.featured_products || []),
           ...(searchData?.organic_results || []),
+          ...(searchData?.shopping_results || []),
         ].map((item) => ({
           ...normalizeProduct(engine, item),
           retailer: engine,
