@@ -66,6 +66,13 @@ const engineConfig = (keyword: string) => ({
     engine: "home_depot",
     q: keyword,
   },
+  "google-shopping": {
+    engine: "google_shopping",
+    q: keyword,
+    google_domain: "google.com",
+    gl: "us",
+    hl: "en",
+  },
 });
 
 function normalizeWalmart(item: any) {
