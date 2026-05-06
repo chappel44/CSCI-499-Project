@@ -41,7 +41,7 @@ export default function RetailerDropdown() {
   };
 
   return (
-    <div className="relative z-50 mb-40" ref={dropdownRef}>
+    <div className="relative z-50" ref={dropdownRef}>
       <button
         type="button"
         className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition hover:opacity-90 shadow-md whitespace-nowrap"

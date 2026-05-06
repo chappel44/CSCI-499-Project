@@ -154,6 +154,7 @@ export default function SearchActions({ visible }: SearchActionsProps) {
             )}
           </div>
         </div>
+        <div className="mb-40" />
         {/* Retailer Dropdown */}
       </div>
     </div>
