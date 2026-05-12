@@ -6,7 +6,7 @@ import SearchHeading from "./search-components/SearchHeading";
 import SearchSuggestions from "./search-components/SearchSuggestions";
 import SearchActions from "./search-components/SearchActions";
 import ApplyGradientOrbs from "../SharedComponents/ApplyGradientOrbs";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 
 const itemsPerPage = 10;
 
@@ -37,9 +37,10 @@ export const PROMO_TIERS = [
 /* ---------------- MAIN ---------------- */
 
 function Search() {
-  const { products, openPage, setOpenPage } = useSearchContext();
+  const { products, openPage, setOpenPage, setKeyword } = useSearchContext();
   const { resolvedTheme } = useTheme();
   const isDark = resolvedTheme === "dark";
+  const [searchParams] = useSearchParams();
 
   const [visible, setVisible] = useState(false);
 
@@ -51,6 +52,13 @@ function Search() {
   useEffect(() => {
     setTimeout(() => setVisible(true), 50);
   }, []);
+
+  useEffect(() => {
+    const keywordParam = searchParams.get("keyword")?.trim();
+    if (keywordParam) {
+      setKeyword(keywordParam);
+    }
+  }, [searchParams, setKeyword]);
 
   return (
     <section

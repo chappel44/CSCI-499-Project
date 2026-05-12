@@ -1,0 +1,46 @@
+{
+  "manifest_version": 3,
+  "name": "Verifind Price Check",
+  "description": "Compare retail product pages against Verifind price results.",
+  "version": "0.1.0",
+  "permissions": ["storage"],
+  "host_permissions": [
+    "https://www.amazon.com/*",
+    "https://amazon.com/*",
+    "https://www.walmart.com/*",
+    "https://walmart.com/*",
+    "https://www.ebay.com/*",
+    "https://ebay.com/*",
+    "https://www.google.com/*",
+    "https://google.com/*",
+    "http://localhost:3001/*",
+    "http://127.0.0.1:3001/*",
+    "http://localhost:5173/*",
+    "http://127.0.0.1:5173/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://www.amazon.com/*",
+        "https://amazon.com/*",
+        "https://www.walmart.com/*",
+        "https://walmart.com/*",
+        "https://www.ebay.com/*",
+        "https://ebay.com/*",
+        "https://www.google.com/search*",
+        "https://google.com/search*",
+        "https://www.google.com/shopping/*",
+        "https://google.com/shopping/*"
+      ],
+      "js": ["content.js"],
+      "css": ["content.css"],
+      "run_at": "document_idle"
+    }
+  ],
+  "action": {
+    "default_title": "Verifind Price Check"
+  }
+}

@@ -38,9 +38,37 @@ function normalizeEbay(item) {
   };
 }
 
+function normalizeAmazon(item) {
+  return {
+    product_id: item.asin ?? item.product_id,
+    title: item.title,
+    link: item.link ?? item.product_link,
+    thumbnail: item.thumbnail,
+    price: item.price?.raw ?? item.price,
+    extracted_price: item.price?.extracted ?? item.extracted_price,
+    rating: item.rating,
+    reviews: item.reviews ?? item.reviews_count,
+  };
+}
+
+function normalizeGoogleShopping(item) {
+  return {
+    product_id: item.product_id,
+    title: item.title,
+    link: item.product_link ?? item.link,
+    thumbnail: item.thumbnail,
+    price: item.price,
+    extracted_price: item.extracted_price,
+    rating: item.rating,
+    reviews: item.reviews,
+  };
+}
+
 const normalizerMap = {
+  amazon: normalizeAmazon,
   walmart: normalizeWalmart,
   ebay: normalizeEbay,
+  "google-shopping": normalizeGoogleShopping,
 };
 
 function normalizeProduct(retailer, item) {
