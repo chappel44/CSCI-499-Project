@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "../../supabase-client";
 import {
   MapPin,
@@ -58,8 +58,25 @@ const REPORT_REASONS = [
 export default function Marketplace() {
   const navigate = useNavigate();
   const [items, setItems] = useState<MarketplaceListing[]>([]);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("all");
+  
+  // URL SEARCH PARAMS
+  const [searchParams, setSearchParams] = useSearchParams();
+  const searchQuery = searchParams.get("q") || "";
+  const selectedCategory = searchParams.get("category") || "all";
+  const minPrice = searchParams.get("minPrice") || "";
+  const maxPrice = searchParams.get("maxPrice") || "";
+
+  // Helper function to update URL without destroying other params
+  const updateURLParam = (key: string, value: string) => {
+    setSearchParams((prev) => {
+      if (value && value !== "all") {
+        prev.set(key, value);
+      } else {
+        prev.delete(key);
+      }
+      return prev;
+    }, { replace: true });
+  };
 
   const [selectedItem, setSelectedItem] = useState<MarketplaceListing | null>(null);
   const [isPostModalOpen, setIsPostModalOpen] = useState(false);
@@ -162,7 +179,7 @@ export default function Marketplace() {
     });
   }, []);
 
-  // Auto-fetch location if permission is already granted (wrapped in try/catch for Safari compatibility)
+  // Auto-fetch location if permission 
   useEffect(() => {
     try {
       if (navigator.permissions) {
@@ -215,7 +232,6 @@ export default function Marketplace() {
     return () => clearTimeout(delayDebounceFN);
   }, [fetchListings]);
 
-  // --- LOCATION FUNCTIONS ---
 
   const handleGetLocation = () => {
     if (!navigator.geolocation) {
@@ -256,7 +272,7 @@ export default function Marketplace() {
       if (data.results?.length > 0) {
         const result = data.results[0];
         setUserCoords({ lat: result.location.lat, lng: result.location.lng });
-        setFilterLocationText(result.formatted_address); // Update text to clean formatted address
+        setFilterLocationText(result.formatted_address); 
       } else {
         alert("Could not find that location. Try a valid Zip Code or City.");
       }
@@ -268,15 +284,13 @@ export default function Marketplace() {
   };
 
   const handleClearFilters = () => {
-    setSearchQuery("");
-    setSelectedCategory("all");
+    setSearchParams(new URLSearchParams(), { replace: true }); 
     setUserCoords(null);
     setFilterLocationText("");
     setMaxDistance(50);
     setIsFilterMenuOpen(false);
   };
 
-  // --- POST & REPORT FUNCTIONS ---
 
   const handlePostItem = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -530,15 +544,16 @@ export default function Marketplace() {
 
   const formatPrice = (price: number) => (price === 0 ? "Free" : `$${price}`);
 
-  // STRICT Filter logic: If distance filter is active, items without coordinates are excluded
+  // MULTI-LAYER FILTERING: Location & Price
   const filteredItems = items.filter(item => {
-    // If user doesn't have location on, show everything
+    // 1. Price Checks
+    if (minPrice !== "" && item.price < Number(minPrice)) return false;
+    if (maxPrice !== "" && item.price > Number(maxPrice)) return false;
+
+    // 2. Location Checks
     if (!userCoords) return true;
-    
-    // If user has location ON, but item has NO location, hide it
     if (!item.latitude || !item.longitude) return false;
     
-    // Check radius
     const distance = calculateDistance(userCoords.lat, userCoords.lng, item.latitude, item.longitude);
     return distance <= maxDistance;
   });
@@ -588,7 +603,7 @@ export default function Marketplace() {
           </div>
         )}
 
-        {/* Search & Post Bar with Filters Dropdown */}
+        {/* Search + Post Bar + Filters Dropdown */}
         <div className="mb-12 flex flex-col md:flex-row gap-4 max-w-3xl mx-auto relative">
           
           <div className="relative flex-1 group">
@@ -597,26 +612,26 @@ export default function Marketplace() {
               type="text"
               placeholder="Search items..."
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={(e) => updateURLParam("q", e.target.value)}
               className="marketplace-search-input w-full pl-12 pr-4 py-3.5 bg-white/70 dark:bg-gray-800/80 dark:text-white backdrop-blur-md border border-gray-200/60 dark:border-gray-700/60 rounded-2xl shadow-sm focus:ring-2 focus:ring-blue-400 outline-none transition-all placeholder:text-gray-400 dark:placeholder:text-gray-500"
             />
           </div>
 
           <div className="flex gap-4 justify-center">
-            {/* Filters Dropdown Trigger */}
+            {/* Filters Dropdown */}
             <div className="relative">
               <button
                 onClick={() => setIsFilterMenuOpen(!isFilterMenuOpen)}
                 className="flex items-center justify-center gap-2 px-6 py-3.5 rounded-2xl font-bold text-gray-700 dark:text-gray-200 bg-white/70 dark:bg-gray-800/80 backdrop-blur-md border border-gray-200/60 dark:border-gray-700/60 shadow-sm hover:bg-white dark:hover:bg-gray-700 transition-all outline-none"
               >
                 <Filter size={18} /> Filters
-                {/* Active Filter Indicator */}
-                {(selectedCategory !== "all" || userCoords) && (
+                {/* Active Filter */}
+                {(selectedCategory !== "all" || userCoords || minPrice || maxPrice) && (
                   <span className="absolute top-2 right-2 w-2.5 h-2.5 bg-blue-500 rounded-full border-2 border-white dark:border-gray-800"></span>
                 )}
               </button>
 
-              {/* Expandable Filter Menu */}
+              {/* Filter Menu */}
               {isFilterMenuOpen && (
                 <div className="absolute top-[115%] right-0 w-80 bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl border border-gray-200 dark:border-gray-700 shadow-2xl rounded-3xl p-6 z-50 animate-in fade-in slide-in-from-top-2">
                   <div className="flex justify-between items-center mb-5">
@@ -626,14 +641,14 @@ export default function Marketplace() {
                     </button>
                   </div>
 
-                  {/* Category Subsection */}
+                  {/* Category section */}
                   <div className="mb-6">
                     <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2 block">
                       Category
                     </label>
                     <select
                       value={selectedCategory}
-                      onChange={(e) => setSelectedCategory(e.target.value)}
+                      onChange={(e) => updateURLParam("category", e.target.value)}
                       className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 font-medium text-gray-700 dark:text-gray-200 outline-none focus:ring-2 focus:ring-blue-500"
                     >
                       <option value="all">All Categories</option>
@@ -649,7 +664,39 @@ export default function Marketplace() {
 
                   <hr className="border-gray-100 dark:border-gray-800 mb-6" />
 
-                  {/* Location/Distance Subsection */}
+                  {/* Price section */}
+                  <div className="mb-6">
+                    <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2 block">
+                      Price Range
+                    </label>
+                    <div className="flex items-center gap-3">
+                      <div className="relative flex-1">
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 font-medium">$</span>
+                        <input 
+                          type="number" 
+                          placeholder="Min" 
+                          value={minPrice} 
+                          onChange={(e) => updateURLParam("minPrice", e.target.value)}
+                          className="w-full pl-7 pr-3 py-2 text-sm rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 dark:text-white outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                      </div>
+                      <span className="text-gray-400 font-bold">-</span>
+                      <div className="relative flex-1">
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 font-medium">$</span>
+                        <input 
+                          type="number" 
+                          placeholder="Max" 
+                          value={maxPrice} 
+                          onChange={(e) => updateURLParam("maxPrice", e.target.value)}
+                          className="w-full pl-7 pr-3 py-2 text-sm rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 dark:text-white outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <hr className="border-gray-100 dark:border-gray-800 mb-6" />
+
+                  {/* Location Section */}
                   <div className="mb-6">
                     <div className="flex justify-between items-center mb-2">
                       <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider block">
@@ -685,15 +732,21 @@ export default function Marketplace() {
                       </div>
 
                       {/* GPS Button */}
-                      <button
-                        onClick={handleGetLocation}
-                        disabled={isLocating}
-                        className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl text-sm font-bold transition-colors bg-blue-50 text-blue-600 hover:bg-blue-100 dark:bg-blue-900/30 dark:text-blue-400 dark:hover:bg-blue-900/50"
-                      >
-                        <Navigation size={14} /> {isLocating ? "Locating..." : "Use GPS"}
-                      </button>
+                      {userCoords ? (
+                         <div className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl text-sm font-bold bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">
+                           <Navigation size={14} /> Location Active ✓
+                         </div>
+                      ) : (
+                        <button
+                          onClick={handleGetLocation}
+                          disabled={isLocating}
+                          className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl text-sm font-bold transition-colors bg-blue-50 text-blue-600 hover:bg-blue-100 dark:bg-blue-900/30 dark:text-blue-400 dark:hover:bg-blue-900/50"
+                        >
+                          <Navigation size={14} /> {isLocating ? "Locating..." : "Use GPS"}
+                        </button>
+                      )}
 
-                      {/* Distance Slider (Only visible if location is set) */}
+                      {/* Distance Slider */}
                       <div className={`transition-all duration-300 mt-2 ${userCoords ? "opacity-100" : "opacity-40 pointer-events-none"}`}>
                         <div className="flex justify-between items-center mb-2">
                           <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">Radius</span>
