@@ -256,6 +256,104 @@ html[data-theme="dark"] .search-result-image {
   background: rgba(10, 18, 31, 0.82) !important;
 }
 
+.extension-page {
+  background:
+    radial-gradient(circle at top left, rgba(0, 170, 255, 0.16), transparent 34%),
+    radial-gradient(circle at top right, rgba(107, 48, 255, 0.14), transparent 30%),
+    #f0f4ff;
+}
+
+.extension-kicker {
+  background: rgba(255, 255, 255, 0.78);
+  border-color: rgba(0, 170, 255, 0.18);
+  color: #2563eb;
+}
+
+.extension-title {
+  background: linear-gradient(90deg, #00aaff, #6b30ff);
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+}
+
+.extension-copy,
+.extension-muted {
+  color: #53627a;
+}
+
+.extension-preview,
+.extension-step {
+  background: rgba(255, 255, 255, 0.82);
+  border-color: rgba(0, 170, 255, 0.14);
+}
+
+.extension-chip {
+  background: rgba(255, 255, 255, 0.68);
+  border-color: rgba(107, 48, 255, 0.18);
+  color: #34425b;
+}
+
+.extension-back {
+  background: rgba(255, 255, 255, 0.72);
+  border-color: rgba(0, 170, 255, 0.16);
+  color: #34425b;
+}
+
+.extension-back:hover {
+  border-color: rgba(107, 48, 255, 0.3);
+  color: #2563eb;
+}
+
+.extension-preview-title {
+  color: #111827;
+}
+
+html[data-theme="dark"] .extension-page {
+  background:
+    radial-gradient(circle at top left, rgba(0, 170, 255, 0.14), transparent 32%),
+    radial-gradient(circle at top right, rgba(107, 48, 255, 0.16), transparent 30%),
+    #0b1220 !important;
+}
+
+html[data-theme="dark"] .extension-kicker {
+  background: rgba(13, 22, 38, 0.82);
+  border-color: rgba(124, 149, 187, 0.24);
+  color: #8bd8ff;
+}
+
+html[data-theme="dark"] .extension-copy,
+html[data-theme="dark"] .extension-muted {
+  color: #b9cae5;
+}
+
+html[data-theme="dark"] .extension-preview,
+html[data-theme="dark"] .extension-step {
+  background: rgba(13, 22, 38, 0.82);
+  border-color: rgba(124, 149, 187, 0.24);
+}
+
+html[data-theme="dark"] .extension-chip {
+  background: rgba(13, 22, 38, 0.82);
+  border-color: rgba(124, 149, 187, 0.24);
+  color: #dbe7f7;
+}
+
+html[data-theme="dark"] .extension-back {
+  background: rgba(13, 22, 38, 0.82);
+  border-color: rgba(124, 149, 187, 0.24);
+  color: #dbe7f7;
+}
+
+html[data-theme="dark"] .extension-back:hover {
+  border-color: rgba(139, 216, 255, 0.34);
+  color: #ffffff;
+}
+
+html[data-theme="dark"] .extension-preview-title {
+  color: #f4f8ff;
+}
+
 html[data-theme="dark"] .wishlist-page,
 html[data-theme="dark"] .wiv-page {
   background:
