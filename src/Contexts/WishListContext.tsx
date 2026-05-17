@@ -80,6 +80,8 @@ export function WishlistProvider({ children }: { children: ReactNode }) {
   >("none");
   const [filterDropOnly, setFilterDropOnly] = useState(false);
   const [watchMeta, setWatchMeta] = useState<Record<string, WatchMeta>>({});
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [watchMetaLoaded, setWatchMetaLoaded] = useState(false);
 
   const updateWatchMeta = (
     itemId: string,
@@ -115,7 +117,22 @@ export function WishlistProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    setItems(data ?? []);
+    const wishlistItems = data ?? [];
+    setItems(wishlistItems);
+    setWatchMeta((prev) => {
+      const next = { ...prev };
+      wishlistItems.forEach((item) => {
+        const existing = next[item.id];
+        if (item.note || item.priority || item.status) {
+          next[item.id] = {
+            note: existing?.note ?? item.note ?? "",
+            priority: existing?.priority ?? item.priority ?? "medium",
+            status: existing?.status ?? item.status ?? "watching",
+          };
+        }
+      });
+      return next;
+    });
   }
 
   useEffect(() => {
@@ -125,6 +142,8 @@ export function WishlistProvider({ children }: { children: ReactNode }) {
       if (!data.session) {
         setItems([]);
         setWatchMeta({});
+        setCurrentUserId(null);
+        setWatchMetaLoaded(true);
 
         if (location.pathname === "/wish-list") {
           navigate("/login");
@@ -134,6 +153,7 @@ export function WishlistProvider({ children }: { children: ReactNode }) {
       }
 
       const userId = data.session.user.id;
+      setCurrentUserId(userId);
       fetchWishlist(userId);
     }
 
@@ -141,17 +161,15 @@ export function WishlistProvider({ children }: { children: ReactNode }) {
   }, [navigate, location.pathname]);
 
   useEffect(() => {
-    async function loadWatchMeta() {
-      const { data } = await supabase.auth.getSession();
-      const userId = data.session?.user.id;
+    if (!currentUserId) return;
 
-      if (!userId) return;
-
-      const saved = window.localStorage.getItem(
-        `wishlist-watch-meta:${userId}`
-      );
+    setWatchMetaLoaded(false);
+    const saved = window.localStorage.getItem(
+      `wishlist-watch-meta:${currentUserId}`
+    );
       if (!saved) {
         setWatchMeta({});
+      setWatchMetaLoaded(true);
         return;
       }
 
@@ -160,26 +178,17 @@ export function WishlistProvider({ children }: { children: ReactNode }) {
       } catch {
         setWatchMeta({});
       }
-    }
-
-    loadWatchMeta();
-  }, []);
+    setWatchMetaLoaded(true);
+  }, [currentUserId]);
 
   useEffect(() => {
-    async function persistWatchMeta() {
-      const { data } = await supabase.auth.getSession();
-      const userId = data.session?.user.id;
+    if (!currentUserId || !watchMetaLoaded) return;
 
-      if (!userId) return;
-
-      window.localStorage.setItem(
-        `wishlist-watch-meta:${userId}`,
-        JSON.stringify(watchMeta)
-      );
-    }
-
-    persistWatchMeta();
-  }, [watchMeta]);
+    window.localStorage.setItem(
+      `wishlist-watch-meta:${currentUserId}`,
+      JSON.stringify(watchMeta)
+    );
+  }, [currentUserId, watchMeta, watchMetaLoaded]);
 
   return (
     <WishlistContext.Provider

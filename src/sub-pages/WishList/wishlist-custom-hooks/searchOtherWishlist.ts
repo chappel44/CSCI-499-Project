@@ -27,11 +27,9 @@ export function useSearchOtherWishlist() {
         return;
       }
 
-      console.log(profileData.id);
-
       const { data: wishlistData, error: wishlistError } = await supabase
         .from("wishlists")
-        .select("product_title, product_image, target_price")
+        .select("product_title, product_image, target_price, note, priority, status")
         .eq("user_id", profileData.id);
 
       if (wishlistError || !wishlistData || wishlistData.length === 0) {

@@ -203,7 +203,7 @@ export default function Header() {
   const renderPanel = (id: NonNullable<DropID>) => {
     if (id === "marketplace")
       return (
-        <div className="p-4 w-64">
+        <div className="header-dropdown-content p-4 w-64">
           <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-2">
             Shop by category
           </p>
@@ -225,7 +225,7 @@ export default function Header() {
               <button
                 key={item.cat}
                 onClick={() => goCategory(item.cat)}
-                className="flex items-center gap-3 px-3 py-2 rounded-xl text-left transition-all duration-150 group w-full"
+                className="header-dropdown-item flex items-center gap-3 px-3 py-2 rounded-xl text-left transition-all duration-150 group w-full"
                 style={{
                   background: "transparent",
                   border: "none",
@@ -241,7 +241,7 @@ export default function Header() {
                 }}
               >
                 <div
-                  className="w-6 h-6 rounded-md flex items-center justify-center flex-shrink-0 text-gray-400 group-hover:text-indigo-500 transition-colors"
+                  className="header-dropdown-icon w-6 h-6 rounded-md flex items-center justify-center flex-shrink-0 text-gray-400 group-hover:text-indigo-500 transition-colors"
                   style={{
                     border: "1px solid rgba(0,0,0,0.08)",
                     background: "rgba(0,0,0,0.02)",
@@ -259,13 +259,13 @@ export default function Header() {
             ))}
           </div>
           <div
-            className="flex gap-2 pt-2"
+            className="header-dropdown-actions flex gap-2 pt-2"
             style={{ borderTop: "1px solid rgba(0,0,0,0.06)" }}
           >
             <Link
               to="/marketplace"
               onClick={closeAll}
-              className="flex-1 text-center py-1.5 rounded-lg text-xs font-semibold text-gray-600 transition-all duration-150 hover:bg-gray-50"
+              className="header-dropdown-secondary flex-1 text-center py-1.5 rounded-lg text-xs font-semibold text-gray-600 transition-all duration-150 hover:bg-gray-50"
               style={{ border: "1px solid rgba(0,0,0,0.10)" }}
             >
               Browse all
@@ -283,7 +283,7 @@ export default function Header() {
 
     if (id === "search")
       return (
-        <div className="p-4 w-52">
+        <div className="header-dropdown-content p-4 w-52">
           <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-1.5">
             Search
           </p>
@@ -304,7 +304,7 @@ export default function Header() {
 
     if (id === "wishlist")
       return (
-        <div className="p-4 w-56">
+        <div className="header-dropdown-content p-4 w-56">
           <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-1.5">
             Wish List
           </p>
@@ -323,7 +323,7 @@ export default function Header() {
             <Link
               to="/favourites"
               onClick={closeAll}
-              className="flex items-center justify-center py-2 rounded-lg text-xs font-medium text-gray-600 transition-all duration-150 hover:bg-gray-100"
+              className="header-dropdown-secondary flex items-center justify-center py-2 rounded-lg text-xs font-medium text-gray-600 transition-all duration-150 hover:bg-gray-100"
               style={{ border: "1px solid rgba(0,0,0,0.08)" }}
             >
               Saved / Favourites
@@ -334,7 +334,7 @@ export default function Header() {
 
     if (id === "about")
       return (
-        <div className="p-4 w-56">
+        <div className="header-dropdown-content p-4 w-56">
           <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-1.5">
             What is Verifind?
           </p>
@@ -562,7 +562,7 @@ export default function Header() {
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: 4, scale: 0.97 }}
                         transition={{ duration: 0.13, ease: "easeOut" }}
-                        className="absolute top-full mt-2 left-1/2 -translate-x-1/2 rounded-2xl z-50 overflow-hidden"
+                        className="header-dropdown-panel absolute top-full mt-2 left-1/2 -translate-x-1/2 rounded-2xl z-50 overflow-hidden"
                         style={{
                           background: "rgba(255,255,255,0.97)",
                           backdropFilter: "blur(20px)",

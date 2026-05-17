@@ -5,6 +5,9 @@ export type WishlistItem = {
   product_title: string;
   product_image: string;
   target_price: number;
+  note?: string | null;
+  priority?: WatchPriority | null;
+  status?: WatchStatus | null;
 };
 
 export type EnrichedItem = WishlistItem & {
@@ -33,6 +36,9 @@ export type OtherWishlistItem = {
   product_title: string;
   product_image: string;
   target_price: number;
+  note?: string | null;
+  priority?: WatchPriority | null;
+  status?: WatchStatus | null;
 };
 
 // price history type — from supabase price_history table
