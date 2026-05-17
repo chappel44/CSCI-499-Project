@@ -16,6 +16,7 @@ import CartPage from "./sub-pages/CartPages";
 import Layout from "./Contexts/Layout";
 import PrivacyPolicy from "./sub-pages/PrivacyPolicy";
 import Extension from "./sub-pages/Extension/Extension";
+import UserProfileReviews from "./sub-pages/UserProfileReviews";
 
 function App() {
   return (
@@ -47,6 +48,7 @@ function App() {
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/profile" element={<Settings />} />
+          <Route path="/users/:userId" element={<UserProfileReviews />} />
           <Route path="/profile/username" element={<Settings />} />
           <Route path="/profile/security" element={<Settings />} />
           <Route path="/profile/appearance" element={<Settings />} />

@@ -231,18 +231,18 @@ function CheckoutForm({ cart, onSuccess }: { cart: CartItem[]; onSuccess: () => 
     fontFamily: "inherit",
   });
   const iCls = "w-full px-3 py-2.5 rounded-xl text-sm focus:outline-none transition-colors";
-  const lbl  = "text-xs text-gray-500 mb-1 block font-medium";
+  const lbl  = "cart-form-label text-xs text-gray-600 mb-1 block font-semibold";
   const err  = (f: string) => errors[f] ? <p className="text-[10px] text-red-400 mt-1">{errors[f]}</p> : null;
 
   return (
     <form onSubmit={handlePay} noValidate>
-      <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-3">Contact</p>
+      <p className="cart-form-section text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-3">Contact</p>
       <div className="flex flex-col gap-2.5 mb-5">
         <div><label className={lbl}>Full name</label><input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="Jane Smith" className={iCls} style={iSt("name")} />{err("name")}</div>
         <div><label className={lbl}>Email</label><input type="email" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} placeholder="jane@email.com" className={iCls} style={iSt("email")} />{err("email")}</div>
       </div>
 
-      <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-3">Shipping address</p>
+      <p className="cart-form-section text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-3">Shipping address</p>
       <div className="flex flex-col gap-2.5 mb-5">
         <div><label className={lbl}>Address</label><input value={form.address} onChange={e => setForm(f => ({ ...f, address: e.target.value }))} placeholder="123 Main St" className={iCls} style={iSt("address")} />{err("address")}</div>
         <div className="flex gap-2">
@@ -262,7 +262,7 @@ function CheckoutForm({ cart, onSuccess }: { cart: CartItem[]; onSuccess: () => 
         </div>
       </div>
 
-      <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-2">Payment</p>
+      <p className="cart-form-section text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-2">Payment</p>
       <div className="flex gap-1.5 mb-3">
         {["Visa", "Mastercard", "Amex", "Discover"].map(b => (
           <span key={b} className="px-2 py-0.5 rounded text-[10px] font-bold transition-all" style={{ border: "1px solid rgba(0,0,0,0.1)", color: brand === b ? "#6B30FF" : "#9ca3af", borderColor: brand === b ? "rgba(107,48,255,0.4)" : "rgba(0,0,0,0.1)", background: brand === b ? "rgba(107,48,255,0.06)" : "transparent" }}>
@@ -285,7 +285,7 @@ function CheckoutForm({ cart, onSuccess }: { cart: CartItem[]; onSuccess: () => 
       <hr style={{ border: "none", borderTop: "1px solid rgba(0,0,0,0.07)", margin: "16px 0" }} />
       <div className="flex flex-col gap-1.5 mb-5">
         {[["Subtotal", fmt(sub)], ["Shipping", sub > 500 ? "Free" : fmt(ship)], ["Tax (8.75%)", fmt(tax)]].map(([l, v]) => (
-          <div key={l} className="flex justify-between text-sm text-gray-500"><span>{l}</span><span>{v}</span></div>
+          <div key={l} className="cart-total-row flex justify-between text-sm text-gray-600"><span>{l}</span><span>{v}</span></div>
         ))}
         <div className="flex justify-between text-base font-bold text-gray-900 mt-2 pt-2" style={{ borderTop: "1px solid rgba(0,0,0,0.05)" }}>
           <span>Total</span>
@@ -320,7 +320,9 @@ export default function CartPage() {
   const [showPromote, setShowPromote] = useState(false);
 
   useEffect(() => {
-    const stored = sessionStorage.getItem("verifind_cart");
+    const stored =
+      sessionStorage.getItem("verifind_cart") ||
+      localStorage.getItem("verifind_cart");
     let existing: CartItem[] = stored ? JSON.parse(stored) : [];
     const incoming = (location.state as any)?.item as CartItem | undefined;
     if (incoming) {
@@ -332,6 +334,7 @@ export default function CartPage() {
         existing = [...existing, { ...incoming, qty: 1, stock: maxStock }];
       }
       sessionStorage.setItem("verifind_cart", JSON.stringify(existing));
+      localStorage.setItem("verifind_cart", JSON.stringify(existing));
       window.history.replaceState({}, "");
     }
     setCart(existing);
@@ -340,6 +343,7 @@ export default function CartPage() {
   const persist = (updated: CartItem[]) => {
     setCart(updated);
     sessionStorage.setItem("verifind_cart", JSON.stringify(updated));
+    localStorage.setItem("verifind_cart", JSON.stringify(updated));
   };
   const remove    = (id: string) => persist(cart.filter(x => x.id !== id));
   const changeQty = (id: string, d: number) => persist(
@@ -351,7 +355,7 @@ export default function CartPage() {
 
   if (success) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center px-4 py-20" style={{ background: "#f0f4ff" }}>
+      <div className="cart-page min-h-screen flex flex-col items-center justify-center px-4 py-20" style={{ background: "#f0f4ff" }}>
         <div className="fixed inset-0 pointer-events-none" style={{ zIndex: 0 }}>
           <div style={{ position: "absolute", top: "20%", left: "10%", width: "50vw", height: "50vw", maxWidth: 600, maxHeight: 600, background: "radial-gradient(circle,rgba(16,185,129,0.12) 0%,transparent 70%)", borderRadius: "50%", filter: "blur(60px)" }} />
         </div>
@@ -374,23 +378,28 @@ export default function CartPage() {
   return (
     <>
     {showPromote && <PromoteModal onClose={() => setShowPromote(false)} />}
-    <div className="min-h-screen" style={{ background: "#f0f4ff" }}>
+    <div className="cart-page min-h-screen" style={{ background: "#f0f4ff" }}>
       <div className="fixed inset-0 pointer-events-none" style={{ zIndex: 0 }}>
         <div style={{ position: "absolute", top: "-10%", left: "-5%", width: "55vw", height: "55vw", maxWidth: 700, maxHeight: 700, background: "radial-gradient(circle,rgba(0,170,255,0.14) 0%,transparent 70%)", borderRadius: "50%", filter: "blur(50px)" }} />
         <div style={{ position: "absolute", bottom: "10%", right: "-5%", width: "45vw", height: "45vw", maxWidth: 600, maxHeight: 600, background: "radial-gradient(circle,rgba(107,48,255,0.11) 0%,transparent 70%)", borderRadius: "50%", filter: "blur(50px)" }} />
       </div>
 
-      <div className="relative z-10 max-w-5xl mx-auto px-4 md:px-8 pt-28 pb-16">
-        <div className="flex items-center gap-3 mb-8">
-          <button onClick={() => navigate(-1)} className="w-9 h-9 rounded-xl flex items-center justify-center text-gray-500 hover:text-gray-800 transition" style={{ background: "rgba(255,255,255,0.6)", border: "1px solid rgba(0,0,0,0.07)" }}>
+      <div className="relative z-10 max-w-6xl mx-auto px-4 md:px-8 pt-28 pb-16">
+        <div className="cart-hero rounded-[2rem] p-5 md:p-6 mb-8">
+          <div className="flex items-center gap-3">
+          <button onClick={() => navigate(-1)} className="cart-hero-back w-10 h-10 rounded-2xl flex items-center justify-center transition" style={{ cursor: "pointer" }}>
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" /></svg>
           </button>
-          <h1 className="text-3xl font-bold text-gray-900">Your Cart</h1>
+          <div className="min-w-0">
+            <h1 className="cart-hero-title text-3xl font-bold">Your Cart</h1>
+            <p className="cart-hero-subtitle text-sm mt-1">Review your marketplace picks and check out when you are ready.</p>
+          </div>
           {cart.length > 0 && (
-            <span className="px-2.5 py-1 rounded-lg text-sm font-semibold text-white" style={{ background: GRAD }}>
+            <span className="ml-auto px-3 py-1.5 rounded-xl text-sm font-semibold text-white whitespace-nowrap" style={{ background: GRAD }}>
               {cart.reduce((a, c) => a + c.qty, 0)} item{cart.reduce((a, c) => a + c.qty, 0) !== 1 ? "s" : ""}
             </span>
           )}
+          </div>
         </div>
 
         {cart.length === 0 && (
@@ -412,7 +421,7 @@ export default function CartPage() {
                 {cart.map((item) => {
                   const imgs = Array.isArray(item.images) ? item.images : [];
                   return (
-                    <div key={item.id} className="flex gap-4 p-4 rounded-2xl items-start" style={{ background: "rgba(255,255,255,0.88)", border: "1px solid rgba(255,255,255,0.95)", boxShadow: "0 2px 12px rgba(0,0,0,0.05)" }}>
+                    <div key={item.id} className="cart-item-card flex gap-4 p-4 rounded-[1.6rem] items-start">
                       {imgs.length > 0 ? (
                         <img src={imgs[0]} alt={item.title} className="rounded-xl flex-shrink-0" style={{ width: 84, height: 84, objectFit: "cover", objectPosition: "center" }} onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
                       ) : (
@@ -421,15 +430,15 @@ export default function CartPage() {
                         </div>
                       )}
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold text-gray-800 leading-snug mb-0.5 line-clamp-2">{item.title}</p>
-                        <p className="text-xs text-gray-400 mb-2 capitalize">{item.condition} · {item.category}{item.seller_name ? ` · ${item.seller_name}` : ""}</p>
+                        <p className="cart-item-title text-sm font-semibold text-gray-900 leading-snug mb-0.5 line-clamp-2">{item.title}</p>
+                        <p className="cart-item-meta text-xs text-gray-500 mb-2 capitalize">{item.condition} · {item.category}{item.seller_name ? ` · ${item.seller_name}` : ""}</p>
                         <div className="flex items-center gap-2 flex-wrap">
                           <p className="text-sm font-extrabold" style={{ background: GRAD, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>{fmt(item.price)}</p>
                           <div className="flex items-center gap-1 ml-auto">
                             <button onClick={() => changeQty(item.id, -1)} className="w-6 h-6 rounded-lg flex items-center justify-center hover:bg-gray-200 transition" style={{ background: "rgba(0,0,0,0.05)", border: "none", cursor: "pointer" }}>
                               <svg className="w-3 h-3 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M20 12H4" /></svg>
                             </button>
-                            <span className="text-sm font-semibold text-gray-800 w-5 text-center">{item.qty}</span>
+                            <span className="cart-qty text-sm font-semibold text-gray-800 w-5 text-center">{item.qty}</span>
                             <button
                               onClick={() => changeQty(item.id, 1)}
                               disabled={item.qty >= (item.stock ?? 1)}
@@ -455,32 +464,32 @@ export default function CartPage() {
                 })}
               </div>
 
-              <button onClick={() => navigate("/favourites")} className="mt-4 w-full p-3.5 rounded-2xl flex items-center gap-3 text-left hover:bg-white/70 transition" style={{ background: "rgba(255,255,255,0.45)", border: "1px solid rgba(107,48,255,0.12)", cursor: "pointer" }}>
+              <button onClick={() => navigate("/favourites")} className="cart-side-link mt-4 w-full p-3.5 rounded-2xl flex items-center gap-3 text-left transition" style={{ cursor: "pointer" }}>
                 <svg className="w-5 h-5 text-indigo-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 016.364 0L12 7.636l1.318-1.318a4.5 4.5 0 116.364 6.364L12 20.364l-7.682-7.682a4.5 4.5 0 010-6.364z" /></svg>
-                <span className="text-sm text-gray-600">View your saved and hearted items</span>
+                <span className="cart-link-copy text-sm text-gray-700">View your saved and hearted items</span>
                 <svg className="w-4 h-4 text-gray-400 ml-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>
               </button>
 
               {/* Promote nudge */}
               <button
                 onClick={() => setShowPromote(true)}
-                className="mt-3 w-full p-3.5 rounded-2xl flex items-center gap-3 text-left hover:bg-white/70 transition"
-                style={{ background: "rgba(255,255,255,0.45)", border: "1px solid rgba(245,158,11,0.25)", cursor: "pointer" }}
+                className="cart-side-link cart-promote-link mt-3 w-full p-3.5 rounded-2xl flex items-center gap-3 text-left transition"
+                style={{ cursor: "pointer" }}
               >
                 <svg className="w-5 h-5 flex-shrink-0" style={{ color: "rgb(245,158,11)" }} fill="currentColor" viewBox="0 0 20 20">
                   <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
                 </svg>
                 <div className="flex-1">
-                  <p className="text-sm font-semibold text-gray-700">Promote your listing</p>
-                  <p className="text-[10px] text-gray-400">Featured spots from $2.99/wk · Cancel anytime</p>
+                  <p className="cart-link-copy text-sm font-semibold text-gray-700">Promote your listing</p>
+                  <p className="cart-muted text-[10px] text-gray-500">Featured spots from $2.99/wk · Cancel anytime</p>
                 </div>
                 <svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>
               </button>
             </div>
 
             {/* Checkout panel */}
-            <div className="rounded-2xl p-6" style={{ flex: 1, minWidth: 300, background: "rgba(255,255,255,0.88)", border: "1px solid rgba(255,255,255,0.95)", boxShadow: "0 4px 24px rgba(0,0,0,0.07)" }}>
-              <h3 className="text-lg font-bold text-gray-900 mb-4">Checkout</h3>
+            <div className="cart-checkout-card rounded-[1.75rem] p-6" style={{ flex: 1, minWidth: 300 }}>
+              <h3 className="cart-section-title text-lg font-bold text-gray-900 mb-4">Checkout</h3>
               <CheckoutForm cart={cart} onSuccess={() => { persist([]); setSuccess(true); }} />
             </div>
           </div>

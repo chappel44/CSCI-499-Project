@@ -10,6 +10,7 @@ import {
   LockKeyhole,
   Palette,
   Shield,
+  Star,
   UserRound,
 } from "lucide-react";
 import { useTheme, type ThemePreference } from "../Contexts/ThemeContext";
@@ -102,6 +103,7 @@ export default function Settings() {
   const themeOptions: ThemePreference[] = ["light", "dark", "system"];
 
   const [currentUsername, setCurrentUsername] = useState("");
+  const [currentUserId, setCurrentUserId] = useState("");
   const [username, setUsername] = useState("");
   const [profileEmail, setProfileEmail] = useState("");
   const [memberSince, setMemberSince] = useState("");
@@ -130,6 +132,7 @@ export default function Settings() {
 
       const user = data.session.user;
       const name = user.user_metadata?.username ?? "";
+      setCurrentUserId(user.id);
       setUsername(name);
       setCurrentUsername(name);
       setProfileEmail(user.email ?? "");
@@ -402,6 +405,12 @@ export default function Settings() {
                 title="Account Details"
                 description="Change your username and public profile identity."
                 onClick={() => navigate("/profile/username")}
+              />
+              <SettingRow
+                icon={<Star size={20} />}
+                title="Public Profile"
+                description="View your reviews and posted wishlist notes."
+                onClick={() => navigate(`/users/${currentUserId}`)}
               />
               <SettingRow
                 icon={<LockKeyhole size={20} />}

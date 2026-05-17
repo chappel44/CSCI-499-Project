@@ -11,6 +11,7 @@ import sortWishlist from "./wish-list-hooks/sortWishlist";
 import DisplayWishlist from "./wish-list-components/DisplayWishlist";
 import DisplayWishlistActions from "./wish-list-components/DisplayWishlistActions";
 import { useSearchOtherWishlist } from "./wishlist-custom-hooks/searchOtherWishlist";
+import { supabase } from "../../../supabase-client";
 
 function WishList() {
   const { items, searchQuery, sortBy, filterDropOnly, setOtherUsername } =
@@ -19,9 +20,16 @@ function WishList() {
   const [searchParams] = useSearchParams();
 
   const [visible, setVisible] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
   useEffect(() => {
     setTimeout(() => setVisible(true), 50);
+  }, []);
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => {
+      setCurrentUserId(data.user?.id ?? null);
+    });
   }, []);
 
   useEffect(() => {
@@ -69,6 +77,27 @@ function WishList() {
       <GreetUser visible={visible} />
 
       <DisplayWishlistActions visible={visible} />
+
+      {currentUserId && (
+        <div
+          className="relative z-10 mt-4 flex justify-center px-6"
+          style={{
+            opacity: visible ? 1 : 0,
+            transition: "opacity 0.6s ease 0.25s",
+          }}
+        >
+          <Link
+            to={`/users/${currentUserId}`}
+            className="rounded-2xl border px-4 py-2 text-sm font-bold text-white shadow-lg transition hover:-translate-y-0.5 hover:opacity-95"
+            style={{
+              background: "linear-gradient(90deg,#00AAFF,#6B30FF)",
+              borderColor: "rgba(125,211,252,0.26)",
+            }}
+          >
+            View Public Profile
+          </Link>
+        </div>
+      )}
 
       {/* Wishlist Items — frosted glass cards */}
       <DisplayWishlist filteredItems={filteredItems} visible={visible} />

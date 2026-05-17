@@ -16,8 +16,10 @@ import {
   MapPinned,
   ShieldCheck,
   AlertTriangle,
+  Heart,
   Navigation,
   RotateCcw,
+  ShoppingCart,
 } from "lucide-react";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
@@ -91,6 +93,8 @@ const REPORT_REASONS = [
   { id: "other", label: "Other", requiresDetails: true },
 ];
 
+const MARKETPLACE_SAVE_CACHE_KEY = "verifind_marketplace_saved_items";
+
 export default function Marketplace() {
   const navigate = useNavigate();
   const [items, setItems] = useState<MarketplaceListing[]>([]);
@@ -101,6 +105,7 @@ export default function Marketplace() {
   const selectedCategory = searchParams.get("category") || "all";
   const minPrice = searchParams.get("minPrice") || "";
   const maxPrice = searchParams.get("maxPrice") || "";
+  const selectedListingId = searchParams.get("listing") || "";
 
   // Helper function to update URL without destroying other params
   const updateURLParam = (key: string, value: string) => {
@@ -140,6 +145,7 @@ export default function Marketplace() {
   const [currentUserVerified, setCurrentUserVerified] = useState(false);
   const [verificationSubmitting, setVerificationSubmitting] = useState(false);
   const [verificationMessage, setVerificationMessage] = useState<string | null>(null);
+  const [savedListingIds, setSavedListingIds] = useState<string[]>([]);
 
   // State for location request and distance calc
   const [userCoords, setUserCoords] = useState<{lat: number, lng: number} | null>(null);
@@ -190,6 +196,24 @@ export default function Marketplace() {
     if (error) console.error("Error fetching listings:", error.message);
     setLoading(false);
   }, [blockedSellerIds, searchQuery, selectedCategory]);
+
+  const openListingDetails = (item: MarketplaceListing) => {
+    setSelectedItem(item);
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      next.set("listing", item.id);
+      return next;
+    }, { replace: true });
+  };
+
+  const closeListingDetails = () => {
+    setSelectedItem(null);
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      next.delete("listing");
+      return next;
+    }, { replace: true });
+  };
 
   // map use effect
   useEffect(() => {
@@ -271,6 +295,7 @@ export default function Marketplace() {
   useEffect(() => {
     if (!currentUserId) {
       const timer = window.setTimeout(() => setReportedListingIds([]), 0);
+      setSavedListingIds([]);
       return () => window.clearTimeout(timer);
     }
 
@@ -292,7 +317,26 @@ export default function Marketplace() {
       );
     };
 
+    const fetchSavedListings = async () => {
+      const { data, error } = await supabase
+        .from("marketplace_saves")
+        .select("listing_id")
+        .eq("user_id", currentUserId);
+
+      if (error) {
+        console.error("Error fetching saved marketplace listings:", error.message);
+        return;
+      }
+
+      setSavedListingIds(
+        (data ?? [])
+          .map((row) => row.listing_id)
+          .filter((id): id is string => Boolean(id))
+      );
+    };
+
     fetchReportedListings();
+    fetchSavedListings();
   }, [currentUserId]);
 
   // search use effect
@@ -302,6 +346,40 @@ export default function Marketplace() {
     }, 300);
     return () => clearTimeout(delayDebounceFN);
   }, [fetchListings]);
+
+  useEffect(() => {
+    if (!selectedListingId || selectedItem?.id === selectedListingId) return;
+
+    const matchingItem = items.find((item) => item.id === selectedListingId);
+    if (matchingItem) {
+      setSelectedItem(matchingItem);
+      return;
+    }
+
+    let cancelled = false;
+    const fetchSelectedListing = async () => {
+      const { data, error } = await supabase
+        .from("marketplace_listings")
+        .select("*")
+        .eq("id", selectedListingId)
+        .eq("sold", false)
+        .maybeSingle();
+
+      if (cancelled) return;
+      if (error) {
+        console.error("Error fetching selected listing:", error.message);
+        return;
+      }
+      if (data && !blockedSellerIds.includes(data.user_id)) {
+        setSelectedItem(data as MarketplaceListing);
+      }
+    };
+
+    fetchSelectedListing();
+    return () => {
+      cancelled = true;
+    };
+  }, [blockedSellerIds, items, selectedItem?.id, selectedListingId]);
 
 
   const handleGetLocation = () => {
@@ -445,7 +523,7 @@ export default function Marketplace() {
       .eq("id", itemId);
     if (error) alert("Error deleting listing: " + error.message);
     else {
-      setSelectedItem(null);
+      closeListingDetails();
       fetchListings();
     }
   };
@@ -454,6 +532,102 @@ export default function Marketplace() {
     if (loggedIn && currentUserId) return true;
     alert("Please log in first.");
     return false;
+  };
+
+  const handleToggleSaveListing = async (item: MarketplaceListing) => {
+    if (!requireSignedIn() || !currentUserId) return;
+
+    const alreadySaved = savedListingIds.includes(item.id);
+    setSavedListingIds((ids) =>
+      alreadySaved ? ids.filter((id) => id !== item.id) : [...ids, item.id]
+    );
+
+    const savedRaw = localStorage.getItem(MARKETPLACE_SAVE_CACHE_KEY);
+    const savedItems = savedRaw ? JSON.parse(savedRaw) : [];
+    if (alreadySaved) {
+      localStorage.setItem(
+        MARKETPLACE_SAVE_CACHE_KEY,
+        JSON.stringify(
+          savedItems.filter((saved: { id: string }) => saved.id !== item.id)
+        )
+      );
+    } else {
+      const nextSavedItem = {
+        id: item.id,
+        title: item.title,
+        price: item.price,
+        images: item.images ?? [],
+        category: item.category,
+        condition: item.condition,
+        seller_name: item.seller_name,
+        verified: false,
+        source: "marketplace",
+      };
+      localStorage.setItem(
+        MARKETPLACE_SAVE_CACHE_KEY,
+        JSON.stringify([
+          nextSavedItem,
+          ...savedItems.filter((saved: { id: string }) => saved.id !== item.id),
+        ])
+      );
+    }
+
+    const { error } = alreadySaved
+      ? await supabase
+          .from("marketplace_saves")
+          .delete()
+          .eq("user_id", currentUserId)
+          .eq("listing_id", item.id)
+      : await supabase.from("marketplace_saves").upsert(
+          {
+            user_id: currentUserId,
+            listing_id: item.id,
+          },
+          { onConflict: "user_id,listing_id" }
+        );
+
+    if (error) {
+      console.error("Could not sync saved item to Supabase:", error.message);
+    }
+
+    setActionMessage(alreadySaved ? "Removed from saved items." : "Saved item.");
+  };
+
+  const handleAddToCart = (item: MarketplaceListing) => {
+    const cartItem = {
+      id: item.id,
+      title: item.title,
+      price: item.price,
+      images: item.images ?? [],
+      category: item.category,
+      condition: item.condition,
+      seller_name: item.seller_name,
+      qty: 1,
+      stock: 1,
+    };
+    const stored =
+      sessionStorage.getItem("verifind_cart") ||
+      localStorage.getItem("verifind_cart");
+    const existing = stored ? JSON.parse(stored) : [];
+    const found = existing.find((cartItem: { id: string }) => cartItem.id === item.id);
+    const nextCart = found
+      ? existing.map((cartItem: { id: string; qty?: number; stock?: number }) =>
+          cartItem.id === item.id
+            ? {
+                ...cartItem,
+                qty: Math.min(cartItem.stock ?? 1, (cartItem.qty ?? 1) + 1),
+              }
+            : cartItem
+        )
+      : [...existing, cartItem];
+
+    sessionStorage.setItem("verifind_cart", JSON.stringify(nextCart));
+    localStorage.setItem("verifind_cart", JSON.stringify(nextCart));
+    navigate("/cart", {
+      state: {
+        item: cartItem,
+      },
+    });
   };
 
   const handleOpenMessage = async () => {
@@ -522,7 +696,7 @@ export default function Marketplace() {
     }
 
     setActionLoading(false);
-    setSelectedItem(null);
+    closeListingDetails();
     navigate(`/marketplace/inbox/${conversationId}`);
   };
 
@@ -556,7 +730,7 @@ export default function Marketplace() {
     setItems((existing) =>
       existing.filter((item) => item.user_id !== selectedItem.user_id)
     );
-    setSelectedItem(null);
+    closeListingDetails();
     setIsBlockModalOpen(false);
     setActionMessage("Seller blocked.");
     setActionLoading(false);
@@ -1242,8 +1416,8 @@ export default function Marketplace() {
                     </div>
 
                     <button
-                      onClick={() => setSelectedItem(item)}
-                      className="marketplace-view-button w-full mt-auto py-3 bg-gray-900 dark:bg-gray-700 text-white font-bold rounded-xl hover:bg-black dark:hover:bg-gray-600 transition-colors"
+                      onClick={() => openListingDetails(item)}
+                      className="marketplace-view-button w-full mt-auto cursor-pointer py-3 bg-gray-900 dark:bg-gray-700 text-white font-bold rounded-xl hover:bg-black dark:hover:bg-gray-600 transition-colors"
                     >
                       View Details
                     </button>
@@ -1658,7 +1832,7 @@ export default function Marketplace() {
       {/* MODAL: VIEW ITEM DETAILS */}
       {selectedItem && (
         <div
-          onClick={() => setSelectedItem(null)}
+          onClick={closeListingDetails}
           className="fixed inset-0 z-[80] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md cursor-pointer"
         >
           <div
@@ -1666,7 +1840,7 @@ export default function Marketplace() {
             className="marketplace-detail-modal bg-white dark:bg-gray-900 rounded-[32px] max-w-5xl w-full max-h-[90vh] overflow-y-auto relative shadow-2xl flex flex-col md:flex-row border border-white/20 dark:border-gray-700"
           >
             <button
-              onClick={() => setSelectedItem(null)}
+              onClick={closeListingDetails}
               className="absolute top-6 right-6 p-2 bg-white/90 dark:bg-gray-800/90 backdrop-blur rounded-full hover:bg-white dark:hover:bg-gray-700 z-10 w-10 h-10 flex items-center justify-center shadow-lg transition-transform hover:scale-110"
             >
               <X size={20} className="text-gray-900 dark:text-white" />
@@ -1850,7 +2024,11 @@ export default function Marketplace() {
                     />
                   )}
                 </div>
-                <div className="pt-6 border-t border-gray-100 dark:border-gray-800 flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => navigate(`/users/${selectedItem.user_id}`)}
+                  className="pt-6 border-t border-gray-100 dark:border-gray-800 flex w-full cursor-pointer items-center gap-3 text-left transition hover:opacity-80"
+                >
                   <div className="w-10 h-10 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 flex items-center justify-center text-white font-bold">
                     {selectedItem.seller_name?.[0]?.toUpperCase() || "U"}
                   </div>
@@ -1861,8 +2039,11 @@ export default function Marketplace() {
                     <p className="text-sm font-bold dark:text-white">
                       {selectedItem.seller_name || "Anonymous"}
                     </p>
+                    <p className="text-xs font-semibold text-blue-500">
+                      View profile reviews
+                    </p>
                   </div>
-                </div>
+                </button>
               </div>
 
               {currentUserId === selectedItem.user_id ? (
@@ -1874,10 +2055,30 @@ export default function Marketplace() {
                 </button>
               ) : (
                 <div className="flex flex-col gap-3">
+                  <div className="grid grid-cols-2 gap-3">
+                    <button
+                      type="button"
+                      onClick={() => handleToggleSaveListing(selectedItem)}
+                      className="w-full cursor-pointer py-3.5 rounded-xl border border-pink-200 dark:border-pink-900/30 bg-pink-50 dark:bg-pink-900/20 text-pink-700 dark:text-pink-400 font-bold hover:bg-pink-100 dark:hover:bg-pink-900/40 transition-all inline-flex items-center justify-center gap-2"
+                    >
+                      <Heart
+                        size={16}
+                        fill={savedListingIds.includes(selectedItem.id) ? "currentColor" : "none"}
+                      />
+                      {savedListingIds.includes(selectedItem.id) ? "Saved" : "Save"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleAddToCart(selectedItem)}
+                      className="w-full cursor-pointer py-3.5 rounded-xl border border-blue-200 dark:border-blue-900/30 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 font-bold hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-all inline-flex items-center justify-center gap-2"
+                    >
+                      <ShoppingCart size={16} /> Add to Cart
+                    </button>
+                  </div>
                   <button
                     onClick={handleOpenMessage}
                     disabled={actionLoading}
-                    className="w-full py-5 bg-blue-600 text-white text-lg font-bold rounded-2xl hover:bg-blue-700 shadow-xl flex items-center justify-center gap-2 disabled:opacity-60"
+                    className="w-full cursor-pointer py-5 bg-blue-600 text-white text-lg font-bold rounded-2xl hover:bg-blue-700 shadow-xl flex items-center justify-center gap-2 disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     <MessageCircle size={20} /> Message Seller
                   </button>
@@ -1887,7 +2088,7 @@ export default function Marketplace() {
                         setActionMessage(null);
                         setIsReportModalOpen(true);
                       }}
-                      className="w-full py-3.5 rounded-xl border border-amber-200 dark:border-amber-900/30 bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-500 font-bold hover:bg-amber-100 dark:hover:bg-amber-900/40 transition-all inline-flex items-center justify-center gap-2"
+                      className="w-full cursor-pointer py-3.5 rounded-xl border border-amber-200 dark:border-amber-900/30 bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-500 font-bold hover:bg-amber-100 dark:hover:bg-amber-900/40 transition-all inline-flex items-center justify-center gap-2"
                     >
                       <ShieldAlert size={16} /> Report
                     </button>
@@ -1897,7 +2098,7 @@ export default function Marketplace() {
                         setIsBlockModalOpen(true);
                       }}
                       disabled={actionLoading}
-                      className="w-full py-3.5 rounded-xl border border-red-200 dark:border-red-900/30 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-500 font-bold hover:bg-red-100 dark:hover:bg-red-900/40 transition-all inline-flex items-center justify-center gap-2 disabled:opacity-60"
+                      className="w-full cursor-pointer py-3.5 rounded-xl border border-red-200 dark:border-red-900/30 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-500 font-bold hover:bg-red-100 dark:hover:bg-red-900/40 transition-all inline-flex items-center justify-center gap-2 disabled:cursor-not-allowed disabled:opacity-60"
                     >
                       <UserX size={16} /> Block Seller
                     </button>
