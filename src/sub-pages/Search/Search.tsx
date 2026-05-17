@@ -69,7 +69,7 @@ function Search() {
     >
       <ApplyGradientOrbs />
 
-      <div className="relative z-10 w-full px-4 sm:px-6 md:px-8 pt-20 pb-16">
+      <div className="relative z-10 w-full px-4 sm:px-6 md:px-8 pt-20">
         <div className="flex gap-5 items-start justify-center max-w-5xl mx-auto">
           <div className="flex-1 min-w-0 max-w-xl">
             <SearchHeading visible={visible} />
@@ -84,7 +84,7 @@ function Search() {
                 />
 
                 {products.length > itemsPerPage && (
-                  <div className="flex justify-center gap-2 mt-8">
+                  <div className="flex justify-center gap-2 mt-8 mb-8">
                     {Array.from({ length: totalPages }).map((_, i) => (
                       <button
                         key={i}
@@ -117,7 +117,7 @@ function Search() {
       </div>
 
       <div
-        className="relative z-10 w-full py-10 mt-auto flex justify-center items-center gap-4"
+        className="relative z-10 w-full py-10 mt-auto flex justify-center items-center gap-4 mb-12"
         style={{ borderTop: "1px solid rgba(0,170,255,0.1)" }}
       >
         <p className="text-xs text-gray-400">

@@ -89,6 +89,7 @@ function WishList() {
         {/* FAQ */}
         <FAQSection />
 
+        {/* Footer — mt-auto pushes it down */}
         <div
           className="relative z-10 w-full py-10 mt-auto flex justify-center items-center gap-4"
           style={{ borderTop: "1px solid rgba(0,170,255,0.1)" }}

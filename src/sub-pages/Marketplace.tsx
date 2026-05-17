@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "../../supabase-client";
 import {
   MapPin,
@@ -16,9 +16,23 @@ import {
   MapPinned,
   ShieldCheck,
   AlertTriangle,
+  Navigation,
+  RotateCcw,
 } from "lucide-react";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
+
+// Haversine distance calculation for filtering based on location
+const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
+  const R = 3958.8; // Radius of Earth in miles
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a =
+    Math.sin(dLat/2) * Math.sin(dLat/2) +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon/2) * Math.sin(dLon/2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  return R * c;
+};
 
 type MarketplaceListing = {
   id: string;
@@ -80,20 +94,40 @@ const REPORT_REASONS = [
 export default function Marketplace() {
   const navigate = useNavigate();
   const [items, setItems] = useState<MarketplaceListing[]>([]);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("all");
 
-  const [selectedItem, setSelectedItem] = useState<MarketplaceListing | null>(
-    null
-  );
+  // URL SEARCH PARAMS
+  const [searchParams, setSearchParams] = useSearchParams();
+  const searchQuery = searchParams.get("q") || "";
+  const selectedCategory = searchParams.get("category") || "all";
+  const minPrice = searchParams.get("minPrice") || "";
+  const maxPrice = searchParams.get("maxPrice") || "";
+
+  // Helper function to update URL without destroying other params
+  const updateURLParam = (key: string, value: string) => {
+    setSearchParams((prev) => {
+      if (value && value !== "all") {
+        prev.set(key, value);
+      } else {
+        prev.delete(key);
+      }
+      return prev;
+    }, { replace: true });
+  };
+
+  const [selectedItem, setSelectedItem] = useState<MarketplaceListing | null>(null);
   const [isPostModalOpen, setIsPostModalOpen] = useState(false);
   const [loggedIn, setLoggedIn] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [tempAddress, setTempAddress] = useState("");
   const [blockedSellerIds, setBlockedSellerIds] = useState<string[]>([]);
+
+  // UI States for Modals
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
   const [isBlockModalOpen, setIsBlockModalOpen] = useState(false);
+  const [isFilterMenuOpen, setIsFilterMenuOpen] = useState(false);
+
+  // Action states
   const [reportReason, setReportReason] = useState("");
   const [reportDetails, setReportDetails] = useState("");
   const [actionMessage, setActionMessage] = useState<string | null>(null);
@@ -107,6 +141,12 @@ export default function Marketplace() {
   const [verificationSubmitting, setVerificationSubmitting] = useState(false);
   const [verificationMessage, setVerificationMessage] = useState<string | null>(null);
 
+  // State for location request and distance calc
+  const [userCoords, setUserCoords] = useState<{lat: number, lng: number} | null>(null);
+  const [maxDistance, setMaxDistance] = useState<number>(50);
+  const [filterLocationText, setFilterLocationText] = useState("");
+  const [isLocating, setIsLocating] = useState(false);
+
   const [formData, setFormData] = useState({
     title: "",
     price: "",
@@ -114,7 +154,6 @@ export default function Marketplace() {
     description: "",
     condition: "Good",
     imageInput: "",
-
     location_name: "",
     latitude: null as number | null,
     longitude: null as number | null,
@@ -184,6 +223,24 @@ export default function Marketplace() {
     });
   }, []);
 
+  // Auto-fetch location if permission
+  useEffect(() => {
+    try {
+      if (navigator.permissions) {
+        navigator.permissions.query({ name: 'geolocation' }).then((result) => {
+          if (result.state === 'granted') {
+            navigator.geolocation.getCurrentPosition(
+              (pos) => setUserCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+              (err) => console.log("Location auto-fetch failed:", err)
+            );
+          }
+        });
+      }
+    } catch (e) {
+      console.log("Permissions API not fully supported.");
+    }
+  }, []);
+
   useEffect(() => {
     if (!currentUserId) {
       const timer = window.setTimeout(() => setBlockedSellerIds([]), 0);
@@ -246,6 +303,66 @@ export default function Marketplace() {
     return () => clearTimeout(delayDebounceFN);
   }, [fetchListings]);
 
+
+  const handleGetLocation = () => {
+    if (!navigator.geolocation) {
+      alert("Geolocation is not supported by your browser");
+      return;
+    }
+
+    setIsLocating(true);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setUserCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+        setFilterLocationText("Current GPS Location");
+        setIsLocating(false);
+      },
+      (err) => {
+        setIsLocating(false);
+        console.error("Location error:", err);
+        if (err.code === 1) {
+          alert("Permission denied. Please allow location access or type a zip code.");
+        } else if (err.code === 2) {
+          alert("Browser couldn't determine physical location. Please type a zip code/city manually.");
+        } else {
+          alert("An unknown error occurred while fetching location.");
+        }
+      },
+      { enableHighAccuracy: false, timeout: 10000, maximumAge: 0 }
+    );
+  };
+
+  const handleFilterAddressLookup = async () => {
+    if (filterLocationText.length < 3) return;
+    setIsLocating(true);
+    try {
+      const API_KEY = import.meta.env.VITE_GEOCODIO_KEY;
+      const res = await fetch(`https://api.geocod.io/v1.7/geocode?q=${encodeURIComponent(filterLocationText)}&api_key=${API_KEY}`);
+      const data = await res.json();
+
+      if (data.results?.length > 0) {
+        const result = data.results[0];
+        setUserCoords({ lat: result.location.lat, lng: result.location.lng });
+        setFilterLocationText(result.formatted_address);
+      } else {
+        alert("Could not find that location. Try a valid Zip Code or City.");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Error looking up location.");
+    }
+    setIsLocating(false);
+  };
+
+  const handleClearFilters = () => {
+    setSearchParams(new URLSearchParams(), { replace: true });
+    setUserCoords(null);
+    setFilterLocationText("");
+    setMaxDistance(50);
+    setIsFilterMenuOpen(false);
+  };
+
+
   const handlePostItem = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -267,7 +384,6 @@ export default function Marketplace() {
         price: numericPrice,
         category: formData.category,
         condition: formData.condition,
-
         images: formData.imageInput ? [formData.imageInput] : [],
         sold: false,
         location_name: formData.location_name,
@@ -728,11 +844,23 @@ export default function Marketplace() {
     setVerificationSubmitting(false);
   };
 
+  // MULTI-LAYER FILTERING: Location & Price
+  const filteredItems = items.filter(item => {
+    // 1. Price Checks
+    if (minPrice !== "" && item.price < Number(minPrice)) return false;
+    if (maxPrice !== "" && item.price > Number(maxPrice)) return false;
+
+    // 2. Location Checks
+    if (!userCoords) return true;
+    if (!item.latitude || !item.longitude) return false;
+
+    const distance = calculateDistance(userCoords.lat, userCoords.lng, item.latitude, item.longitude);
+    return distance <= maxDistance;
+  });
 
   return (
     <div
-      className="marketplace-page min-h-screen flex flex-col pt-24 pb-12 px-4 relative overflow-hidden"
-      style={{ background: "#f0f4ff" }}
+      className="marketplace-page min-h-screen flex flex-col pt-24 pb-12 px-4 relative overflow-hidden bg-[#f0f4ff] dark:bg-gray-950 transition-colors duration-300"
     >
       {/* Mesh Background */}
       <div className="fixed inset-0 pointer-events-none" style={{ zIndex: 0 }}>
@@ -765,12 +893,12 @@ export default function Marketplace() {
       </div>
 
       <div className="relative z-10 max-w-6xl mx-auto w-full">
-        <h1 className="marketplace-title text-4xl font-black mb-8 text-center text-gray-900 tracking-tight">
+        <h1 className="marketplace-title text-4xl font-black mb-8 text-center text-gray-900 dark:text-white tracking-tight">
           Marketplace
         </h1>
 
         {actionMessage && (
-          <div className="mx-auto mb-5 max-w-3xl rounded-2xl border border-blue-100 bg-white/70 px-4 py-3 text-sm font-semibold text-gray-600 shadow-sm backdrop-blur-md">
+          <div className="mx-auto mb-5 max-w-3xl rounded-2xl border border-blue-100 bg-white/70 dark:bg-blue-900/40 px-4 py-3 text-sm font-semibold text-gray-600 dark:text-gray-200 shadow-sm backdrop-blur-md">
             {actionMessage}
           </div>
         )}
@@ -866,39 +994,177 @@ export default function Marketplace() {
           );
         })()}
 
-        {/* Search, Filter & Post Bar */}
-        <div className="mb-12 flex flex-col md:flex-row gap-4 max-w-3xl mx-auto">
+        {/* Search + Post Bar + Filters Dropdown */}
+        <div className="mb-12 flex flex-col md:flex-row gap-4 max-w-3xl mx-auto relative">
           <div className="relative flex-1 group">
-            <Search className="marketplace-search-icon absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 group-focus-within:text-blue-500 transition-colors" />
+            <Search className="marketplace-search-icon absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 dark:text-gray-500 group-focus-within:text-blue-500 transition-colors" />
             <input
               type="text"
               placeholder="Search items..."
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="marketplace-search-input w-full pl-12 pr-4 py-3.5 bg-white/70 backdrop-blur-md border border-gray-200/60 rounded-2xl shadow-sm focus:ring-2 focus:ring-blue-400 outline-none transition-all"
+              onChange={(e) => updateURLParam("q", e.target.value)}
+              className="marketplace-search-input w-full pl-12 pr-4 py-3.5 bg-white/70 dark:bg-gray-800/80 dark:text-white backdrop-blur-md border border-gray-200/60 dark:border-gray-700/60 rounded-2xl shadow-sm focus:ring-2 focus:ring-blue-400 outline-none transition-all placeholder:text-gray-400 dark:placeholder:text-gray-500"
             />
           </div>
 
           <div className="flex gap-4 justify-center">
+            {/* Filters Dropdown */}
             <div className="relative">
-              <select
-                value={selectedCategory}
-                onChange={(e) => setSelectedCategory(e.target.value)}
-                className="marketplace-secondary-button flex items-center justify-center gap-2 px-10 py-3.5 rounded-2xl font-bold text-gray-700 bg-white/70 backdrop-blur-md border border-gray-200/60 shadow-sm appearance-none cursor-pointer outline-none"
+              <button
+                onClick={() => setIsFilterMenuOpen(!isFilterMenuOpen)}
+                className="flex items-center justify-center gap-2 px-6 py-3.5 rounded-2xl font-bold text-gray-700 dark:text-gray-200 bg-white/70 dark:bg-gray-800/80 backdrop-blur-md border border-gray-200/60 dark:border-gray-700/60 shadow-sm hover:bg-white dark:hover:bg-gray-700 transition-all outline-none"
               >
-                <option value="all">All Categories</option>
-                <option value="electronics">Electronics</option>
-                <option value="home">Home</option>
-                <option value="fashion">Fashion</option>
-                <option value="toys">Toys</option>
-                <option value="books">Books</option>
-                <option value="sports">Sports</option>
-                <option value="other">Other</option>
-              </select>
-              <Filter
-                size={16}
-                className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none"
-              />
+                <Filter size={18} /> Filters
+                {/* Active Filter */}
+                {(selectedCategory !== "all" || userCoords || minPrice || maxPrice) && (
+                  <span className="absolute top-2 right-2 w-2.5 h-2.5 bg-blue-500 rounded-full border-2 border-white dark:border-gray-800"></span>
+                )}
+              </button>
+
+              {/* Filter Menu */}
+              {isFilterMenuOpen && (
+                <div className="absolute top-[115%] right-0 w-80 bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl border border-gray-200 dark:border-gray-700 shadow-2xl rounded-3xl p-6 z-50 animate-in fade-in slide-in-from-top-2">
+                  <div className="flex justify-between items-center mb-5">
+                    <h3 className="text-lg font-black text-gray-900 dark:text-white">Filters</h3>
+                    <button onClick={() => setIsFilterMenuOpen(false)}>
+                      <X size={20} className="text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 transition-colors" />
+                    </button>
+                  </div>
+
+                  {/* Category section */}
+                  <div className="mb-6">
+                    <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2 block">
+                      Category
+                    </label>
+                    <select
+                      value={selectedCategory}
+                      onChange={(e) => updateURLParam("category", e.target.value)}
+                      className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 font-medium text-gray-700 dark:text-gray-200 outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="all">All Categories</option>
+                      <option value="electronics">Electronics</option>
+                      <option value="home">Home</option>
+                      <option value="fashion">Fashion</option>
+                      <option value="toys">Toys</option>
+                      <option value="books">Books</option>
+                      <option value="sports">Sports</option>
+                      <option value="other">Other</option>
+                    </select>
+                  </div>
+
+                  <hr className="border-gray-100 dark:border-gray-800 mb-6" />
+
+                  {/* Price section */}
+                  <div className="mb-6">
+                    <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2 block">
+                      Price Range
+                    </label>
+                    <div className="flex items-center gap-3">
+                      <div className="relative flex-1">
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 font-medium">$</span>
+                        <input
+                          type="number"
+                          placeholder="Min"
+                          value={minPrice}
+                          onChange={(e) => updateURLParam("minPrice", e.target.value)}
+                          className="w-full pl-7 pr-3 py-2 text-sm rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 dark:text-white outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                      </div>
+                      <span className="text-gray-400 font-bold">-</span>
+                      <div className="relative flex-1">
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 font-medium">$</span>
+                        <input
+                          type="number"
+                          placeholder="Max"
+                          value={maxPrice}
+                          onChange={(e) => updateURLParam("maxPrice", e.target.value)}
+                          className="w-full pl-7 pr-3 py-2 text-sm rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 dark:text-white outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <hr className="border-gray-100 dark:border-gray-800 mb-6" />
+
+                  {/* Location Section */}
+                  <div className="mb-6">
+                    <div className="flex justify-between items-center mb-2">
+                      <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider block">
+                        Location
+                      </label>
+                    </div>
+
+                    <div className="flex flex-col gap-3">
+
+                      {/* Manual Location Input */}
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          placeholder="Zip or City..."
+                          value={filterLocationText}
+                          onChange={(e) => setFilterLocationText(e.target.value)}
+                          onKeyDown={(e) => e.key === 'Enter' && handleFilterAddressLookup()}
+                          className="w-full px-3 py-2 text-sm rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 dark:text-white outline-none focus:ring-2 focus:ring-blue-500 placeholder:text-gray-400 dark:placeholder:text-gray-500"
+                        />
+                        <button
+                          onClick={handleFilterAddressLookup}
+                          disabled={isLocating || filterLocationText.length < 3}
+                          className="px-3 py-2 bg-gray-900 dark:bg-blue-600 text-white text-sm font-bold rounded-xl hover:bg-black dark:hover:bg-blue-700 disabled:opacity-50 transition-colors"
+                        >
+                          {isLocating ? "..." : "Go"}
+                        </button>
+                      </div>
+
+                      <div className="flex items-center gap-3">
+                        <hr className="flex-1 border-gray-200 dark:border-gray-700"/>
+                        <span className="text-[10px] font-bold text-gray-400 uppercase">OR</span>
+                        <hr className="flex-1 border-gray-200 dark:border-gray-700"/>
+                      </div>
+
+                      {/* GPS Button */}
+                      {userCoords ? (
+                         <div className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl text-sm font-bold bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">
+                           <Navigation size={14} /> Location Active ✓
+                         </div>
+                      ) : (
+                        <button
+                          onClick={handleGetLocation}
+                          disabled={isLocating}
+                          className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl text-sm font-bold transition-colors bg-blue-50 text-blue-600 hover:bg-blue-100 dark:bg-blue-900/30 dark:text-blue-400 dark:hover:bg-blue-900/50"
+                        >
+                          <Navigation size={14} /> {isLocating ? "Locating..." : "Use GPS"}
+                        </button>
+                      )}
+
+                      {/* Distance Slider */}
+                      <div className={`transition-all duration-300 mt-2 ${userCoords ? "opacity-100" : "opacity-40 pointer-events-none"}`}>
+                        <div className="flex justify-between items-center mb-2">
+                          <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">Radius</span>
+                          <span className="text-sm font-black text-blue-600 dark:text-blue-400">{maxDistance} mi</span>
+                        </div>
+                        <input
+                          type="range"
+                          min="5"
+                          max="200"
+                          step="5"
+                          value={maxDistance}
+                          onChange={(e) => setMaxDistance(Number(e.target.value))}
+                          className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
+                        />
+                      </div>
+
+                    </div>
+                  </div>
+
+                  {/* Clear Filters Button */}
+                  <button
+                    onClick={handleClearFilters}
+                    className="w-full py-3 flex items-center justify-center gap-2 text-sm font-bold text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-white bg-gray-50 hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700 rounded-xl transition-all"
+                  >
+                    <RotateCcw size={16} /> Clear All Filters
+                  </button>
+                </div>
+              )}
             </div>
 
             {loggedIn && (
@@ -918,21 +1184,21 @@ export default function Marketplace() {
           <div className="flex justify-center items-center py-20 w-full">
             <div className="w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
           </div>
-        ) : items.length === 0 ? (
-          <div className="text-center py-20 text-gray-500 font-medium text-lg w-full">
-            No items listed yet.
+        ) : filteredItems.length === 0 ? (
+          <div className="text-center py-20 text-gray-500 dark:text-gray-400 font-medium text-lg w-full">
+            No items found matching your filters.
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 pb-10">
-            {items.map((item) => {
+            {filteredItems.map((item) => {
               const trustBadges = getTrustBadges(item);
 
               return (
                 <div
                   key={item.id}
-                  className="marketplace-card bg-white/60 backdrop-blur-md rounded-[2rem] p-4 border border-white/50 shadow-sm hover:shadow-xl transition-all duration-300 group flex flex-col"
+                  className="marketplace-card bg-white/60 dark:bg-gray-800/60 backdrop-blur-md rounded-[2rem] p-4 border border-white/50 dark:border-gray-700/50 shadow-sm hover:shadow-xl transition-all duration-300 group flex flex-col"
                 >
-                  <div className="marketplace-card-image aspect-square rounded-2xl overflow-hidden mb-4 bg-gray-100">
+                  <div className="marketplace-card-image aspect-square rounded-2xl overflow-hidden mb-4 bg-gray-100 dark:bg-gray-900">
                     <img
                       src={
                         item.images?.[0] ||
@@ -943,15 +1209,22 @@ export default function Marketplace() {
                     />
                   </div>
                   <div className="px-2 flex-grow flex flex-col">
-                    <p className="text-[10px] font-bold text-indigo-500 uppercase tracking-widest mb-1">
+                    <p className="text-[10px] font-bold text-indigo-500 dark:text-indigo-400 uppercase tracking-widest mb-1">
                       {item.category}
                     </p>
-                    <h3 className="text-xl font-bold text-gray-900 mb-1 truncate">
+                    <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-1 truncate">
                       {item.title}
                     </h3>
-                    <p className="text-2xl font-medium mb-3 text-gray-900">
+                    <p className="text-2xl font-medium mb-3 text-gray-900 dark:text-gray-200">
                       {formatPrice(item.price)}
                     </p>
+
+                    {userCoords && item.latitude && item.longitude && (
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mb-3 font-semibold flex items-center gap-1">
+                        <MapPin size={12} className="text-blue-500" />
+                        {Math.round(calculateDistance(userCoords.lat, userCoords.lng, item.latitude, item.longitude))} miles away
+                      </p>
+                    )}
 
                     <div className="mb-4 flex flex-wrap gap-1.5">
                       {trustBadges.slice(0, 2).map((badge) => (
@@ -970,7 +1243,7 @@ export default function Marketplace() {
 
                     <button
                       onClick={() => setSelectedItem(item)}
-                      className="marketplace-view-button w-full mt-auto py-3 bg-gray-900 text-white font-bold rounded-xl hover:bg-black transition-colors"
+                      className="marketplace-view-button w-full mt-auto py-3 bg-gray-900 dark:bg-gray-700 text-white font-bold rounded-xl hover:bg-black dark:hover:bg-gray-600 transition-colors"
                     >
                       View Details
                     </button>
@@ -985,15 +1258,15 @@ export default function Marketplace() {
       {/* MODAL: POST LISTING */}
       {isPostModalOpen && (
         <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
-          <div className="marketplace-modal bg-white rounded-[2.5rem] w-full max-w-md overflow-hidden shadow-2xl border border-gray-100">
+          <div className="marketplace-modal bg-white dark:bg-gray-900 rounded-[2.5rem] w-full max-w-md overflow-hidden shadow-2xl border border-gray-100 dark:border-gray-800">
             <div className="p-8 max-h-[85vh] overflow-y-auto">
               <div className="flex justify-between items-center mb-6">
-                <h2 className="text-2xl font-black text-gray-900">
+                <h2 className="text-2xl font-black text-gray-900 dark:text-white">
                   List an Item
                 </h2>
                 <button
                   onClick={() => setIsPostModalOpen(false)}
-                  className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                  className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors"
                 >
                   <X className="text-gray-400" />
                 </button>
@@ -1001,13 +1274,13 @@ export default function Marketplace() {
 
               <form onSubmit={handlePostItem} className="space-y-4">
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-xs font-semibold text-gray-600 uppercase tracking-wide px-1">
+                  <label className="text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wide px-1">
                     Title
                   </label>
                   <input
                     required
                     placeholder="What are you selling?"
-                    className="marketplace-form-input w-full px-4 py-3 rounded-xl border border-gray-200 bg-gray-50 outline-none"
+                    className="marketplace-form-input w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 dark:text-white outline-none"
                     value={formData.title}
                     onChange={(e) =>
                       setFormData({ ...formData, title: e.target.value })
@@ -1017,14 +1290,14 @@ export default function Marketplace() {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="flex flex-col gap-1.5">
-                    <label className="text-xs font-semibold text-gray-600 uppercase tracking-wide px-1">
+                    <label className="text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wide px-1">
                       Price
                     </label>
                     <input
                       required
                       type="number"
                       step="0.01"
-                      className="marketplace-form-input w-full px-4 py-3 rounded-xl border border-gray-200 bg-gray-50 outline-none"
+                      className="marketplace-form-input w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 dark:text-white outline-none"
                       value={formData.price}
                       onChange={(e) =>
                         setFormData({ ...formData, price: e.target.value })
@@ -1032,11 +1305,11 @@ export default function Marketplace() {
                     />
                   </div>
                   <div className="flex flex-col gap-1.5">
-                    <label className="text-xs font-semibold text-gray-600 uppercase tracking-wide px-1">
+                    <label className="text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wide px-1">
                       Category
                     </label>
                     <select
-                      className="marketplace-form-input w-full px-4 py-3 rounded-xl border border-gray-200 bg-gray-50 outline-none"
+                      className="marketplace-form-input w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 dark:text-white outline-none"
                       value={formData.category}
                       onChange={(e) =>
                         setFormData({ ...formData, category: e.target.value })
@@ -1054,11 +1327,11 @@ export default function Marketplace() {
                 </div>
 
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-xs font-semibold text-gray-600 uppercase tracking-wide px-1">
+                  <label className="text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wide px-1">
                     Condition
                   </label>
                   <select
-                    className="marketplace-form-input w-full px-4 py-3 rounded-xl border border-gray-200 bg-gray-50 outline-none"
+                    className="marketplace-form-input w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 dark:text-white outline-none"
                     value={formData.condition}
                     onChange={(e) =>
                       setFormData({ ...formData, condition: e.target.value })
@@ -1073,43 +1346,44 @@ export default function Marketplace() {
 
                 {/* Location Selection */}
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-xs font-semibold text-gray-600 uppercase tracking-wide px-1">
-                    Location
+                  <label className="text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wide px-1">
+                    Location *Required
                   </label>
                   <div className="flex gap-2">
                     <div className="relative flex-1">
                       <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                       <input
                         placeholder="Enter address..."
-                        className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 bg-gray-50 outline-none"
+                        className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 dark:text-white outline-none"
                         value={tempAddress}
                         onChange={(e) => setTempAddress(e.target.value)}
+                        onKeyDown={(e) => e.key === 'Enter' && handleAddressLookup(tempAddress)}
                       />
                     </div>
                     <button
                       type="button"
                       onClick={() => handleAddressLookup(tempAddress)}
-                      className="px-4 py-2 bg-gray-800 text-white rounded-xl font-bold text-xs hover:bg-black"
+                      className="px-4 py-2 bg-gray-800 text-white rounded-xl font-bold text-xs hover:bg-black dark:bg-blue-600 dark:hover:bg-blue-700"
                     >
                       Find
                     </button>
                   </div>
                   {formData.location_name && (
-                    <p className="text-[10px] text-green-600 font-bold px-1 italic">
+                    <p className="text-[10px] text-green-600 dark:text-green-400 font-bold px-1 italic">
                       ✓ Found: {formData.location_name}
                     </p>
                   )}
                 </div>
 
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-xs font-semibold text-gray-600 uppercase tracking-wide px-1">
+                  <label className="text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wide px-1">
                     Image URL
                   </label>
                   <div className="relative">
                     <Camera className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                     <input
                       placeholder="https://..."
-                      className="marketplace-form-input w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 bg-gray-50 outline-none"
+                      className="marketplace-form-input w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 dark:text-white outline-none"
                       value={formData.imageInput}
                       onChange={(e) =>
                         setFormData({ ...formData, imageInput: e.target.value })
@@ -1119,13 +1393,13 @@ export default function Marketplace() {
                 </div>
 
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-xs font-semibold text-gray-600 uppercase tracking-wide px-1">
+                  <label className="text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wide px-1">
                     Description
                   </label>
                   <textarea
                     rows={3}
                     placeholder="Provide details..."
-                    className="marketplace-form-input w-full px-4 py-3 rounded-xl border border-gray-200 bg-gray-50 outline-none resize-none"
+                    className="marketplace-form-input w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 dark:text-white outline-none resize-none"
                     value={formData.description}
                     onChange={(e) =>
                       setFormData({ ...formData, description: e.target.value })
@@ -1135,12 +1409,19 @@ export default function Marketplace() {
 
                 <button
                   type="submit"
-                  className="w-full py-4 rounded-2xl text-white font-bold shadow-xl hover:opacity-90 active:scale-[0.98] mt-4"
-                  style={{
-                    background: "linear-gradient(90deg,#00AAFF,#6B30FF)",
-                  }}
+                  disabled={!formData.latitude || !formData.longitude}
+                  className={`w-full py-4 rounded-2xl font-bold shadow-xl transition-all mt-4 ${
+                    formData.latitude && formData.longitude
+                      ? "text-white hover:opacity-90 active:scale-[0.98]"
+                      : "bg-gray-300 dark:bg-gray-800 text-gray-500 cursor-not-allowed"
+                  }`}
+                  style={
+                    formData.latitude && formData.longitude
+                      ? { background: "linear-gradient(90deg,#00AAFF,#6B30FF)" }
+                      : {}
+                  }
                 >
-                  Publish Listing
+                  {formData.latitude && formData.longitude ? "Publish Listing" : "Set Location to Publish"}
                 </button>
               </form>
             </div>
@@ -1382,16 +1663,16 @@ export default function Marketplace() {
         >
           <div
             onClick={(e) => e.stopPropagation()}
-            className="marketplace-detail-modal bg-white rounded-[32px] max-w-5xl w-full max-h-[90vh] overflow-y-auto relative shadow-2xl flex flex-col md:flex-row border border-white/20"
+            className="marketplace-detail-modal bg-white dark:bg-gray-900 rounded-[32px] max-w-5xl w-full max-h-[90vh] overflow-y-auto relative shadow-2xl flex flex-col md:flex-row border border-white/20 dark:border-gray-700"
           >
             <button
               onClick={() => setSelectedItem(null)}
-              className="absolute top-6 right-6 p-2 bg-white/90 backdrop-blur rounded-full hover:bg-white z-10 w-10 h-10 flex items-center justify-center shadow-lg transition-transform hover:scale-110"
+              className="absolute top-6 right-6 p-2 bg-white/90 dark:bg-gray-800/90 backdrop-blur rounded-full hover:bg-white dark:hover:bg-gray-700 z-10 w-10 h-10 flex items-center justify-center shadow-lg transition-transform hover:scale-110"
             >
-              <X size={20} className="text-gray-900" />
+              <X size={20} className="text-gray-900 dark:text-white" />
             </button>
 
-            <div className="w-full md:w-[55%] bg-gray-50 min-h-[300px] flex items-center justify-center">
+            <div className="w-full md:w-[55%] bg-gray-50 dark:bg-gray-800 min-h-[300px] flex items-center justify-center">
               <img
                 src={
                   selectedItem.images?.[0] ||
@@ -1402,19 +1683,19 @@ export default function Marketplace() {
               />
             </div>
 
-            <div className="w-full md:w-[45%] p-10 md:p-12 flex flex-col bg-white">
+            <div className="w-full md:w-[45%] p-10 md:p-12 flex flex-col bg-white dark:bg-gray-900">
               <div className="flex gap-2 mb-4">
-                <span className="px-3 py-1 bg-blue-50 text-blue-600 rounded-full text-xs font-bold uppercase tracking-wider">
+                <span className="px-3 py-1 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-full text-xs font-bold uppercase tracking-wider">
                   {selectedItem.category}
                 </span>
-                <span className="px-3 py-1 bg-purple-50 text-purple-600 rounded-full text-xs font-bold uppercase tracking-wider">
+                <span className="px-3 py-1 bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 rounded-full text-xs font-bold uppercase tracking-wider">
                   {selectedItem.condition}
                 </span>
               </div>
-              <h2 className="text-3xl font-black text-gray-900 mb-4">
+              <h2 className="text-3xl font-black text-gray-900 dark:text-white mb-4">
                 {selectedItem.title}
               </h2>
-              <p className="text-4xl font-medium mb-8 text-gray-900">
+              <p className="text-4xl font-medium mb-8 text-gray-900 dark:text-gray-200">
                 {formatPrice(selectedItem.price)}
               </p>
 
@@ -1545,18 +1826,18 @@ export default function Marketplace() {
 
               <div className="space-y-6 mb-10 flex-grow">
                 <div>
-                  <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider mb-2">
+                  <h3 className="text-sm font-bold text-gray-900 dark:text-gray-300 uppercase tracking-wider mb-2">
                     Description
                   </h3>
-                  <p className="text-gray-600">
+                  <p className="text-gray-600 dark:text-gray-400">
                     {selectedItem.description || "No description provided."}
                   </p>
                 </div>
                 <div>
-                  <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider mb-2">
+                  <h3 className="text-sm font-bold text-gray-900 dark:text-gray-300 uppercase tracking-wider mb-2">
                     Location
                   </h3>
-                  <div className="flex items-center gap-1 text-gray-500 mb-2">
+                  <div className="flex items-center gap-1 text-gray-500 dark:text-gray-400 mb-2">
                     <MapPin size={14} className="text-blue-500" />
                     <span className="text-sm font-medium">
                       {selectedItem.location_name || "Location not provided"}
@@ -1565,11 +1846,11 @@ export default function Marketplace() {
                   {selectedItem.latitude && (
                     <div
                       id="item-map"
-                      className="w-full h-48 rounded-2xl border border-gray-100 shadow-inner bg-gray-50"
+                      className="w-full h-48 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-inner bg-gray-50 dark:bg-gray-800"
                     />
                   )}
                 </div>
-                <div className="pt-6 border-t border-gray-100 flex items-center gap-3">
+                <div className="pt-6 border-t border-gray-100 dark:border-gray-800 flex items-center gap-3">
                   <div className="w-10 h-10 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 flex items-center justify-center text-white font-bold">
                     {selectedItem.seller_name?.[0]?.toUpperCase() || "U"}
                   </div>
@@ -1577,7 +1858,7 @@ export default function Marketplace() {
                     <p className="text-xs text-gray-400 uppercase font-semibold tracking-wider">
                       Listed By
                     </p>
-                    <p className="text-sm font-bold">
+                    <p className="text-sm font-bold dark:text-white">
                       {selectedItem.seller_name || "Anonymous"}
                     </p>
                   </div>
@@ -1587,7 +1868,7 @@ export default function Marketplace() {
               {currentUserId === selectedItem.user_id ? (
                 <button
                   onClick={() => handleDeleteListing(selectedItem.id)}
-                  className="w-full py-5 bg-red-50 text-red-600 border border-red-200 text-lg font-bold rounded-2xl hover:bg-red-100 flex items-center justify-center gap-2"
+                  className="w-full py-5 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-900/30 text-lg font-bold rounded-2xl hover:bg-red-100 dark:hover:bg-red-900/40 flex items-center justify-center gap-2"
                 >
                   <Trash2 size={20} /> Delete Listing
                 </button>
@@ -1606,7 +1887,7 @@ export default function Marketplace() {
                         setActionMessage(null);
                         setIsReportModalOpen(true);
                       }}
-                      className="w-full py-3.5 rounded-xl border border-amber-200 bg-amber-50 text-amber-700 font-bold hover:bg-amber-100 transition-all inline-flex items-center justify-center gap-2"
+                      className="w-full py-3.5 rounded-xl border border-amber-200 dark:border-amber-900/30 bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-500 font-bold hover:bg-amber-100 dark:hover:bg-amber-900/40 transition-all inline-flex items-center justify-center gap-2"
                     >
                       <ShieldAlert size={16} /> Report
                     </button>
@@ -1616,7 +1897,7 @@ export default function Marketplace() {
                         setIsBlockModalOpen(true);
                       }}
                       disabled={actionLoading}
-                      className="w-full py-3.5 rounded-xl border border-red-200 bg-red-50 text-red-700 font-bold hover:bg-red-100 transition-all inline-flex items-center justify-center gap-2 disabled:opacity-60"
+                      className="w-full py-3.5 rounded-xl border border-red-200 dark:border-red-900/30 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-500 font-bold hover:bg-red-100 dark:hover:bg-red-900/40 transition-all inline-flex items-center justify-center gap-2 disabled:opacity-60"
                     >
                       <UserX size={16} /> Block Seller
                     </button>
@@ -1628,6 +1909,7 @@ export default function Marketplace() {
         </div>
       )}
 
+      {/* REPORT MODAL */}
       {isReportModalOpen && selectedItem && (
         <div className="fixed inset-0 z-[95] flex items-center justify-center bg-black/60 px-4 backdrop-blur-sm">
           <div className="report-modal-shell w-full max-w-2xl rounded-[2rem] border border-cyan-500/20 bg-[#0b1733]/95 p-7 shadow-2xl">
@@ -1715,37 +1997,38 @@ export default function Marketplace() {
         </div>
       )}
 
+      {/* BLOCK MODAL */}
       {isBlockModalOpen && selectedItem && (
         <div className="fixed inset-0 z-[96] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-          <div className="report-modal-shell bg-white rounded-[2rem] w-full max-w-lg overflow-hidden shadow-2xl border border-gray-100">
+          <div className="report-modal-shell bg-white dark:bg-gray-900 rounded-[2rem] w-full max-w-lg overflow-hidden shadow-2xl border border-gray-100 dark:border-gray-800">
             <div className="p-6 md:p-7">
               <div className="flex items-center justify-between gap-3 mb-4">
-                <h2 className="text-2xl font-black text-gray-900">
+                <h2 className="text-2xl font-black text-gray-900 dark:text-white">
                   Block Seller
                 </h2>
                 <button
                   onClick={() => setIsBlockModalOpen(false)}
-                  className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                  className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors"
                 >
                   <X className="text-gray-500" />
                 </button>
               </div>
 
-              <p className="text-sm text-gray-700">
+              <p className="text-sm text-gray-700 dark:text-gray-300">
                 Block{" "}
-                <span className="font-semibold">
+                <span className="font-semibold text-gray-900 dark:text-white">
                   {selectedItem.seller_name || "this seller"}
                 </span>
                 ? You will not be able to message each other, and their listings
                 will be hidden for you.
               </p>
-              <p className="text-xs text-gray-500 mt-2">
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
                 You can unblock them later from Profile under{" "}
-                <span className="font-semibold">Blocked Users</span>.
+                <span className="font-semibold text-gray-700 dark:text-gray-300">Blocked Users</span>.
               </p>
 
               {blockMessage && (
-                <div className="report-status-message rounded-xl border border-gray-200 bg-gray-50 text-sm text-gray-700 p-3 mt-4">
+                <div className="report-status-message rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50 text-sm text-gray-700 dark:text-gray-300 p-3 mt-4">
                   {blockMessage}
                 </div>
               )}
@@ -1754,7 +2037,7 @@ export default function Marketplace() {
                 <button
                   type="button"
                   onClick={() => setIsBlockModalOpen(false)}
-                  className="report-cancel-button w-full py-3 rounded-xl border border-slate-200 text-slate-700 font-bold bg-slate-50 hover:bg-slate-100 transition-all"
+                  className="report-cancel-button w-full py-3 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 font-bold bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 transition-all"
                 >
                   Cancel
                 </button>
@@ -1783,7 +2066,7 @@ export default function Marketplace() {
           &copy; {new Date().getFullYear()} Verifind. All rights reserved.
         </p>
         <p className="text-gray-400">•</p>
-        <Link to="/privacy-policy" className="text-xs text-gray-400">
+        <Link to="/privacy-policy" className="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors">
           Privacy Policy
         </Link>
       </div>
