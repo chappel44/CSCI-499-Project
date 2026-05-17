@@ -43,7 +43,7 @@ export default function SearchActions({ visible }: SearchActionsProps) {
       }}
     >
       {/* Input */}
-      <div className="flex md:flex-col flex-col-reverse gap-3 ">
+      <div className="flex flex-col gap-3 mb-4 md:mb-12 lg:mb-20">
         <SearchInput />
 
         {/* Search button */}

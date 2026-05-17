@@ -197,6 +197,7 @@ app.get("/api/search", async (req, res) => {
         })
         .then((r) => ({ retailer: engine, data: r.data }))
         .catch((err) => ({ retailer: engine, error: err.message }));
+
       console.log("DATA RESULT: ", result.data);
 
       if (result.data) {

@@ -44,7 +44,7 @@ export default function RetailerDropdown() {
     <div className="relative z-50" ref={dropdownRef}>
       <button
         type="button"
-        className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition hover:opacity-90 shadow-md whitespace-nowrap"
+        className="mb-1 flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition hover:opacity-90 shadow-md whitespace-nowrap"
         style={{
           background: "linear-gradient(90deg,#00AAFF,#6B30FF)",
           color: "#fff",
