@@ -12,8 +12,12 @@ import {
   MessageCircle,
   ShieldAlert,
   UserX,
+  BadgeCheck,
+  MapPinned,
+  ShieldCheck,
+  AlertTriangle,
   Navigation,
-  RotateCcw
+  RotateCcw,
 } from "lucide-react";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
@@ -23,7 +27,7 @@ const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: numbe
   const R = 3958.8; // Radius of Earth in miles
   const dLat = (lat2 - lat1) * Math.PI / 180;
   const dLon = (lon2 - lon1) * Math.PI / 180;
-  const a = 
+  const a =
     Math.sin(dLat/2) * Math.sin(dLat/2) +
     Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon/2) * Math.sin(dLon/2);
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
@@ -44,6 +48,38 @@ type MarketplaceListing = {
   latitude: number | null;
   longitude: number | null;
   seller_name: string | null;
+  seller_verified?: boolean | null;
+  identity_verified?: boolean | null;
+  verified_user?: boolean | null;
+};
+
+type TrustBadge = {
+  label: string;
+  tone: "good" | "info" | "warning";
+  icon: "verified" | "active" | "location" | "reported";
+  detail: string;
+};
+
+type SellerProgress = {
+  level: string;
+  score: number;
+  signals: SellerSignal[];
+  completed: string[];
+  improvements: string[];
+  identityVerified: boolean;
+};
+
+type SellerSignal = {
+  label: string;
+  description: string;
+  done: boolean;
+  action: string;
+};
+
+type SellerProgressInput = {
+  sellerName: string | null;
+  listings: MarketplaceListing[];
+  sellerVerified?: boolean;
 };
 
 const REPORT_REASONS = [
@@ -58,7 +94,7 @@ const REPORT_REASONS = [
 export default function Marketplace() {
   const navigate = useNavigate();
   const [items, setItems] = useState<MarketplaceListing[]>([]);
-  
+
   // URL SEARCH PARAMS
   const [searchParams, setSearchParams] = useSearchParams();
   const searchQuery = searchParams.get("q") || "";
@@ -85,7 +121,7 @@ export default function Marketplace() {
   const [loading, setLoading] = useState(true);
   const [tempAddress, setTempAddress] = useState("");
   const [blockedSellerIds, setBlockedSellerIds] = useState<string[]>([]);
-  
+
   // UI States for Modals
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
   const [isBlockModalOpen, setIsBlockModalOpen] = useState(false);
@@ -98,6 +134,12 @@ export default function Marketplace() {
   const [blockMessage, setBlockMessage] = useState<string | null>(null);
   const [reportMessage, setReportMessage] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
+  const [reportedListingIds, setReportedListingIds] = useState<string[]>([]);
+  const [isSellerProgressOpen, setIsSellerProgressOpen] = useState(false);
+  const [isVerifyModalOpen, setIsVerifyModalOpen] = useState(false);
+  const [currentUserVerified, setCurrentUserVerified] = useState(false);
+  const [verificationSubmitting, setVerificationSubmitting] = useState(false);
+  const [verificationMessage, setVerificationMessage] = useState<string | null>(null);
 
   // State for location request and distance calc
   const [userCoords, setUserCoords] = useState<{lat: number, lng: number} | null>(null);
@@ -174,12 +216,14 @@ export default function Marketplace() {
   // user auth use effect
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
+      const user = data.session?.user;
       setLoggedIn(!!data.session);
-      setCurrentUserId(data.session?.user?.id || null);
+      setCurrentUserId(user?.id || null);
+      setCurrentUserVerified(Boolean(user?.user_metadata?.identity_verified));
     });
   }, []);
 
-  // Auto-fetch location if permission 
+  // Auto-fetch location if permission
   useEffect(() => {
     try {
       if (navigator.permissions) {
@@ -224,6 +268,33 @@ export default function Marketplace() {
     fetchBlockedSellers();
   }, [currentUserId]);
 
+  useEffect(() => {
+    if (!currentUserId) {
+      const timer = window.setTimeout(() => setReportedListingIds([]), 0);
+      return () => window.clearTimeout(timer);
+    }
+
+    const fetchReportedListings = async () => {
+      const { data, error } = await supabase
+        .from("marketplace_listing_reports")
+        .select("listing_id")
+        .eq("reporter_id", currentUserId);
+
+      if (error) {
+        console.error("Error fetching listing reports:", error.message);
+        return;
+      }
+
+      setReportedListingIds(
+        (data ?? [])
+          .map((row) => row.listing_id)
+          .filter((id): id is string => Boolean(id))
+      );
+    };
+
+    fetchReportedListings();
+  }, [currentUserId]);
+
   // search use effect
   useEffect(() => {
     const delayDebounceFN = setTimeout(() => {
@@ -238,7 +309,7 @@ export default function Marketplace() {
       alert("Geolocation is not supported by your browser");
       return;
     }
-    
+
     setIsLocating(true);
     navigator.geolocation.getCurrentPosition(
       (pos) => {
@@ -257,7 +328,7 @@ export default function Marketplace() {
           alert("An unknown error occurred while fetching location.");
         }
       },
-      { enableHighAccuracy: false, timeout: 10000, maximumAge: 0 } 
+      { enableHighAccuracy: false, timeout: 10000, maximumAge: 0 }
     );
   };
 
@@ -272,7 +343,7 @@ export default function Marketplace() {
       if (data.results?.length > 0) {
         const result = data.results[0];
         setUserCoords({ lat: result.location.lat, lng: result.location.lng });
-        setFilterLocationText(result.formatted_address); 
+        setFilterLocationText(result.formatted_address);
       } else {
         alert("Could not find that location. Try a valid Zip Code or City.");
       }
@@ -284,7 +355,7 @@ export default function Marketplace() {
   };
 
   const handleClearFilters = () => {
-    setSearchParams(new URLSearchParams(), { replace: true }); 
+    setSearchParams(new URLSearchParams(), { replace: true });
     setUserCoords(null);
     setFilterLocationText("");
     setMaxDistance(50);
@@ -535,6 +606,7 @@ export default function Marketplace() {
 
     setReportDetails("");
     setReportReason("");
+    setReportedListingIds((ids) => [...new Set([...ids, selectedItem.id])]);
     setIsReportModalOpen(false);
     setActionMessage(
       "Report submitted. Thanks for helping keep VeriFind safe."
@@ -543,6 +615,234 @@ export default function Marketplace() {
   };
 
   const formatPrice = (price: number) => (price === 0 ? "Free" : `$${price}`);
+
+  const isDemoVerifiedListing = (item: MarketplaceListing) =>
+    items.length > 0 && item.id === items[0].id;
+
+  const isListingIdentityVerified = (item: MarketplaceListing) =>
+    Boolean(
+      item.seller_verified ||
+        item.identity_verified ||
+        item.verified_user ||
+        (item.user_id === currentUserId && currentUserVerified) ||
+        isDemoVerifiedListing(item)
+    );
+
+  const getSellerProgressFromListings = ({
+    sellerName,
+    listings,
+    sellerVerified = false,
+  }: SellerProgressInput): SellerProgress => {
+    const hasSellerName = Boolean(sellerName);
+    const hasLocation = listings.some(
+      (listing) => listing.location_name || (listing.latitude && listing.longitude)
+    );
+    const hasClearPhotos = listings.some(
+      (listing) => (listing.images?.length ?? 0) > 0
+    );
+    const hasDetailedDescription = listings.some(
+      (listing) => (listing.description?.trim().length ?? 0) >= 30
+    );
+    const hasMultipleListings = listings.length >= 2;
+    const hasVerifiedIdentity = listings.some(
+      (listing) => isListingIdentityVerified(listing)
+    ) || sellerVerified;
+
+    const checks = [
+      {
+        label: "Public seller name",
+        description: "A name helps buyers understand who they are contacting.",
+        done: hasSellerName,
+        complete: "Public seller name added",
+        improve: "Add a public seller name in your profile",
+        action: "Go to Profile > Account Details and save a username.",
+      },
+      {
+        label: "Listing location",
+        description: "A pickup area helps buyers plan safer local purchases.",
+        done: hasLocation,
+        complete: "Listing location added",
+        improve: "Add a pickup/location area to your listings",
+        action: "Add a location when creating or updating a marketplace listing.",
+      },
+      {
+        label: "Clear listing photo",
+        description: "Photos make the listing easier to inspect before messaging.",
+        done: hasClearPhotos,
+        complete: "Listing photo added",
+        improve: "Add clear photos instead of leaving listings image-free",
+        action: "Paste a clear image URL when listing an item.",
+      },
+      {
+        label: "Detailed description",
+        description: "Good descriptions reduce confusion about condition and included items.",
+        done: hasDetailedDescription,
+        complete: "Detailed description added",
+        improve: "Write a more detailed description with condition and included items",
+        action: "Write at least a few sentences about condition, flaws, and what is included.",
+      },
+      {
+        label: "Active listing history",
+        description: "More active listings show you are building marketplace history.",
+        done: hasMultipleListings,
+        complete: "Multiple active listings",
+        improve: "Build history by keeping more accurate active listings",
+        action: "Keep accurate listings active and remove or update items when needed.",
+      },
+    ];
+
+    const completed = checks
+      .filter((check) => check.done)
+      .map((check) => check.complete);
+    const improvements = checks
+      .filter((check) => !check.done)
+      .map((check) => check.improve);
+    const score = checks.filter((check) => check.done).length;
+    const level =
+      score >= 4
+        ? "Strong Seller Profile"
+        : score >= 2
+          ? "Building Trust"
+          : "New Seller";
+    const signals = checks.map((check) => ({
+      label: check.label,
+      description: check.description,
+      done: check.done,
+      action: check.action,
+    }));
+
+    return {
+      level,
+      score,
+      signals,
+      completed,
+      improvements,
+      identityVerified: hasVerifiedIdentity,
+    };
+  };
+
+  const getSellerProgress = (item: MarketplaceListing): SellerProgress =>
+    getSellerProgressFromListings({
+      sellerName: item.seller_name,
+      listings: items.filter((listing) => listing.user_id === item.user_id),
+      sellerVerified:
+        item.user_id === currentUserId
+          ? currentUserVerified
+          : isListingIdentityVerified(item),
+    });
+
+  const getCurrentSellerProgress = (): SellerProgress | null => {
+    if (!currentUserId) return null;
+
+    const myListings = items.filter((listing) => listing.user_id === currentUserId);
+    const sellerName = myListings.find((listing) => listing.seller_name)?.seller_name ?? null;
+
+    return getSellerProgressFromListings({
+      sellerName,
+      listings: myListings,
+      sellerVerified: currentUserVerified,
+    });
+  };
+
+  const getTrustBadges = (item: MarketplaceListing): TrustBadge[] => {
+    const sellerProgress = getSellerProgress(item);
+    const sellerActiveListings = items.filter(
+      (listing) => listing.user_id === item.user_id
+    ).length;
+    const badges: TrustBadge[] = [];
+
+    badges.push({
+      label: sellerProgress.level,
+      tone: sellerProgress.score >= 4 ? "good" : sellerProgress.score >= 2 ? "info" : "warning",
+      icon: sellerProgress.score >= 4 ? "verified" : sellerProgress.score >= 2 ? "active" : "reported",
+      detail: `Seller profile strength: ${sellerProgress.score}/5 trust signals completed. This is not identity verification.`,
+    });
+
+    if (
+      isListingIdentityVerified(item)
+    ) {
+      badges.push({
+        label: "Verified Seller",
+        tone: "good",
+        icon: "verified",
+        detail: "This seller has completed optional identity verification.",
+      });
+    }
+
+    if (item.seller_name) {
+      badges.push({
+        label: "Named seller",
+        tone: "good",
+        icon: "verified",
+        detail: "This listing includes a public seller name.",
+      });
+    }
+
+    if (sellerActiveListings > 1) {
+      badges.push({
+        label: "Active seller",
+        tone: "info",
+        icon: "active",
+        detail: `${sellerActiveListings} active listings are visible from this seller.`,
+      });
+    }
+
+    if (item.location_name || (item.latitude && item.longitude)) {
+      badges.push({
+        label: "Location shared",
+        tone: "info",
+        icon: "location",
+        detail: "The seller added a location to help plan safer pickups.",
+      });
+    }
+
+    if (reportedListingIds.includes(item.id)) {
+      badges.unshift({
+        label: "Reported by you",
+        tone: "warning",
+        icon: "reported",
+        detail: "You already submitted a report for this listing.",
+      });
+    }
+
+    return badges;
+  };
+
+  const getTrustBadgeClasses = (tone: TrustBadge["tone"]) => {
+    if (tone === "good") {
+      return "border-cyan-200 bg-cyan-50 text-cyan-700";
+    }
+    if (tone === "warning") {
+      return "border-violet-200 bg-violet-50 text-violet-700";
+    }
+    return "border-indigo-200 bg-indigo-50 text-indigo-700";
+  };
+
+  const renderTrustBadgeIcon = (icon: TrustBadge["icon"], size = 13) => {
+    if (icon === "verified") return <BadgeCheck size={size} />;
+    if (icon === "active") return <ShieldCheck size={size} />;
+    if (icon === "location") return <MapPinned size={size} />;
+    return <AlertTriangle size={size} />;
+  };
+
+  const completeDemoVerification = async () => {
+    setVerificationSubmitting(true);
+    setVerificationMessage(null);
+
+    const { error } = await supabase.auth.updateUser({
+      data: { identity_verified: true },
+    });
+
+    if (error) {
+      setVerificationMessage("Could not verify seller: " + error.message);
+      setVerificationSubmitting(false);
+      return;
+    }
+
+    setCurrentUserVerified(true);
+    setVerificationMessage("Verified Seller badge added to your seller profile.");
+    setVerificationSubmitting(false);
+  };
 
   // MULTI-LAYER FILTERING: Location & Price
   const filteredItems = items.filter(item => {
@@ -553,7 +853,7 @@ export default function Marketplace() {
     // 2. Location Checks
     if (!userCoords) return true;
     if (!item.latitude || !item.longitude) return false;
-    
+
     const distance = calculateDistance(userCoords.lat, userCoords.lng, item.latitude, item.longitude);
     return distance <= maxDistance;
   });
@@ -603,9 +903,99 @@ export default function Marketplace() {
           </div>
         )}
 
+        {loggedIn && (() => {
+          const sellerProgress = getCurrentSellerProgress();
+          if (!sellerProgress) return null;
+          const nextStepCount = sellerProgress.improvements.length;
+
+          return (
+            <div className="mx-auto mb-8 max-w-3xl rounded-3xl border border-cyan-500/20 bg-[#0b1733]/85 p-5 shadow-xl backdrop-blur-md">
+              <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
+                <div className="relative h-20 w-20 flex-shrink-0 rounded-full bg-slate-100 p-2 shadow-inner">
+                  <div
+                    className="absolute inset-0 rounded-full"
+                    style={{
+                      background: `conic-gradient(#00AAFF ${
+                        (sellerProgress.score / 5) * 360
+                      }deg, rgba(107,48,255,0.2) 0deg)`,
+                    }}
+                  />
+                  <div className="absolute inset-2 flex items-center justify-center rounded-full bg-[#111f3d]">
+                    <span className="text-lg font-black text-cyan-100">
+                      {sellerProgress.score}/5
+                    </span>
+                  </div>
+                </div>
+
+                <div className="min-w-0 flex-1">
+                  <div className="mb-2 flex flex-wrap items-center gap-2">
+                    <p className="text-xs font-black uppercase tracking-widest text-cyan-200/80">
+                      Seller Profile Strength
+                    </p>
+                    <span
+                      className={`inline-flex items-center gap-1 rounded-full border px-3 py-1 text-xs font-black ${getTrustBadgeClasses(
+                        sellerProgress.score >= 4
+                          ? "good"
+                          : sellerProgress.score >= 2
+                            ? "info"
+                            : "warning"
+                      )}`}
+                    >
+                      {renderTrustBadgeIcon(
+                        sellerProgress.score >= 4
+                          ? "verified"
+                          : sellerProgress.score >= 2
+                            ? "active"
+                            : "reported",
+                        14
+                      )}
+                      {sellerProgress.level}
+                    </span>
+                  </div>
+
+                  <h2 className="text-2xl font-black text-slate-100">
+                    {sellerProgress.level === "Strong Seller Profile"
+                      ? "Your marketplace profile has strong trust signals."
+                      : `Complete ${nextStepCount} more trust ${
+                          nextStepCount === 1 ? "signal" : "signals"
+                        } to level up.`}
+                  </h2>
+
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {sellerProgress.completed.slice(0, 3).map((item) => (
+                      <span
+                        key={item}
+                        className="rounded-full border border-cyan-300/30 bg-cyan-400/10 px-3 py-1 text-xs font-bold text-cyan-100"
+                      >
+                        {item}
+                      </span>
+                    ))}
+                    {sellerProgress.improvements.slice(0, 2).map((item) => (
+                      <span
+                        key={item}
+                        className="rounded-full border border-violet-300/30 bg-violet-400/10 px-3 py-1 text-xs font-bold text-violet-100"
+                      >
+                        {item}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setIsSellerProgressOpen(true)}
+                  className="rounded-2xl px-5 py-3 text-sm font-bold text-white shadow-md transition hover:opacity-90"
+                  style={{ background: "linear-gradient(90deg,#00AAFF,#6B30FF)" }}
+                >
+                  View All Signals
+                </button>
+              </div>
+            </div>
+          );
+        })()}
+
         {/* Search + Post Bar + Filters Dropdown */}
         <div className="mb-12 flex flex-col md:flex-row gap-4 max-w-3xl mx-auto relative">
-          
           <div className="relative flex-1 group">
             <Search className="marketplace-search-icon absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 dark:text-gray-500 group-focus-within:text-blue-500 transition-colors" />
             <input
@@ -672,10 +1062,10 @@ export default function Marketplace() {
                     <div className="flex items-center gap-3">
                       <div className="relative flex-1">
                         <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 font-medium">$</span>
-                        <input 
-                          type="number" 
-                          placeholder="Min" 
-                          value={minPrice} 
+                        <input
+                          type="number"
+                          placeholder="Min"
+                          value={minPrice}
                           onChange={(e) => updateURLParam("minPrice", e.target.value)}
                           className="w-full pl-7 pr-3 py-2 text-sm rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 dark:text-white outline-none focus:ring-2 focus:ring-blue-500"
                         />
@@ -683,10 +1073,10 @@ export default function Marketplace() {
                       <span className="text-gray-400 font-bold">-</span>
                       <div className="relative flex-1">
                         <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 font-medium">$</span>
-                        <input 
-                          type="number" 
-                          placeholder="Max" 
-                          value={maxPrice} 
+                        <input
+                          type="number"
+                          placeholder="Max"
+                          value={maxPrice}
                           onChange={(e) => updateURLParam("maxPrice", e.target.value)}
                           className="w-full pl-7 pr-3 py-2 text-sm rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 dark:text-white outline-none focus:ring-2 focus:ring-blue-500"
                         />
@@ -703,9 +1093,9 @@ export default function Marketplace() {
                         Location
                       </label>
                     </div>
-                    
+
                     <div className="flex flex-col gap-3">
-                      
+
                       {/* Manual Location Input */}
                       <div className="flex gap-2">
                         <input
@@ -716,7 +1106,7 @@ export default function Marketplace() {
                           onKeyDown={(e) => e.key === 'Enter' && handleFilterAddressLookup()}
                           className="w-full px-3 py-2 text-sm rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 dark:text-white outline-none focus:ring-2 focus:ring-blue-500 placeholder:text-gray-400 dark:placeholder:text-gray-500"
                         />
-                        <button 
+                        <button
                           onClick={handleFilterAddressLookup}
                           disabled={isLocating || filterLocationText.length < 3}
                           className="px-3 py-2 bg-gray-900 dark:bg-blue-600 text-white text-sm font-bold rounded-xl hover:bg-black dark:hover:bg-blue-700 disabled:opacity-50 transition-colors"
@@ -767,7 +1157,7 @@ export default function Marketplace() {
                   </div>
 
                   {/* Clear Filters Button */}
-                  <button 
+                  <button
                     onClick={handleClearFilters}
                     className="w-full py-3 flex items-center justify-center gap-2 text-sm font-bold text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-white bg-gray-50 hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700 rounded-xl transition-all"
                   >
@@ -800,49 +1190,67 @@ export default function Marketplace() {
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 pb-10">
-            {filteredItems.map((item) => (
-              <div
-                key={item.id}
-                className="marketplace-card bg-white/60 dark:bg-gray-800/60 backdrop-blur-md rounded-[2rem] p-4 border border-white/50 dark:border-gray-700/50 shadow-sm hover:shadow-xl transition-all duration-300 group flex flex-col"
-              >
-                <div className="marketplace-card-image aspect-square rounded-2xl overflow-hidden mb-4 bg-gray-100 dark:bg-gray-900">
-                  <img
-                    src={
-                      item.images?.[0] ||
-                      "https://placehold.co/400x400/e2e8f0/64748b?text=No+Image"
-                    }
-                    alt={item.title}
-                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                  />
-                </div>
-                <div className="px-2 flex-grow flex flex-col">
-                  <p className="text-[10px] font-bold text-indigo-500 dark:text-indigo-400 uppercase tracking-widest mb-1">
-                    {item.category}
-                  </p>
-                  <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-1 truncate">
-                    {item.title}
-                  </h3>
-                  <p className="text-2xl font-medium mb-4 text-gray-900 dark:text-gray-200">
-                    {formatPrice(item.price)}
-                  </p>
+            {filteredItems.map((item) => {
+              const trustBadges = getTrustBadges(item);
 
-                  {/* Show distance snippet on card if location is active */}
-                  {userCoords && item.latitude && item.longitude && (
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mb-3 font-semibold flex items-center gap-1">
-                      <MapPin size={12} className="text-blue-500"/>
-                      {Math.round(calculateDistance(userCoords.lat, userCoords.lng, item.latitude, item.longitude))} miles away
+              return (
+                <div
+                  key={item.id}
+                  className="marketplace-card bg-white/60 dark:bg-gray-800/60 backdrop-blur-md rounded-[2rem] p-4 border border-white/50 dark:border-gray-700/50 shadow-sm hover:shadow-xl transition-all duration-300 group flex flex-col"
+                >
+                  <div className="marketplace-card-image aspect-square rounded-2xl overflow-hidden mb-4 bg-gray-100 dark:bg-gray-900">
+                    <img
+                      src={
+                        item.images?.[0] ||
+                        "https://placehold.co/400x400/e2e8f0/64748b?text=No+Image"
+                      }
+                      alt={item.title}
+                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                    />
+                  </div>
+                  <div className="px-2 flex-grow flex flex-col">
+                    <p className="text-[10px] font-bold text-indigo-500 dark:text-indigo-400 uppercase tracking-widest mb-1">
+                      {item.category}
                     </p>
-                  )}
+                    <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-1 truncate">
+                      {item.title}
+                    </h3>
+                    <p className="text-2xl font-medium mb-3 text-gray-900 dark:text-gray-200">
+                      {formatPrice(item.price)}
+                    </p>
 
-                  <button
-                    onClick={() => setSelectedItem(item)}
-                    className="marketplace-view-button w-full mt-auto py-3 bg-gray-900 dark:bg-gray-700 text-white font-bold rounded-xl hover:bg-black dark:hover:bg-gray-600 transition-colors"
-                  >
-                    View Details
-                  </button>
+                    {userCoords && item.latitude && item.longitude && (
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mb-3 font-semibold flex items-center gap-1">
+                        <MapPin size={12} className="text-blue-500" />
+                        {Math.round(calculateDistance(userCoords.lat, userCoords.lng, item.latitude, item.longitude))} miles away
+                      </p>
+                    )}
+
+                    <div className="mb-4 flex flex-wrap gap-1.5">
+                      {trustBadges.slice(0, 2).map((badge) => (
+                        <span
+                          key={badge.label}
+                          className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-bold ${getTrustBadgeClasses(
+                            badge.tone
+                          )}`}
+                          title={badge.detail}
+                        >
+                          {renderTrustBadgeIcon(badge.icon)}
+                          {badge.label}
+                        </span>
+                      ))}
+                    </div>
+
+                    <button
+                      onClick={() => setSelectedItem(item)}
+                      className="marketplace-view-button w-full mt-auto py-3 bg-gray-900 dark:bg-gray-700 text-white font-bold rounded-xl hover:bg-black dark:hover:bg-gray-600 transition-colors"
+                    >
+                      View Details
+                    </button>
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
@@ -851,10 +1259,6 @@ export default function Marketplace() {
       {isPostModalOpen && (
         <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
           <div className="marketplace-modal bg-white dark:bg-gray-900 rounded-[2.5rem] w-full max-w-md overflow-hidden shadow-2xl border border-gray-100 dark:border-gray-800">
-            <div
-              className="h-1.5 w-full"
-              style={{ background: "linear-gradient(90deg,#00AAFF,#6B30FF)" }}
-            />
             <div className="p-8 max-h-[85vh] overflow-y-auto">
               <div className="flex justify-between items-center mb-6">
                 <h2 className="text-2xl font-black text-gray-900 dark:text-white">
@@ -1025,6 +1429,232 @@ export default function Marketplace() {
         </div>
       )}
 
+      {isSellerProgressOpen && (() => {
+        const sellerProgress = getCurrentSellerProgress();
+        if (!sellerProgress) return null;
+
+        return (
+          <div className="fixed inset-0 z-[72] flex items-center justify-center overflow-y-auto p-4 bg-black/60 backdrop-blur-sm">
+            <div className="my-6 flex max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden rounded-[2rem] border border-cyan-500/20 bg-[#0b1733] shadow-2xl">
+              <div className="flex-1 overflow-y-auto p-6 md:p-7">
+                <div className="mb-6 flex items-start justify-between gap-4">
+                  <div>
+                    <p className="text-xs font-black uppercase tracking-widest text-cyan-200/80">
+                      Seller Profile Strength
+                    </p>
+                    <h2 className="mt-2 text-3xl font-black text-slate-100">
+                      {sellerProgress.level}
+                    </h2>
+                    <p className="mt-1 text-sm text-slate-300">
+                      {sellerProgress.score}/5 profile signals completed.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setIsSellerProgressOpen(false)}
+                    className="rounded-full p-2 text-slate-300 transition hover:bg-white/10 hover:text-white"
+                  >
+                    <X size={20} />
+                  </button>
+                </div>
+
+                <div className="space-y-3">
+                  {sellerProgress.signals.map((signal) => (
+                    <div
+                      key={signal.label}
+                      className={`rounded-2xl border p-4 ${
+                        signal.done
+                          ? "border-cyan-300/30 bg-cyan-400/10"
+                          : "border-violet-300/30 bg-violet-400/10"
+                      }`}
+                    >
+                      <div className="flex items-start gap-3">
+                        <div
+                          className={`mt-0.5 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full ${
+                            signal.done
+                              ? "bg-cyan-300 text-[#0b1733]"
+                              : "bg-violet-300 text-[#0b1733]"
+                          }`}
+                        >
+                          {signal.done ? (
+                            <BadgeCheck size={17} />
+                          ) : (
+                            <AlertTriangle size={17} />
+                          )}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <h3 className="text-sm font-black text-slate-100">
+                              {signal.label}
+                            </h3>
+                            <span
+                              className={`rounded-full px-2.5 py-1 text-[11px] font-black ${
+                                signal.done
+                                  ? "bg-cyan-300/20 text-cyan-100"
+                                  : "bg-violet-300/20 text-violet-100"
+                              }`}
+                            >
+                              {signal.done ? "Complete" : "Incomplete"}
+                            </span>
+                          </div>
+                          <p className="mt-1 text-sm text-slate-300">
+                            {signal.description}
+                          </p>
+                          {!signal.done && (
+                            <div className="mt-2">
+                              <p className="text-xs font-semibold text-violet-100">
+                                {signal.action}
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="mt-5 rounded-2xl border border-cyan-300/25 bg-[#111f3d] p-4">
+                  <div className="flex items-start gap-3">
+                    <div
+                      className={`mt-0.5 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full ${
+                        sellerProgress.identityVerified
+                          ? "bg-cyan-300 text-[#0b1733]"
+                          : "bg-slate-300/20 text-slate-200"
+                      }`}
+                    >
+                      <BadgeCheck size={17} />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <h3 className="text-sm font-black text-slate-100">
+                          Optional: Verified Seller
+                        </h3>
+                        <span
+                          className={`rounded-full px-2.5 py-1 text-[11px] font-black ${
+                            sellerProgress.identityVerified
+                              ? "bg-cyan-300/20 text-cyan-100"
+                              : "bg-slate-300/15 text-slate-200"
+                          }`}
+                        >
+                          {sellerProgress.identityVerified
+                            ? "Verified"
+                            : "Optional"}
+                        </span>
+                      </div>
+                      <p className="mt-1 text-sm text-slate-300">
+                        This is separate from the 5/5 profile score. It represents
+                        optional identity verification, similar to verification
+                        systems on other platforms.
+                      </p>
+                      {!sellerProgress.identityVerified && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsSellerProgressOpen(false);
+                            setVerificationMessage(null);
+                            setIsVerifyModalOpen(true);
+                          }}
+                          className="mt-3 rounded-xl px-4 py-2 text-xs font-bold text-white shadow-md transition hover:opacity-90"
+                          style={{
+                            background:
+                              "linear-gradient(90deg,#00AAFF,#6B30FF)",
+                          }}
+                        >
+                          Verify Seller
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsSellerProgressOpen(false);
+                      navigate("/profile/username");
+                    }}
+                    className="rounded-xl border border-cyan-500/30 bg-[#13284d] py-3 text-sm font-bold text-slate-100 transition hover:bg-[#17325f]"
+                  >
+                    Edit Profile
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsSellerProgressOpen(false);
+                      setIsPostModalOpen(true);
+                    }}
+                    className="rounded-xl py-3 text-sm font-bold text-white shadow-md transition hover:opacity-90"
+                    style={{ background: "linear-gradient(90deg,#00AAFF,#6B30FF)" }}
+                  >
+                    Add Listing
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
+      {isVerifyModalOpen && (
+        <div className="fixed inset-0 z-[73] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="w-full max-w-lg overflow-hidden rounded-[2rem] border border-cyan-500/20 bg-[#0b1733] p-6 shadow-2xl md:p-7">
+            <div className="mb-5 flex items-start justify-between gap-4">
+              <div>
+                <p className="text-xs font-black uppercase tracking-widest text-cyan-200/80">
+                  Optional Identity Badge
+                </p>
+                <h2 className="mt-2 text-3xl font-black text-slate-100">
+                  Verified Seller
+                </h2>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsVerifyModalOpen(false)}
+                className="rounded-full p-2 text-slate-300 transition hover:bg-white/10 hover:text-white"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="rounded-2xl border border-cyan-300/20 bg-cyan-400/10 p-4 text-sm text-slate-200">
+              This prototype adds a verified badge to your account without storing
+              real ID images. A production version would use a trusted verification
+              provider to scan an ID or verify school/work identity.
+            </div>
+
+            {verificationMessage && (
+              <div className="mt-4 rounded-2xl border border-violet-300/30 bg-violet-400/10 p-3 text-sm font-semibold text-violet-100">
+                {verificationMessage}
+              </div>
+            )}
+
+            <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <button
+                type="button"
+                onClick={() => setIsVerifyModalOpen(false)}
+                className="rounded-xl border border-cyan-500/30 bg-[#13284d] py-3 text-sm font-bold text-slate-100 transition hover:bg-[#17325f]"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={completeDemoVerification}
+                disabled={verificationSubmitting || currentUserVerified}
+                className="rounded-xl py-3 text-sm font-bold text-white shadow-md transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+                style={{ background: "linear-gradient(90deg,#00AAFF,#6B30FF)" }}
+              >
+                {currentUserVerified
+                  ? "Verified"
+                  : verificationSubmitting
+                    ? "Verifying..."
+                    : "Complete Demo Verification"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* MODAL: VIEW ITEM DETAILS */}
       {selectedItem && (
         <div
@@ -1068,6 +1698,131 @@ export default function Marketplace() {
               <p className="text-4xl font-medium mb-8 text-gray-900 dark:text-gray-200">
                 {formatPrice(selectedItem.price)}
               </p>
+
+              <div className="mb-8 rounded-2xl border border-cyan-100 bg-cyan-50/60 p-4">
+                <div className="mb-3 flex items-center gap-2">
+                  <ShieldCheck size={18} className="text-cyan-600" />
+                  <h3 className="text-sm font-black uppercase tracking-wider text-gray-900">
+                    Seller Profile Signals
+                  </h3>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {getTrustBadges(selectedItem).map((badge) => (
+                    <div
+                      key={badge.label}
+                      className={`rounded-xl border px-3 py-2 ${getTrustBadgeClasses(
+                        badge.tone
+                      )}`}
+                    >
+                      <div className="flex items-center gap-1.5 text-xs font-black">
+                        {renderTrustBadgeIcon(badge.icon, 14)}
+                        {badge.label}
+                      </div>
+                      <p className="mt-1 max-w-[13rem] text-[11px] font-medium leading-snug opacity-80">
+                        {badge.detail}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="mt-4 rounded-2xl border border-cyan-200 bg-white/70 p-3">
+                  <div className="flex items-start gap-2">
+                    <BadgeCheck
+                      size={16}
+                      className={
+                        getSellerProgress(selectedItem).identityVerified
+                          ? "mt-0.5 flex-shrink-0 text-cyan-600"
+                          : "mt-0.5 flex-shrink-0 text-slate-400"
+                      }
+                    />
+                    <div>
+                      <p className="text-xs font-black uppercase tracking-wider text-gray-900">
+                        Optional Identity Verification
+                      </p>
+                      <p className="mt-1 text-xs font-semibold text-gray-600">
+                        {getSellerProgress(selectedItem).identityVerified
+                          ? "Verified Seller badge active."
+                          : currentUserId === selectedItem.user_id
+                            ? "You can add a Verified Seller badge from View All Signals."
+                            : "This seller has not added optional identity verification."}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {currentUserId === selectedItem.user_id && (() => {
+                const progress = getSellerProgress(selectedItem);
+
+                return (
+                  <div className="mb-8 rounded-2xl border border-cyan-100 bg-gradient-to-br from-cyan-50 to-violet-50 p-4">
+                    <div className="mb-3 flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-2">
+                        <BadgeCheck size={18} className="text-cyan-600" />
+                        <h3 className="text-sm font-black uppercase tracking-wider text-gray-900">
+                          Your Seller Level
+                        </h3>
+                      </div>
+                      <span className="rounded-full bg-white px-3 py-1 text-xs font-black text-violet-700 shadow-sm">
+                        {progress.score}/5
+                      </span>
+                    </div>
+
+                    <p className="text-2xl font-black text-gray-900">
+                      {progress.level}
+                    </p>
+                    <div className="mt-3 h-2 overflow-hidden rounded-full bg-white">
+                      <div
+                        className="h-full rounded-full"
+                        style={{
+                          width: `${(progress.score / 5) * 100}%`,
+                          background: "linear-gradient(90deg,#00AAFF,#6B30FF)",
+                        }}
+                      />
+                    </div>
+
+                    {progress.completed.length > 0 && (
+                      <div className="mt-4">
+                        <p className="text-xs font-black uppercase tracking-wider text-cyan-700">
+                          Helping your score
+                        </p>
+                        <div className="mt-2 flex flex-wrap gap-2">
+                          {progress.completed.map((item) => (
+                            <span
+                              key={item}
+                              className="rounded-full border border-cyan-200 bg-cyan-50 px-3 py-1 text-xs font-bold text-cyan-700"
+                            >
+                              {item}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {progress.improvements.length > 0 && (
+                      <div className="mt-4">
+                        <p className="text-xs font-black uppercase tracking-wider text-violet-700">
+                          To improve
+                        </p>
+                        <ul className="mt-2 space-y-2">
+                          {progress.improvements.slice(0, 3).map((item) => (
+                            <li
+                              key={item}
+                              className="flex items-start gap-2 text-xs font-semibold text-gray-700"
+                            >
+                              <AlertTriangle
+                                size={14}
+                                className="mt-0.5 flex-shrink-0 text-violet-600"
+                              />
+                              <span>{item}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
 
               <div className="space-y-6 mb-10 flex-grow">
                 <div>

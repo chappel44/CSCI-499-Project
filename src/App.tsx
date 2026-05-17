@@ -11,6 +11,8 @@ import ResetPassword from "./sub-pages/ResetPassword";
 import Marketplace from "./sub-pages/Marketplace";
 import MarketplaceInbox from "./sub-pages/MarketplaceInbox";
 import BlockedUsers from "./sub-pages/BlockedUsers";
+import FavouritesPage from "./sub-pages/FavouritesPage";
+import CartPage from "./sub-pages/CartPages";
 import Layout from "./Contexts/Layout";
 import PrivacyPolicy from "./sub-pages/PrivacyPolicy";
 import Extension from "./sub-pages/Extension/Extension";
@@ -24,6 +26,8 @@ function App() {
           <Route path="/" element={<Search />} />
           <Route path="/search" element={<Search />} />
           <Route path="/wish-list" element={<WishList />} />
+          <Route path="/favourites" element={<FavouritesPage />} />
+          <Route path="/cart" element={<CartPage />} />
           <Route path="/marketplace" element={<Marketplace />} />
           <Route path="/messages" element={<MarketplaceInbox />} />
           <Route
