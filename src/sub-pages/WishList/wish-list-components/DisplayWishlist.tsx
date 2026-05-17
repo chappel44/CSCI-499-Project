@@ -72,7 +72,7 @@ export default function DisplayWishlist({
   };
 
   return (
-    <div className="wishlist-grid relative z-10 flex-1 overflow-y-auto px-6 py-6 flex flex-wrap justify-center gap-4">
+    <div className=" relative z-10 overflow-y-auto px-6 py-6 grid grid-cols-2 md:grid-cols-4 gap-4 max-w-6xl mx-auto">
       {!loading && filteredItems.length === 0 && (
         <p className="text-gray-500 text-center">No items found.</p>
       )}
@@ -95,7 +95,7 @@ export default function DisplayWishlist({
           <div
             key={item.id}
             // frosted glass card — bg-white/60 + backdrop-blur + border-white/40
-            className="wishlist-card backdrop-blur-md rounded-2xl transition-all duration-300 p-3 flex flex-col w-48 relative hover:-translate-y-1"
+            className="wishlist-card backdrop-blur-md rounded-2xl transition-all duration-300 p-3 flex flex-col w-48 relative hover:-translate-y-1 transition-transform duration-500 ease-out"
             style={{
               background: "rgba(255,255,255,0.60)",
               border: "1px solid rgba(255,255,255,0.75)",
