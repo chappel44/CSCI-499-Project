@@ -35,7 +35,7 @@ export default function SearchActions({ visible }: SearchActionsProps) {
 
   return (
     <div
-      className="flex items-center justify-center flex-wrap gap-2 z-20 w-full max-w-2xl"
+      className="flex items-center justify-center flex-wrap gap-2 w-full max-w-2xl"
       style={{
         opacity: visible ? 1 : 0,
         transform: visible ? "translateY(0)" : "translateY(12px)",
@@ -43,7 +43,7 @@ export default function SearchActions({ visible }: SearchActionsProps) {
       }}
     >
       {/* Input */}
-      <div className="flex flex-col gap-3 mb-4 md:mb-12 lg:mb-20">
+      <div className="flex flex-col gap-3 mb-4 md:mb-12 lg:mb-20 overflow-visible">
         <SearchInput />
 
         {/* Search button */}
@@ -107,7 +107,7 @@ export default function SearchActions({ visible }: SearchActionsProps) {
 
             {priceFiltersOpen && (
               <div
-                className="search-price-panel absolute top-full left-1/2 -translate-x-1/2 mt-2 p-3 rounded-2xl border shadow-lg flex gap-2 z-50"
+                className="search-price-panel absolute top-full left-1/2 -translate-x-1/2 mt-2 p-3 rounded-2xl border shadow-lg flex gap-2"
                 style={{
                   background: "rgba(255,255,255,0.88)",
                   backdropFilter: "blur(16px)",

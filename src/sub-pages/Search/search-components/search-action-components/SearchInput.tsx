@@ -15,7 +15,7 @@ export default function SearchInput() {
   };
   return (
     <div
-      className="search-input-shell flex flex-1 items-center gap-2 rounded-xl px-4 py-2.5 transition min-w-0 z-10"
+      className="search-input-shell flex flex-1 items-center gap-2 rounded-xl px-4 py-2.5 transition min-w-0 z-50"
       style={{
         background: "rgba(255,255,255,0.7)",
         backdropFilter: "blur(12px)",

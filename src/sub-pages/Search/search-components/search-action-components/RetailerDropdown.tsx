@@ -41,7 +41,7 @@ export default function RetailerDropdown() {
   };
 
   return (
-    <div className="relative z-50" ref={dropdownRef}>
+    <div className="relative z-5" ref={dropdownRef}>
       <button
         type="button"
         className="mb-1 flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition hover:opacity-90 shadow-md whitespace-nowrap"
@@ -88,7 +88,7 @@ export default function RetailerDropdown() {
             <button
               key={retailer.id}
               onClick={() => toggleRetailer(retailer.id)}
-              className="search-retailer-option flex items-center justify-between py-2.5 px-4 text-sm text-left text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition cursor-pointer z-999"
+              className="search-retailer-option flex items-center justify-between py-2.5 px-4 text-sm text-left text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition cursor-pointer z-5"
             >
               <span>{retailer.label}</span>
               {isSelected && (
