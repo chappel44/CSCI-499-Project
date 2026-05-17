@@ -47,7 +47,7 @@ function RetailerIcon({ retailer }: { retailer?: string }) {
     <img
       src={url}
       alt={retailer}
-      className="w-[100px] h-[50px]  object-contain "
+      className="w-[80px] h-[40px] md:w-[100px] md:h-[50px]  object-contain "
     />
   );
 }
@@ -101,7 +101,7 @@ export default function DisplayProducts({
             }}
           >
             {item.retailer && (
-              <div className="absolute bottom-1/3 translate-y-1/3 md:bottom-2 right-2">
+              <div className="absolute bottom-1/3 translate-y-1/3 -right-0">
                 <RetailerIcon retailer={item.retailer} />
               </div>
             )}
