@@ -19,7 +19,6 @@ import {
   Heart,
   Navigation,
   RotateCcw,
-  ShoppingCart,
 } from "lucide-react";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
@@ -120,6 +119,7 @@ export default function Marketplace() {
   };
 
   const [selectedItem, setSelectedItem] = useState<MarketplaceListing | null>(null);
+  const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [isPostModalOpen, setIsPostModalOpen] = useState(false);
   const [loggedIn, setLoggedIn] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
@@ -159,7 +159,7 @@ export default function Marketplace() {
     category: "electronics",
     description: "",
     condition: "Good",
-    imageInput: "",
+    images: [""],
     location_name: "",
     latitude: null as number | null,
     longitude: null as number | null,
@@ -199,6 +199,7 @@ export default function Marketplace() {
 
   const openListingDetails = (item: MarketplaceListing) => {
     setSelectedItem(item);
+    setActiveImageIndex(0);
     setSearchParams((prev) => {
       const next = new URLSearchParams(prev);
       next.set("listing", item.id);
@@ -207,14 +208,12 @@ export default function Marketplace() {
   };
 
   const closeListingDetails = () => {
-    setSelectedItem(null);
     setSearchParams((prev) => {
       const next = new URLSearchParams(prev);
       next.delete("listing");
       return next;
     }, { replace: true });
   };
-
   // map use effect
   useEffect(() => {
     if (selectedItem && selectedItem.latitude && selectedItem.longitude) {
@@ -348,11 +347,16 @@ export default function Marketplace() {
   }, [fetchListings]);
 
   useEffect(() => {
-    if (!selectedListingId || selectedItem?.id === selectedListingId) return;
-
+    // fixes the double closes modal bug
+    if (!selectedListingId) {
+      setSelectedItem(null);
+      return;
+    }
+    if (selectedItem?.id === selectedListingId) return;
     const matchingItem = items.find((item) => item.id === selectedListingId);
     if (matchingItem) {
       setSelectedItem(matchingItem);
+      setActiveImageIndex(0);
       return;
     }
 
@@ -372,6 +376,7 @@ export default function Marketplace() {
       }
       if (data && !blockedSellerIds.includes(data.user_id)) {
         setSelectedItem(data as MarketplaceListing);
+        setActiveImageIndex(0);
       }
     };
 
@@ -454,6 +459,12 @@ export default function Marketplace() {
         ? 0
         : parseFloat(formData.price.replace(/[^0-9.]/g, ""));
 
+    // Flatten comma-separated strings and filter out blanks
+    const validImages = formData.images
+      .flatMap((img) => img.split(","))
+      .map((img) => img.trim())
+      .filter((img) => img !== "");
+
     const { error } = await supabase.from("marketplace_listings").insert([
       {
         user_id: user.id,
@@ -462,7 +473,7 @@ export default function Marketplace() {
         price: numericPrice,
         category: formData.category,
         condition: formData.condition,
-        images: formData.imageInput ? [formData.imageInput] : [],
+        images: validImages,
         sold: false,
         location_name: formData.location_name,
         latitude: formData.latitude,
@@ -481,7 +492,7 @@ export default function Marketplace() {
         category: "electronics",
         description: "",
         condition: "Good",
-        imageInput: "",
+        images: [""],
         location_name: "",
         latitude: null,
         longitude: null,
@@ -591,43 +602,6 @@ export default function Marketplace() {
     }
 
     setActionMessage(alreadySaved ? "Removed from saved items." : "Saved item.");
-  };
-
-  const handleAddToCart = (item: MarketplaceListing) => {
-    const cartItem = {
-      id: item.id,
-      title: item.title,
-      price: item.price,
-      images: item.images ?? [],
-      category: item.category,
-      condition: item.condition,
-      seller_name: item.seller_name,
-      qty: 1,
-      stock: 1,
-    };
-    const stored =
-      sessionStorage.getItem("verifind_cart") ||
-      localStorage.getItem("verifind_cart");
-    const existing = stored ? JSON.parse(stored) : [];
-    const found = existing.find((cartItem: { id: string }) => cartItem.id === item.id);
-    const nextCart = found
-      ? existing.map((cartItem: { id: string; qty?: number; stock?: number }) =>
-          cartItem.id === item.id
-            ? {
-                ...cartItem,
-                qty: Math.min(cartItem.stock ?? 1, (cartItem.qty ?? 1) + 1),
-              }
-            : cartItem
-        )
-      : [...existing, cartItem];
-
-    sessionStorage.setItem("verifind_cart", JSON.stringify(nextCart));
-    localStorage.setItem("verifind_cart", JSON.stringify(nextCart));
-    navigate("/cart", {
-      state: {
-        item: cartItem,
-      },
-    });
   };
 
   const handleOpenMessage = async () => {
@@ -1551,19 +1525,44 @@ export default function Marketplace() {
 
                 <div className="flex flex-col gap-1.5">
                   <label className="text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wide px-1">
-                    Image URL
+                    Image URLs
                   </label>
-                  <div className="relative">
-                    <Camera className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                    <input
-                      placeholder="https://..."
-                      className="marketplace-form-input w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 dark:text-white outline-none"
-                      value={formData.imageInput}
-                      onChange={(e) =>
-                        setFormData({ ...formData, imageInput: e.target.value })
-                      }
-                    />
-                  </div>
+                  {formData.images.map((url, index) => (
+                    <div key={index} className="relative flex gap-2 mb-2">
+                      <div className="relative flex-1">
+                        <Camera className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                        <input
+                          placeholder="https://..."
+                          className="marketplace-form-input w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 dark:text-white outline-none"
+                          value={url}
+                          onChange={(e) => {
+                            const newImages = [...formData.images];
+                            newImages[index] = e.target.value;
+                            setFormData({ ...formData, images: newImages });
+                          }}
+                        />
+                      </div>
+                      {formData.images.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const newImages = formData.images.filter((_, i) => i !== index);
+                            setFormData({ ...formData, images: newImages });
+                          }}
+                          className="px-3 py-3 bg-red-50 dark:bg-red-900/20 text-red-600 rounded-xl border border-red-100 dark:border-red-900/30 hover:bg-red-100 dark:hover:bg-red-900/40 transition-colors"
+                        >
+                          <X size={20} />
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={() => setFormData({ ...formData, images: [...formData.images, ""] })}
+                    className="text-xs font-bold text-blue-500 text-left mt-1 hover:text-blue-600 transition-colors"
+                  >
+                    + Add another image
+                  </button>
                 </div>
 
                 <div className="flex flex-col gap-1.5">
@@ -1846,15 +1845,41 @@ export default function Marketplace() {
               <X size={20} className="text-gray-900 dark:text-white" />
             </button>
 
-            <div className="w-full md:w-[55%] bg-gray-50 dark:bg-gray-800 min-h-[300px] flex items-center justify-center">
-              <img
-                src={
-                  selectedItem.images?.[0] ||
-                  "https://placehold.co/600x600/e2e8f0/64748b?text=No+Image"
-                }
-                className="w-full h-full object-cover"
-                alt={selectedItem.title}
-              />
+            <div className="w-full md:w-[55%] bg-gray-50 dark:bg-gray-800 flex flex-col p-6 items-center justify-center relative">
+              <div className="w-full flex-1 flex items-center justify-center min-h-[300px]">
+                <img
+                  src={
+                    selectedItem.images?.[activeImageIndex] ||
+                    selectedItem.images?.[0] ||
+                    "https://placehold.co/600x600/e2e8f0/64748b?text=No+Image"
+                  }
+                  className="max-w-full max-h-[60vh] object-contain rounded-2xl shadow-sm transition-opacity duration-300"
+                  alt={selectedItem.title}
+                />
+              </div>
+
+              {/* Thumbnails row */}
+              {selectedItem.images && selectedItem.images.length > 1 && (
+                <div className="mt-6 flex gap-3 overflow-x-auto pb-2 w-full justify-center px-4 max-w-full snap-x scrollbar-hide">
+                  {selectedItem.images.map((img, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => setActiveImageIndex(idx)}
+                      className={`w-16 h-16 sm:w-20 sm:h-20 flex-shrink-0 snap-center rounded-xl overflow-hidden border-2 transition-all duration-200 ${
+                        activeImageIndex === idx
+                          ? "border-blue-500 scale-105 shadow-md"
+                          : "border-transparent opacity-60 hover:opacity-100"
+                      }`}
+                    >
+                      <img
+                        src={img}
+                        className="w-full h-full object-cover"
+                        alt={`Thumbnail ${idx + 1}`}
+                      />
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
 
             <div className="w-full md:w-[45%] p-10 md:p-12 flex flex-col bg-white dark:bg-gray-900">
@@ -2055,26 +2080,17 @@ export default function Marketplace() {
                 </button>
               ) : (
                 <div className="flex flex-col gap-3">
-                  <div className="grid grid-cols-2 gap-3">
-                    <button
-                      type="button"
-                      onClick={() => handleToggleSaveListing(selectedItem)}
-                      className="w-full cursor-pointer py-3.5 rounded-xl border border-pink-200 dark:border-pink-900/30 bg-pink-50 dark:bg-pink-900/20 text-pink-700 dark:text-pink-400 font-bold hover:bg-pink-100 dark:hover:bg-pink-900/40 transition-all inline-flex items-center justify-center gap-2"
-                    >
-                      <Heart
-                        size={16}
-                        fill={savedListingIds.includes(selectedItem.id) ? "currentColor" : "none"}
-                      />
-                      {savedListingIds.includes(selectedItem.id) ? "Saved" : "Save"}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleAddToCart(selectedItem)}
-                      className="w-full cursor-pointer py-3.5 rounded-xl border border-blue-200 dark:border-blue-900/30 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 font-bold hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-all inline-flex items-center justify-center gap-2"
-                    >
-                      <ShoppingCart size={16} /> Add to Cart
-                    </button>
-                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleToggleSaveListing(selectedItem)}
+                    className="w-full cursor-pointer py-3.5 rounded-xl border border-pink-200 dark:border-pink-900/30 bg-pink-50 dark:bg-pink-900/20 text-pink-700 dark:text-pink-400 font-bold hover:bg-pink-100 dark:hover:bg-pink-900/40 transition-all inline-flex items-center justify-center gap-2 mb-1"
+                  >
+                    <Heart
+                      size={16}
+                      fill={savedListingIds.includes(selectedItem.id) ? "currentColor" : "none"}
+                    />
+                    {savedListingIds.includes(selectedItem.id) ? "Saved to Favorites" : "Save Listing"}
+                  </button>
                   <button
                     onClick={handleOpenMessage}
                     disabled={actionLoading}
