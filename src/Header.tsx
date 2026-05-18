@@ -184,22 +184,7 @@ export default function Header() {
       />
     </svg>
   );
-  const CartIcon = (
-    <svg
-      className="w-6 h-6 md:w-3.5 md:h-3.5"
-      fill="none"
-      viewBox="0 0 24 24"
-      stroke="currentColor"
-      strokeWidth={1.8}
-    >
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"
-      />
-    </svg>
-  );
-
+ 
   const renderPanel = (id: NonNullable<DropID>) => {
     if (id === "marketplace")
       return (
@@ -427,21 +412,14 @@ export default function Header() {
               </Link>
               <div className="md:hidden flex items-center">
                 <Link
-                  to="/cart"
-                  className="px-4 py-1.5 rounded-xl text-sm font-medium text-gray-600 transition-all duration-150 hover:bg-gray-50 hover:border-gray-300"
-                  style={{ border: "1px solid rgba(0,0,0,0.10)" }}
-                >
-                  {CartIcon}
-                </Link>
-                <Link
                   to="/favourites"
                   className="px-4 py-1.5 rounded-xl text-sm font-medium text-gray-600 transition-all duration-150 hover:bg-gray-50 hover:border-gray-300"
                   style={{ border: "1px solid rgba(0,0,0,0.10)" }}
                 >
                   {FavIcon}
                 </Link>
-              </div>
-            </>
+              </div>            
+              </>
           ) : (
             <Link
               to="/"
@@ -592,15 +570,6 @@ export default function Header() {
               {FavIcon}
               <span className="text-sm">Saved</span>
             </Link>
-            <Link
-              to="/cart"
-              onClick={closeAll}
-              className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-medium text-gray-500 hover:text-gray-800 hover:bg-gray-100/80 transition-all duration-150"
-            >
-              {CartIcon}
-              <span className="text-sm">Cart</span>
-            </Link>
-
             {loggedIn ? (
               <>
                 <Link
@@ -613,7 +582,7 @@ export default function Header() {
                 </Link>
                 <button
                   onClick={handleSignOut}
-                  className="px-5 py-2 cursor-pointer rounded-xl text-sm font-semibold text-white transition hover:opacity-90 shadow-md border border-white/20"
+                  className="px-5 py-2 cursor-pointer rounded-xl text-sm font-semibold text-white transition hover:opacity-90 shadow-md border-none"
                   style={{ background: GRAD }}
                 >
                   Sign Out
@@ -623,21 +592,21 @@ export default function Header() {
               <>
                 <Link
                   to="/login"
-                  className="px-5 py-2 rounded-xl text-sm font-semibold text-white transition hover:opacity-90 shadow-md border border-white/20"
+                  className="px-5 py-2 rounded-xl text-sm font-semibold text-white transition hover:opacity-90 shadow-md border-none"
                   style={{ background: GRAD }}
                 >
                   Login
                 </Link>
                 <Link
                   to="/signup"
-                  className="px-5 py-2 rounded-xl text-sm font-semibold text-white transition hover:opacity-90 shadow-md"
+                  className="px-5 py-2 rounded-xl text-sm font-semibold text-white transition hover:opacity-90 shadow-md border-none"
                   style={{ background: GRAD }}
                 >
                   Sign Up
                 </Link>
               </>
             )}
-          </div>
+            </div>
         </div>
       </motion.header>
 
