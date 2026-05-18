@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import { useTheme } from "../../../Contexts/ThemeContext";
 import { Link } from "react-router-dom";
 
@@ -6,6 +7,15 @@ export default function ComingSoonCards() {
 
   return (
     <div className="flex gap-3 mt-5 flex-wrap justify-center">
+=======
+import { useTheme } from "../../../Contexts/ThemeContext";
+
+export default function ComingSoonCards() {
+  const { resolvedTheme } = useTheme();
+
+  return (
+    <div className="flex gap-3 mt-5 flex-wrap justify-center">
+>>>>>>> 7113605d04dee12a5116a3645ab0d223697c177e
       {/* App Store button */}
       <button
         disabled
@@ -34,6 +44,7 @@ export default function ComingSoonCards() {
         </div>
       </button>
 
+<<<<<<< HEAD
       {/* Browser Extension button */}
       <Link
         to="/extension"
@@ -47,6 +58,21 @@ export default function ComingSoonCards() {
         }}
         title="Get the Verifind browser extension"
       >
+=======
+      {/* Browser Extension button */}
+      <button
+        disabled
+        className="coming-soon-card flex items-center gap-2.5 px-4 py-2.5 rounded-xl text-sm font-semibold transition cursor-not-allowed"
+        style={{
+          background: "rgba(255,255,255,0.6)",
+          backdropFilter: "blur(12px)",
+          border: "1px solid rgba(107,48,255,0.2)",
+          color: "#374151",
+          boxShadow: "0 2px 12px rgba(0,0,0,0.06)",
+        }}
+        title="Coming soon"
+      >
+>>>>>>> 7113605d04dee12a5116a3645ab0d223697c177e
         {/* Puzzle piece / extension icon */}
         <svg
           className="w-5 h-5 flex-shrink-0"

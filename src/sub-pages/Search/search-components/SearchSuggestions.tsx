@@ -1,8 +1,20 @@
+<<<<<<< HEAD
 import { SearchIcon, ShieldCheck, ChevronDown, ChevronUp } from "lucide-react";
 import { useState, useMemo } from "react";
 import { useSearchContext } from "../../../Contexts/useSearchContext";
 import { useTheme } from "../../../Contexts/ThemeContext";
 import { motion, AnimatePresence } from "framer-motion";
+=======
+import {
+  SearchIcon,
+  ShieldCheck,
+  ChevronDown,
+  ChevronUp,
+} from "lucide-react";
+import { useState, useMemo } from "react";
+import { useSearchContext } from "../../../Contexts/useSearchContext";
+import { useTheme } from "../../../Contexts/ThemeContext";
+>>>>>>> 7113605d04dee12a5116a3645ab0d223697c177e
 
 interface SearchSuggestionsProps {
   visible: boolean;
@@ -10,11 +22,18 @@ interface SearchSuggestionsProps {
 
 const SEARCHES = ["AirPods", "Gaming Laptops", "Nike", "Nike Running Shoes"];
 
-export default function SearchSuggestions({ visible }: SearchSuggestionsProps) {
+export default function SearchSuggestions({
+  visible,
+}: SearchSuggestionsProps) {
   const { products, setKeyword } = useSearchContext();
   const { resolvedTheme } = useTheme();
   const [open, setOpen] = useState(false);
 
+<<<<<<< HEAD
+=======
+  if (products.length > 0) return null;
+
+>>>>>>> 7113605d04dee12a5116a3645ab0d223697c177e
   const isDark = resolvedTheme === "dark";
 
   const styles = useMemo(
@@ -37,12 +56,19 @@ export default function SearchSuggestions({ visible }: SearchSuggestionsProps) {
     }),
     [isDark]
   );
+<<<<<<< HEAD
 
   if (products.length > 0) return null;
 
   return (
     <div
       className=" w-full transition-all duration-500 z-5 mb-8"
+=======
+
+  return (
+    <div
+      className="mt-4 w-full transition-all duration-500"
+>>>>>>> 7113605d04dee12a5116a3645ab0d223697c177e
       style={{
         opacity: visible ? 1 : 0,
         transform: visible ? "translateY(0)" : "translateY(10px)",
@@ -51,7 +77,11 @@ export default function SearchSuggestions({ visible }: SearchSuggestionsProps) {
       <div
         className={`
           rounded-2xl overflow-hidden
+<<<<<<< HEAD
           border shadow-sm
+=======
+          border backdrop-blur-xl shadow-sm
+>>>>>>> 7113605d04dee12a5116a3645ab0d223697c177e
           ${styles.container}
         `}
       >
@@ -62,6 +92,7 @@ export default function SearchSuggestions({ visible }: SearchSuggestionsProps) {
         >
           <div className="flex items-center gap-2">
             <ShieldCheck className="w-4 h-4 text-green-500 shrink-0" />
+<<<<<<< HEAD
 
             <span className={`text-sm font-semibold ${styles.textPrimary}`}>
               Verified Product Data
@@ -148,6 +179,84 @@ export default function SearchSuggestions({ visible }: SearchSuggestionsProps) {
             </motion.div>
           )}
         </AnimatePresence>
+=======
+
+            <span className={`text-sm font-semibold ${styles.textPrimary}`}>
+              Verified Product Data
+            </span>
+
+            <span
+              className={`text-xs hidden sm:inline ${styles.textMuted}`}
+            >
+              — Real-time Verifind lookup
+            </span>
+          </div>
+
+          {open ? (
+            <ChevronUp className={`w-4 h-4 ${styles.textMuted}`} />
+          ) : (
+            <ChevronDown className={`w-4 h-4 ${styles.textMuted}`} />
+          )}
+        </button>
+
+        {/* Body */}
+        {open && (
+          <div
+            className={`px-4 pb-4 flex flex-col gap-3 border-t ${isDark ? "border-white/10" : "border-black/5"}`}
+          >
+            <p className={`text-xs pt-3 ${styles.textSecondary}`}>
+              Search for any product — we pull live prices, ratings and seller
+              data.
+            </p>
+
+            {/* Suggestions */}
+            <div className="grid grid-cols-2 gap-2">
+              {SEARCHES.map((item, index) => (
+                <button
+                  key={item}
+                  onClick={() => {
+                    setKeyword(item);
+                    setOpen(false);
+                  }}
+                  className={`
+                    flex items-center gap-2 px-3 py-2 rounded-xl text-sm
+                    border transition
+                    ${styles.card}
+                  `}
+                >
+                  <SearchIcon
+                    className={`w-3.5 h-3.5 shrink-0 ${styles.textMuted}`}
+                  />
+
+                  <span
+                    className={
+                      index === 0
+                        ? "text-blue-500 font-medium"
+                        : styles.textSecondary
+                    }
+                  >
+                    {item}
+                  </span>
+                </button>
+              ))}
+            </div>
+
+            {/* Footer badge */}
+            <div
+              className={`
+                flex items-center gap-2 px-3 py-2 rounded-xl border
+                ${styles.badge}
+              `}
+            >
+              <ShieldCheck className="w-4 h-4 text-green-500 shrink-0" />
+
+              <p className={`text-xs ${styles.textSecondary}`}>
+                Prices verified across Amazon, eBay, Walmart and Google Shopping.
+              </p>
+            </div>
+          </div>
+        )}
+>>>>>>> 7113605d04dee12a5116a3645ab0d223697c177e
       </div>
     </div>
   );
