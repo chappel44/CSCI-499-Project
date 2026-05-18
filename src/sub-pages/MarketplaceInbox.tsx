@@ -465,6 +465,8 @@ export default function MarketplaceInbox() {
               <div className="rounded-2xl border border-dashed border-cyan-500/30 p-4 text-sm text-slate-300 bg-[#0f203f]/70">
                 No conversations yet.
               </div>
+
+
             ) : (
               <div className="space-y-2.5">
                 {conversations.map((conversation) => {

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { useWishlist } from "../../Contexts/WishListContext";
 import ApplyGradientOrbs from "../SharedComponents/ApplyGradientOrbs";
 import { SearchOtherWishlist } from "./wish-list-components/SearchOtherWishlists";
@@ -11,6 +11,7 @@ import sortWishlist from "./wish-list-hooks/sortWishlist";
 import DisplayWishlist from "./wish-list-components/DisplayWishlist";
 import DisplayWishlistActions from "./wish-list-components/DisplayWishlistActions";
 import { useSearchOtherWishlist } from "./wishlist-custom-hooks/searchOtherWishlist";
+import { supabase } from "../../../supabase-client";
 
 function WishList() {
   const { items, searchQuery, sortBy, filterDropOnly, setOtherUsername } =
@@ -19,9 +20,16 @@ function WishList() {
   const [searchParams] = useSearchParams();
 
   const [visible, setVisible] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
   useEffect(() => {
     setTimeout(() => setVisible(true), 50);
+  }, []);
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => {
+      setCurrentUserId(data.user?.id ?? null);
+    });
   }, []);
 
   useEffect(() => {
@@ -70,6 +78,27 @@ function WishList() {
 
       <DisplayWishlistActions visible={visible} />
 
+      {currentUserId && (
+        <div
+          className="relative z-10 mt-4 flex justify-center px-6"
+          style={{
+            opacity: visible ? 1 : 0,
+            transition: "opacity 0.6s ease 0.25s",
+          }}
+        >
+          <Link
+            to={`/users/${currentUserId}`}
+            className="rounded-2xl border px-4 py-2 text-sm font-bold text-white shadow-lg transition hover:-translate-y-0.5 hover:opacity-95"
+            style={{
+              background: "linear-gradient(90deg,#00AAFF,#6B30FF)",
+              borderColor: "rgba(125,211,252,0.26)",
+            }}
+          >
+            View Public Profile
+          </Link>
+        </div>
+      )}
+
       {/* Wishlist Items — frosted glass cards */}
       <DisplayWishlist filteredItems={filteredItems} visible={visible} />
 
@@ -89,9 +118,19 @@ function WishList() {
         {/* FAQ */}
         <FAQSection />
 
-        <p className="text-xs text-gray-400 mt-2">
-          &copy; {new Date().getFullYear()} Verifind
-        </p>
+        {/* Footer — mt-auto pushes it down */}
+        <div
+          className="relative z-10 w-full py-10 mt-auto flex justify-center items-center gap-4"
+          style={{ borderTop: "1px solid rgba(0,170,255,0.1)" }}
+        >
+          <p className="text-xs text-gray-400">
+            &copy; {new Date().getFullYear()} Verifind. All rights reserved.
+          </p>
+          <p className="text-gray-400">•</p>
+          <Link to="/privacy-policy" className="text-xs text-gray-400">
+            Privacy Policy
+          </Link>
+        </div>
       </div>
     </div>
   );

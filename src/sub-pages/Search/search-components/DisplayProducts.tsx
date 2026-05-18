@@ -20,6 +20,8 @@ function RetailerIcon({ retailer }: { retailer?: string }) {
     amazon:
       "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a9/Amazon_logo.svg/960px-Amazon_logo.svg.png?_=20250504041148",
     ebay: "https://cdn.simpleicons.org/ebay/E53238",
+    "google-shopping":
+      "https://www.gstatic.com/images/branding/product/2x/shopping_48dp.png",
   };
 
   const match = Object.entries(logoMap).find(([key]) =>
@@ -33,7 +35,7 @@ function RetailerIcon({ retailer }: { retailer?: string }) {
         style={{
           background: "rgba(0,0,0,0.06)",
           color: "#555",
-          fontSize: "10px",
+          fontSize: "20px",
         }}
       >
         {retailer}
@@ -45,7 +47,7 @@ function RetailerIcon({ retailer }: { retailer?: string }) {
     <img
       src={url}
       alt={retailer}
-      className="w-[100px] h-[50px]  object-contain "
+      className="w-[80px] h-[40px] md:w-[100px] md:h-[50px]  object-contain "
     />
   );
 }
@@ -74,7 +76,7 @@ export default function DisplayProducts({
         return (
           <div
             key={index}
-            className="search-result-card flex items-center mt-4 gap-4 p-4 rounded-2xl transition-all duration-200 hover:-translate-y-0.5"
+            className="search-result-card flex items-center mt-4 gap-4 p-4 rounded-2xl transition-all duration-200 hover:-translate-y-0.5 "
             style={{
               background: "rgba(255,255,255,0.65)",
               backdropFilter: "blur(14px)",
@@ -99,7 +101,7 @@ export default function DisplayProducts({
             }}
           >
             {item.retailer && (
-              <div className="absolute bottom-1 right-1">
+              <div className="absolute bottom-1/3 translate-y-1/3 -right-0">
                 <RetailerIcon retailer={item.retailer} />
               </div>
             )}

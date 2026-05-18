@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "../../supabase-client";
 
 const GRAD = "linear-gradient(135deg,#00AAFF,#6B30FF)";
+const MARKETPLACE_SAVE_CACHE_KEY = "verifind_marketplace_saved_items";
 
 const SELLER_DEALS: Record<string, number> = {
   Bob: 47,
@@ -32,10 +33,22 @@ interface FavItem {
   seller_name: string | null;
   verified: boolean;
   source: "marketplace" | "wishlist";
+  note?: string;
+  priority?: "low" | "medium" | "high";
+  status?: "watching" | "ready-to-buy" | "bought";
 }
 
 const fmt = (p: number) =>
   "$" + Number(p).toLocaleString("en-US", { minimumFractionDigits: 2 });
+
+function readStoredItems(key: string): FavItem[] {
+  try {
+    const raw = localStorage.getItem(key);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
 
 const MOCK_MAP: Record<string, FavItem> = Object.fromEntries(
   [
@@ -450,8 +463,11 @@ export default function FavouritesPage() {
 
   useEffect(() => {
     supabase.auth.getSession().then(async ({ data }) => {
+      const cachedMarketplaceItems = readStoredItems(MARKETPLACE_SAVE_CACHE_KEY);
+      const wlItems = readStoredItems("verifind_wishlist_favs");
       const u = data.session?.user;
       if (!u) {
+        setItems([...cachedMarketplaceItems, ...wlItems]);
         setLoading(false);
         return;
       }
@@ -483,11 +499,12 @@ export default function FavouritesPage() {
         const { data: rows } = await supabase
           .from("marketplace_listings")
           .select(
-            "id,title,price,images,category,condition,seller_name,verified"
+            "id,title,price,images,category,condition,seller_name"
           )
           .in("id", dbIds);
         dbItems = (rows ?? []).map((r: any) => ({
           ...r,
+          verified: false,
           source: "marketplace" as const,
           condition: ["New", "Used"].includes(r.condition)
             ? r.condition
@@ -495,11 +512,16 @@ export default function FavouritesPage() {
         }));
       }
 
-      // Load wishlist items (those with hearts from WishList page)
-      const wlRaw = localStorage.getItem("verifind_wishlist_favs");
-      const wlItems: FavItem[] = wlRaw ? JSON.parse(wlRaw) : [];
+      const mergedMarketplaceItems = [
+        ...cachedMarketplaceItems,
+        ...mockItems,
+        ...dbItems,
+      ].filter(
+        (item, index, list) =>
+          list.findIndex((candidate) => candidate.id === item.id) === index
+      );
 
-      setItems([...mockItems, ...dbItems, ...wlItems]);
+      setItems([...mergedMarketplaceItems, ...wlItems]);
       setLoading(false);
     });
   }, []);
@@ -524,7 +546,16 @@ export default function FavouritesPage() {
         "verifind_saved_mock",
         JSON.stringify(local.filter((x) => x !== id))
       );
-    } else if (uid) {
+    } else {
+      const cachedRaw = localStorage.getItem(MARKETPLACE_SAVE_CACHE_KEY);
+      const cached: FavItem[] = cachedRaw ? JSON.parse(cachedRaw) : [];
+      localStorage.setItem(
+        MARKETPLACE_SAVE_CACHE_KEY,
+        JSON.stringify(cached.filter((x) => x.id !== id))
+      );
+    }
+
+    if (!MOCK_MAP[id] && uid) {
       await supabase
         .from("marketplace_saves")
         .delete()
@@ -534,7 +565,7 @@ export default function FavouritesPage() {
   };
 
   return (
-    <div className="min-h-screen" style={{ background: "#f0f4ff" }}>
+    <div className="saved-page min-h-screen" style={{ background: "#f0f4ff" }}>
       {/* BG orbs */}
       <div className="fixed inset-0 pointer-events-none" style={{ zIndex: 0 }}>
         <div
@@ -569,16 +600,14 @@ export default function FavouritesPage() {
         />
       </div>
 
-      <div className="relative z-10 max-w-5xl mx-auto px-4 md:px-8 pt-28 pb-16">
+      <div className="relative z-10 max-w-6xl mx-auto px-4 md:px-8 pt-28 pb-16">
         {/* Header */}
-        <div className="flex items-center gap-3 mb-2">
+        <div className="saved-hero rounded-[2rem] p-5 md:p-6 mb-8">
+        <div className="flex items-center gap-3">
           <button
             onClick={() => navigate(-1)}
-            className="w-9 h-9 rounded-xl flex items-center justify-center text-gray-500 hover:text-gray-800 transition"
-            style={{
-              background: "rgba(255,255,255,0.6)",
-              border: "1px solid rgba(0,0,0,0.07)",
-            }}
+            className="saved-hero-back w-10 h-10 rounded-2xl flex items-center justify-center transition"
+            style={{ cursor: "pointer" }}
           >
             <svg
               className="w-4 h-4"
@@ -594,26 +623,29 @@ export default function FavouritesPage() {
               />
             </svg>
           </button>
-          <h1 className="text-3xl font-bold text-gray-900">Saved Items</h1>
+          <div className="min-w-0">
+            <h1 className="saved-hero-title text-3xl font-bold">Saved Items</h1>
+            <p className="saved-hero-subtitle text-sm mt-1">
+              Everything you've hearted from the Marketplace and Wish List.
+            </p>
+          </div>
           {items.length > 0 && (
             <span
-              className="px-2.5 py-1 rounded-lg text-sm font-semibold text-white"
+              className="ml-auto px-3 py-1.5 rounded-xl text-sm font-semibold text-white whitespace-nowrap"
               style={{ background: GRAD }}
             >
               {items.length}
             </span>
           )}
         </div>
-        <p className="text-sm text-gray-500 mb-8 ml-12">
-          Everything you've hearted from the Marketplace and Wish List.
-        </p>
+        </div>
 
         {loading && (
-          <div className="flex flex-wrap gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {Array.from({ length: 6 }).map((_, i) => (
               <div
                 key={i}
-                className="rounded-2xl overflow-hidden w-56"
+                className="rounded-[1.6rem] overflow-hidden"
                 style={{
                   background: "rgba(255,255,255,0.55)",
                   border: "1px solid rgba(255,255,255,0.8)",
@@ -693,7 +725,7 @@ export default function FavouritesPage() {
         )}
 
         {!loading && items.length > 0 && (
-          <div className="flex flex-wrap gap-5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {items.map((item) => {
               const c = COND_STYLE[item.condition] ?? COND_STYLE["Used"];
               const deals = SELLER_DEALS[item.seller_name ?? ""] ?? 0;
@@ -702,17 +734,12 @@ export default function FavouritesPage() {
               return (
                 <div
                   key={item.id}
-                  className="rounded-2xl overflow-hidden flex flex-col w-56 transition-all duration-200 hover:-translate-y-1"
-                  style={{
-                    background: "rgba(255,255,255,0.75)",
-                    border: "1px solid rgba(255,255,255,0.9)",
-                    boxShadow: "0 4px 20px rgba(0,0,0,0.07)",
-                  }}
+                  className="saved-card rounded-[1.6rem] overflow-hidden flex flex-col transition-all duration-200 hover:-translate-y-1"
                 >
                   {/* Image */}
                   <div
                     className="relative overflow-hidden"
-                    style={{ height: 156 }}
+                    style={{ height: 190 }}
                   >
                     {imgs.length > 0 ? (
                       <img
@@ -807,14 +834,14 @@ export default function FavouritesPage() {
                   </div>
 
                   {/* Body */}
-                  <div className="p-3.5 flex flex-col flex-1">
+                  <div className="p-4 flex flex-col flex-1">
                     <span
                       className="inline-block px-2 py-0.5 rounded-md text-[10px] font-bold mb-1.5 self-start"
                       style={{ background: c.bg, color: c.color }}
                     >
                       {item.condition}
                     </span>
-                    <h3 className="text-sm font-semibold text-gray-800 line-clamp-2 leading-snug mb-1 flex-1">
+                    <h3 className="saved-card-title text-sm font-semibold text-gray-900 line-clamp-2 leading-snug mb-1 flex-1">
                       {item.title}
                     </h3>
                     <p
@@ -835,24 +862,36 @@ export default function FavouritesPage() {
                       >
                         {(item.seller_name ?? "?")[0].toUpperCase()}
                       </div>
-                      <span className="text-[10px] text-gray-500 truncate">
+                      <span className="saved-card-meta text-[10px] text-gray-600 truncate">
                         {item.seller_name}
                       </span>
-                      <span className="text-[10px] text-gray-400 ml-auto flex-shrink-0">
+                      <span className="saved-card-meta text-[10px] text-gray-500 ml-auto flex-shrink-0">
                         {deals} deals
                       </span>
                     </div>
+                    {item.note?.trim() && (
+                      <p
+                        className="saved-card-note mt-3 rounded-xl px-3 py-2 text-[11px] leading-snug"
+                        style={{
+                          background: "rgba(0,170,255,0.08)",
+                          border: "1px solid rgba(0,170,255,0.16)",
+                          color: "#475569",
+                        }}
+                      >
+                        {item.note}
+                      </p>
+                    )}
                   </div>
 
                   {/* Buttons */}
-                  <div className="px-3.5 pb-3.5 flex gap-2">
+                  <div className="px-4 pb-4 flex gap-2">
                     <button
                       onClick={() =>
                         navigate("/cart", {
                           state: { item: { ...item, qty: 1 } },
                         })
                       }
-                      className="flex-1 py-1.5 rounded-lg text-xs font-bold text-white hover:opacity-90 transition"
+                      className="flex-1 py-2.5 rounded-xl text-xs font-bold text-white hover:opacity-90 transition"
                       style={{ background: GRAD, border: "none" }}
                     >
                       Add to Cart
@@ -862,10 +901,10 @@ export default function FavouritesPage() {
                         navigate(
                           item.source === "wishlist"
                             ? "/wish-list"
-                            : "/marketplace"
+                            : `/marketplace?listing=${encodeURIComponent(item.id)}`
                         )
                       }
-                      className="flex-1 py-1.5 rounded-lg text-xs font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 transition"
+                      className="saved-view-button flex-1 py-2.5 rounded-xl text-xs font-bold text-gray-700 bg-gray-100 hover:bg-gray-200 transition"
                       style={{ border: "none" }}
                     >
                       View

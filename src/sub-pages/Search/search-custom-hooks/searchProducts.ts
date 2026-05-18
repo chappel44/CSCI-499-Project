@@ -9,10 +9,12 @@ export function useSearchProducts() {
   const { keyword, setProducts, selectedRetailers, setSelectedRetailers } =
     useSearchContext();
 
+  /* ============ search products is used as the core functionality of the searching mechanism behind verifind ============*/
   return async function searchProducts(
     setLoading: (loading: boolean) => void,
     setOpenPage: (openPage: number) => void
   ) {
+    //Return if no keyword is provided
     if (!keyword) return;
 
     setLoading(true);
@@ -21,15 +23,20 @@ export function useSearchProducts() {
       const { data: user } = await supabase.auth.getUser();
       const userId = user.user?.id;
 
+      //Insert the most recent search into supabase
       const { error } = await supabase
         .from("search_history")
         .insert({ search_term: keyword, user_id: userId });
 
       if (error) console.error(error.message);
+
       setOpenPage(-1);
 
+      //This Line will remove redundant words and sort the splitted words
+      //to improve cache hit chances
       const normalizedKeyword = normalizeKeyword(keyword);
 
+      //array used to collect
       const allProducts: Product[] = [];
 
       const retailersNeedingFetch = (
@@ -46,8 +53,13 @@ export function useSearchProducts() {
             return retailer; // cache miss, needs serp fetch
           })
         )
-      ).filter(Boolean) as string[];
+      )
+        //Filters out the nulls that are returned when a cache hit occurs
+        .filter(Boolean) as string[];
+
       console.log("Retailers needing fetch", retailersNeedingFetch);
+
+      //Only call the api for search terms that are not associated with a retailer in cache
       if (retailersNeedingFetch.length > 0) {
         const serpProducts = await pullProductsFromSerp(
           keyword,
@@ -58,6 +70,7 @@ export function useSearchProducts() {
         allProducts.push(...serpProducts); // collect serp results
       }
       console.log("allProducts before setProducts:", allProducts);
+      setProducts([]);
       setProducts((prev) => [...prev, ...allProducts]); // single state update
       setSelectedRetailers(retailersNeedingFetch);
       setOpenPage(0);

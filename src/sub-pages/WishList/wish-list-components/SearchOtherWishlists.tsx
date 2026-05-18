@@ -105,6 +105,18 @@ export function SearchOtherWishlist({ visible }: SearchOtherWishlistProps) {
                         ${item.target_price}
                       </span>
                     </p>
+                    {(item.priority || item.status) && (
+                      <p className="mt-1 text-[10px] font-semibold uppercase tracking-wide text-blue-400">
+                        {[item.priority, item.status?.replaceAll("-", " ")]
+                          .filter(Boolean)
+                          .join(" · ")}
+                      </p>
+                    )}
+                    {item.note?.trim() && (
+                      <p className="mt-2 rounded-lg border border-blue-200/40 bg-blue-50/70 px-2 py-1.5 text-xs leading-relaxed text-gray-600 dark:border-blue-300/20 dark:bg-blue-500/10 dark:text-blue-100">
+                        {item.note}
+                      </p>
+                    )}
                   </div>
                 </div>
               ))}

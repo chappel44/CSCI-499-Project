@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useWishlist } from "../../../Contexts/WishListContext";
 import type { EnrichedItem } from "../wish-list-structures/wishListStructs";
 import { renderStars } from "./renderStars";
 import { Sparkline } from "./SparkLine";
 import { removeFromWishlist } from "../wish-list-hooks/removeFromWishlist";
 import { useSearchContext } from "../../../Contexts/useSearchContext";
+import { supabase } from "../../../../supabase-client";
 
 interface DisplayWishlistProps {
   visible: boolean;
@@ -18,10 +19,228 @@ export default function DisplayWishlist({
   const { priceHistory, setItems, watchMeta, updateWatchMeta } = useWishlist();
   const { setAddedIds } = useSearchContext();
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
+  const [saveToast, setSaveToast] = useState(false);
+  const [toastMessage, setToastMessage] = useState("Item has been saved");
+  const [savedNoteId, setSavedNoteId] = useState<string | null>(null);
+  const [postingNoteId, setPostingNoteId] = useState<string | null>(null);
+  const [postedNoteIds, setPostedNoteIds] = useState<Set<string>>(new Set());
+  const [confirmingDeleteNoteId, setConfirmingDeleteNoteId] = useState<string | null>(null);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [loading] = useState(true);
 
   const getGoogleShoppingUrl = (title: string) =>
     `https://www.google.com/search?tbm=shop&q=${encodeURIComponent(title)}`;
+
+  const saveToSavedItems = (item: EnrichedItem, itemWatchMeta: {
+    note: string;
+    priority: "low" | "medium" | "high";
+    status: "watching" | "ready-to-buy" | "bought";
+  }) => {
+    const currentRaw = localStorage.getItem("verifind_wishlist_favs");
+    const current = currentRaw ? JSON.parse(currentRaw) : [];
+    const numericPrice = item.live_price
+      ? Number(item.live_price.replace(/[^0-9.]/g, ""))
+      : item.target_price;
+    const nextItem = {
+      id: item.id,
+      title: item.product_title,
+      price: Number.isFinite(numericPrice) ? numericPrice : item.target_price,
+      images: item.product_image ? [item.product_image] : [],
+      category: "wishlist",
+      condition: "New",
+      seller_name: item.seller ?? "Wishlist",
+      verified: false,
+      source: "wishlist",
+      note: itemWatchMeta.note,
+      priority: itemWatchMeta.priority,
+      status: itemWatchMeta.status,
+    };
+    const next = [
+      nextItem,
+      ...current.filter((saved: { id: string }) => saved.id !== item.id),
+    ];
+    localStorage.setItem("verifind_wishlist_favs", JSON.stringify(next));
+    setToastMessage("Item has been saved");
+    setSaveToast(true);
+  };
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => {
+      setCurrentUserId(data.user?.id ?? null);
+    });
+  }, []);
+
+  useEffect(() => {
+    if (!saveToast) return;
+    const timer = window.setTimeout(() => setSaveToast(false), 2400);
+    return () => window.clearTimeout(timer);
+  }, [saveToast]);
+
+  const updatePublicMetaPreview = (
+    item: EnrichedItem,
+    itemWatchMeta: {
+      note: string;
+      priority: "low" | "medium" | "high";
+      status: "watching" | "ready-to-buy" | "bought";
+    }
+  ) => {
+    if (!currentUserId) return;
+
+    const publicNoteKey = `wishlist-public-notes:${currentUserId}`;
+    const currentPublicNotesRaw = localStorage.getItem(publicNoteKey);
+    const currentPublicNotes = currentPublicNotesRaw
+      ? JSON.parse(currentPublicNotesRaw)
+      : {};
+    const updatePayload = {
+      note: itemWatchMeta.note.trim(),
+      priority: itemWatchMeta.priority,
+      status: itemWatchMeta.status,
+    };
+
+    localStorage.setItem(
+      publicNoteKey,
+      JSON.stringify({
+        ...currentPublicNotes,
+        [item.id]: updatePayload,
+        [item.product_id]: updatePayload,
+      })
+    );
+
+    setItems((currentItems) =>
+      currentItems.map((currentItem) =>
+        currentItem.id === item.id ? { ...currentItem, ...updatePayload } : currentItem
+      )
+    );
+  };
+
+  const updateItemNote = (itemId: string, note: string) => {
+    updateWatchMeta(itemId, { note: note.slice(0, 120) });
+    setSavedNoteId(itemId);
+  };
+
+  const postWishlistChanges = async (
+    item: EnrichedItem,
+    itemWatchMeta: {
+      note: string;
+      priority: "low" | "medium" | "high";
+      status: "watching" | "ready-to-buy" | "bought";
+    }
+  ) => {
+    const itemId = item.id;
+    const note = itemWatchMeta.note.trim();
+
+    setPostingNoteId(itemId);
+    const { data: userData } = await supabase.auth.getUser();
+    const userId = userData.user?.id;
+
+    if (!userId) {
+      setPostingNoteId(null);
+      setToastMessage("Log in to post a note");
+      setSaveToast(true);
+      return;
+    }
+
+    const updatePayload = {
+        note,
+        priority: itemWatchMeta.priority,
+        status: itemWatchMeta.status,
+    };
+
+    const publicNoteKey = `wishlist-public-notes:${userId}`;
+    const currentPublicNotesRaw = localStorage.getItem(publicNoteKey);
+    const currentPublicNotes = currentPublicNotesRaw
+      ? JSON.parse(currentPublicNotesRaw)
+      : {};
+    localStorage.setItem(
+      publicNoteKey,
+      JSON.stringify({
+        ...currentPublicNotes,
+        [item.id]: updatePayload,
+        [item.product_id]: updatePayload,
+      })
+    );
+
+    const updateById = await supabase
+      .from("wishlists")
+      .update(updatePayload)
+      .eq("id", itemId)
+      .select("id, note, priority, status")
+      .maybeSingle();
+
+    const updateByProductId =
+      !updateById.data && item.product_id
+        ? await supabase
+            .from("wishlists")
+            .update(updatePayload)
+            .eq("product_id", item.product_id)
+            .eq("user_id", userId)
+            .select("id, note, priority, status")
+            .maybeSingle()
+        : updateById;
+
+    const data = updateById.data ?? updateByProductId.data;
+    const error = updateById.error ?? updateByProductId.error;
+
+    setPostingNoteId(null);
+
+    setItems((currentItems) =>
+      currentItems.map((currentItem) =>
+        currentItem.id === itemId
+          ? {
+              ...currentItem,
+              ...updatePayload,
+            }
+          : currentItem
+      )
+    );
+    setPostedNoteIds((ids) => new Set(ids).add(itemId));
+
+    if (error) {
+      setToastMessage(note ? "Changes saved to profile locally" : "Note deleted locally");
+      setSaveToast(true);
+      console.error("Could not post wishlist note:", error.message);
+      return;
+    }
+
+    if (!data) {
+      setToastMessage(note ? "Changes saved to profile locally" : "Note deleted locally");
+      setSaveToast(true);
+      return;
+    }
+
+    setItems((currentItems) =>
+      currentItems.map((item) =>
+        item.id === itemId
+          ? {
+              ...item,
+              note: data.note,
+              priority: data.priority,
+              status: data.status,
+            }
+          : item
+      )
+    );
+    setPostedNoteIds((ids) => new Set(ids).add(itemId));
+    setToastMessage(note ? "Changes posted to public profile" : "Note deleted from public profile");
+    setSaveToast(true);
+  };
+
+  const deleteWishlistNote = (item: EnrichedItem) => {
+    const itemWatchMeta = watchMeta[item.id] ?? {
+      note: "",
+      priority: "medium" as const,
+      status: "watching" as const,
+    };
+    updateWatchMeta(item.id, { note: "" });
+    setConfirmingDeleteNoteId(null);
+    void postWishlistChanges(item, { ...itemWatchMeta, note: "" });
+  };
+
+  useEffect(() => {
+    if (!savedNoteId) return;
+    const timer = window.setTimeout(() => setSavedNoteId(null), 1400);
+    return () => window.clearTimeout(timer);
+  }, [savedNoteId]);
 
   const getPriorityStyles = (priority: "low" | "medium" | "high") => {
     if (priority === "high") {
@@ -72,7 +291,37 @@ export default function DisplayWishlist({
   };
 
   return (
-    <div className="wishlist-grid relative z-10 flex-1 overflow-y-auto px-6 py-6 flex flex-wrap justify-center gap-4">
+    <>
+    <div
+      className={`fixed left-1/2 top-24 z-[120] flex -translate-x-1/2 items-center gap-3 rounded-2xl border px-4 py-3 shadow-2xl backdrop-blur-md transition-all duration-300 ${
+        saveToast ? "translate-y-0 opacity-100" : "-translate-y-4 opacity-0 pointer-events-none"
+      }`}
+      style={{
+        background: "linear-gradient(135deg, rgba(10,24,45,0.96), rgba(20,29,67,0.94))",
+        borderColor: "rgba(82,170,255,0.28)",
+        color: "#f8fbff",
+      }}
+      role="status"
+      aria-live="polite"
+    >
+      <span
+        className="flex h-9 w-9 items-center justify-center rounded-xl text-white"
+        style={{ background: "linear-gradient(135deg,#00AAFF,#6B30FF)" }}
+      >
+        <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+        </svg>
+      </span>
+      <div>
+        <p className="text-sm font-bold">{toastMessage}</p>
+        <p className="text-xs" style={{ color: "#aebfda" }}>
+          {toastMessage.includes("Note") || toastMessage.includes("Changes")
+            ? "It can show on your public wishlist."
+            : "You can find it in Saved."}
+        </p>
+      </div>
+    </div>
+    <div className=" relative z-10 overflow-y-auto px-6 py-6 grid grid-cols-2 md:grid-cols-4 gap-4 max-w-6xl mx-auto">
       {!loading && filteredItems.length === 0 && (
         <p className="text-gray-500 text-center">No items found.</p>
       )}
@@ -90,12 +339,13 @@ export default function DisplayWishlist({
           priority: "medium" as const,
           status: "watching" as const,
         };
+        const hasNote = itemWatchMeta.note.trim().length > 0;
 
         return (
           <div
             key={item.id}
             // frosted glass card — bg-white/60 + backdrop-blur + border-white/40
-            className="wishlist-card backdrop-blur-md rounded-2xl transition-all duration-300 p-3 flex flex-col w-48 relative hover:-translate-y-1"
+            className="wishlist-card backdrop-blur-md rounded-2xl transition-all duration-300 p-3 flex flex-col w-48 relative hover:-translate-y-1 transition-transform duration-500 ease-out"
             style={{
               background: "rgba(255,255,255,0.60)",
               border: "1px solid rgba(255,255,255,0.75)",
@@ -227,11 +477,15 @@ export default function DisplayWishlist({
                 </span>
                 <select
                   value={itemWatchMeta.priority}
-                  onChange={(e) =>
-                    updateWatchMeta(item.id, {
+                  onChange={(e) => {
+                    const nextMeta = {
+                      ...itemWatchMeta,
                       priority: e.target.value as "low" | "medium" | "high",
-                    })
-                  }
+                    };
+                    updateWatchMeta(item.id, { priority: nextMeta.priority });
+                    updatePublicMetaPreview(item, nextMeta);
+                    setSavedNoteId(item.id);
+                  }}
                   className="wishlist-watch-input rounded-md border border-gray-300 px-2 py-1.5 text-xs text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-400"
                 >
                   <option value="low">Low</option>
@@ -246,14 +500,18 @@ export default function DisplayWishlist({
                 </span>
                 <select
                   value={itemWatchMeta.status}
-                  onChange={(e) =>
-                    updateWatchMeta(item.id, {
+                  onChange={(e) => {
+                    const nextMeta = {
+                      ...itemWatchMeta,
                       status: e.target.value as
                         | "watching"
                         | "ready-to-buy"
                         | "bought",
-                    })
-                  }
+                    };
+                    updateWatchMeta(item.id, { status: nextMeta.status });
+                    updatePublicMetaPreview(item, nextMeta);
+                    setSavedNoteId(item.id);
+                  }}
                   className="wishlist-watch-input rounded-md border border-gray-300 px-2 py-1.5 text-xs text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-400"
                 >
                   <option value="watching">Watching</option>
@@ -264,35 +522,118 @@ export default function DisplayWishlist({
             </div>
 
             <label className="mb-3 flex flex-col gap-1">
-              <span className="text-[10px] font-semibold uppercase tracking-wide text-gray-400">
-                Note
+              <span className="flex items-center justify-between text-[10px] font-semibold uppercase tracking-wide text-gray-400">
+                <span>Note</span>
+                <span
+                  className={`normal-case tracking-normal transition-opacity ${
+                    savedNoteId === item.id || postedNoteIds.has(item.id)
+                      ? "opacity-100"
+                      : "opacity-0"
+                  }`}
+                  style={{ color: "#7dd3fc" }}
+                >
+                  {postedNoteIds.has(item.id) ? "Posted" : "Note saved"}
+                </span>
               </span>
               <textarea
                 value={itemWatchMeta.note}
-                onChange={(e) =>
-                  updateWatchMeta(item.id, {
-                    note: e.target.value.slice(0, 120),
-                  })
-                }
+                onChange={(e) => updateItemNote(item.id, e.target.value)}
                 placeholder="Birthday gift, wait for bigger drop, compare later..."
                 rows={3}
                 className="wishlist-watch-input resize-none rounded-md border border-gray-300 px-2 py-2 text-xs text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-400"
               />
+              <div className="mt-2 flex flex-col gap-2">
+                <span className="text-[10px] text-gray-500">
+                  Draft saves here. Post changes for profile/search visibility.
+                </span>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => postWishlistChanges(item, itemWatchMeta)}
+                    disabled={postingNoteId === item.id}
+                    className="cursor-pointer rounded-lg px-2.5 py-1.5 text-[10px] font-bold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+                    style={{ background: "linear-gradient(90deg,#00AAFF,#6B30FF)" }}
+                  >
+                    {postingNoteId === item.id ? "Posting..." : "Post Note"}
+                  </button>
+                  {hasNote && confirmingDeleteNoteId !== item.id && (
+                    <button
+                      type="button"
+                      onClick={() => setConfirmingDeleteNoteId(item.id)}
+                      disabled={postingNoteId === item.id}
+                      className="cursor-pointer rounded-lg border px-2.5 py-1.5 text-[10px] font-bold text-red-100 transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+                      style={{
+                        background: "linear-gradient(135deg,rgba(220,38,38,0.95),rgba(127,29,29,0.95))",
+                        borderColor: "rgba(248,113,113,0.42)",
+                      }}
+                    >
+                      Delete Note
+                    </button>
+                  )}
+                </div>
+                {confirmingDeleteNoteId === item.id && (
+                  <div className="rounded-xl border border-red-400/30 bg-red-500/10 p-2">
+                    <p className="mb-2 text-[10px] font-semibold text-red-100">
+                      Delete this note?
+                    </p>
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => deleteWishlistNote(item)}
+                        className="cursor-pointer rounded-lg bg-red-500 px-2 py-1 text-[10px] font-bold text-white transition hover:bg-red-600"
+                      >
+                        Yes
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setConfirmingDeleteNoteId(null)}
+                        className="cursor-pointer rounded-lg border px-2 py-1 text-[10px] font-bold text-slate-200 transition hover:bg-slate-700/60"
+                        style={{ borderColor: "rgba(148,163,184,0.35)" }}
+                      >
+                        No
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
             </label>
 
+            {hasNote && (
+              <div
+                className="mb-3 rounded-xl px-3 py-2 text-xs leading-relaxed"
+                style={{
+                  background: "rgba(0,170,255,0.08)",
+                  border: "1px solid rgba(125,211,252,0.2)",
+                  color: "#cfe0fb",
+                }}
+              >
+                {itemWatchMeta.note}
+              </div>
+            )}
+
             <div className="flex gap-2 mt-auto">
+              <button
+                onClick={() => saveToSavedItems(item, itemWatchMeta)}
+                className="flex-1 cursor-pointer py-1 rounded-md text-xs font-semibold text-white transition hover:opacity-90"
+                style={{ background: "linear-gradient(90deg,#00AAFF,#6B30FF)" }}
+              >
+                Save
+              </button>
               <a
                 href={item.link || "#"}
                 target="_blank"
                 rel="noopener noreferrer"
-                className={`flex-1 text-center py-1 rounded-md text-xs font-semibold transition ${
+                className={`flex-1 cursor-pointer text-center py-1 rounded-md text-xs font-semibold transition ${
                   item.link
-                    ? "text-white hover:opacity-90"
+                    ? "text-sky-100 hover:opacity-90"
                     : "bg-gray-300 text-gray-500 cursor-not-allowed"
                 }`}
                 style={
                   item.link
-                    ? { background: "linear-gradient(90deg,#00AAFF,#6B30FF)" }
+                    ? {
+                        background: "rgba(14,165,233,0.12)",
+                        border: "1px solid rgba(125,211,252,0.3)",
+                      }
                     : {}
                 }
               >
@@ -316,13 +657,13 @@ export default function DisplayWishlist({
                         updateWatchMeta(item.id, null);
                         setConfirmingId(null);
                       }}
-                      className="flex-1 py-1 rounded-md text-xs font-semibold text-white bg-red-500 hover:bg-red-600 transition"
+                      className="flex-1 cursor-pointer py-1 rounded-md text-xs font-semibold text-white bg-red-500 hover:bg-red-600 transition"
                     >
                       Yes
                     </button>
                     <button
                       onClick={() => setConfirmingId(null)}
-                      className="wishlist-cancel-button flex-1 py-1 rounded-md text-xs font-medium transition"
+                      className="wishlist-cancel-button flex-1 cursor-pointer py-1 rounded-md text-xs font-medium transition"
                       style={{
                         background: "rgba(241,245,249,0.95)",
                         color: "#475569",
@@ -344,7 +685,7 @@ export default function DisplayWishlist({
               ) : (
                 <button
                   onClick={() => setConfirmingId(item.id)}
-                  className="wishlist-remove-button flex-1 py-1 rounded-md text-xs font-medium transition"
+                  className="wishlist-remove-button flex-1 cursor-pointer py-1 rounded-md text-xs font-medium transition"
                   style={{
                     background: "rgba(241,245,249,0.95)",
                     color: "#64748B",
@@ -371,5 +712,6 @@ export default function DisplayWishlist({
         );
       })}
     </div>
+    </>
   );
 }

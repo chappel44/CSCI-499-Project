@@ -38,9 +38,37 @@ function normalizeEbay(item) {
   };
 }
 
+function normalizeAmazon(item) {
+  return {
+    product_id: item.asin ?? item.product_id,
+    title: item.title,
+    link: item.link ?? item.product_link,
+    thumbnail: item.thumbnail,
+    price: item.price?.raw ?? item.price,
+    extracted_price: item.price?.extracted ?? item.extracted_price,
+    rating: item.rating,
+    reviews: item.reviews ?? item.reviews_count,
+  };
+}
+
+function normalizeGoogleShopping(item) {
+  return {
+    product_id: item.product_id,
+    title: item.title,
+    link: item.product_link ?? item.link,
+    thumbnail: item.thumbnail,
+    price: item.price,
+    extracted_price: item.extracted_price,
+    rating: item.rating,
+    reviews: item.reviews,
+  };
+}
+
 const normalizerMap = {
+  amazon: normalizeAmazon,
   walmart: normalizeWalmart,
   ebay: normalizeEbay,
+  "google-shopping": normalizeGoogleShopping,
 };
 
 function normalizeProduct(retailer, item) {
@@ -118,6 +146,13 @@ const engineConfig = (keyword) => ({
     engine: "home_depot",
     q: keyword,
   },
+  "google-shopping": {
+    engine: "google_shopping",
+    q: keyword,
+    google_domain: "google.com",
+    gl: "us",
+    hl: "en",
+  },
 });
 
 app.use(express.json());
@@ -131,12 +166,16 @@ app.use((req, res, next) => {
 });
 
 app.get("/api/search", async (req, res) => {
-  console.log("server running");
   const { keyword, engines } = req.query;
 
   if (!keyword) return res.status(400).json({ error: "Missing keyword" });
 
   const config = engineConfig(keyword);
+  console.log("raw query:", req.query);
+  console.log("engines raw value:", req.query.engines);
+  console.log("config keys:", Object.keys(config));
+
+  console.log("KEYWORD: ", keyword);
 
   // Parse engines from comma-separated string, fallback to amazon
   const selectedEngines = engines
@@ -158,6 +197,8 @@ app.get("/api/search", async (req, res) => {
         })
         .then((r) => ({ retailer: engine, data: r.data }))
         .catch((err) => ({ retailer: engine, error: err.message }));
+
+      console.log("DATA RESULT: ", result.data);
 
       if (result.data) {
         const normalizedKeyword = normalizeKeyword(keyword);
@@ -197,6 +238,7 @@ app.get("/api/search", async (req, res) => {
         const products = [
           ...(searchData?.featured_products || []),
           ...(searchData?.organic_results || []),
+          ...(searchData?.shopping_results || []),
         ].map((item) => ({
           ...normalizeProduct(engine, item),
           retailer: engine,

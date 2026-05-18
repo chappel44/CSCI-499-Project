@@ -1,4 +1,5 @@
 import { useTheme } from "../../../Contexts/ThemeContext";
+import { Link } from "react-router-dom";
 
 export default function ComingSoonCards() {
   const { resolvedTheme } = useTheme();
@@ -34,9 +35,9 @@ export default function ComingSoonCards() {
       </button>
 
       {/* Browser Extension button */}
-      <button
-        disabled
-        className="coming-soon-card flex items-center gap-2.5 px-4 py-2.5 rounded-xl text-sm font-semibold transition cursor-not-allowed"
+      <Link
+        to="/extension"
+        className="coming-soon-card flex items-center gap-2.5 px-4 py-2.5 rounded-xl text-sm font-semibold transition hover:-translate-y-0.5 hover:border-violet-300 hover:shadow-lg"
         style={{
           background: "rgba(255,255,255,0.6)",
           backdropFilter: "blur(12px)",
@@ -44,7 +45,7 @@ export default function ComingSoonCards() {
           color: "#374151",
           boxShadow: "0 2px 12px rgba(0,0,0,0.06)",
         }}
-        title="Coming soon"
+        title="Get the Verifind browser extension"
       >
         {/* Puzzle piece / extension icon */}
         <svg
@@ -62,12 +63,14 @@ export default function ComingSoonCards() {
           />
         </svg>
         <div className="flex flex-col items-start leading-tight">
-          <span className="text-xs text-gray-400 font-normal">Coming soon</span>
+          <span className="text-xs text-gray-400 font-normal">
+            Get the extension
+          </span>
           <span className="text-sm font-bold text-gray-800">
             Browser Extension
           </span>
         </div>
-      </button>
+      </Link>
     </div>
   );
 }

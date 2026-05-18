@@ -1,82 +1,132 @@
 import { useEffect, useState } from "react";
 import { useSearchContext } from "../../Contexts/useSearchContext";
+import { useTheme } from "../../Contexts/ThemeContext";
 import DisplayProducts from "./search-components/DisplayProducts";
 import SearchHeading from "./search-components/SearchHeading";
 import SearchSuggestions from "./search-components/SearchSuggestions";
 import SearchActions from "./search-components/SearchActions";
 import ApplyGradientOrbs from "../SharedComponents/ApplyGradientOrbs";
-import PaginationButtons from "./search-components/PaginationButtons";
-import { DiplaySearchesLeft } from "./search-components/DisplaySearchesLeft";
-import { useSortedProducts } from "./search-hooks/sortSearch";
-import DisplayAdvancedSortingButtons from "./search-components/SearchSortingButtons";
+import { Link, useSearchParams } from "react-router-dom";
 
 const itemsPerPage = 10;
 
+export const PROMO_TIERS = [
+  {
+    name: "Basic",
+    price: 2.99,
+    period: "wk",
+    desc: "Top of category",
+    highlight: false,
+  },
+  {
+    name: "Featured",
+    price: 7.99,
+    period: "wk",
+    desc: "Homepage spotlight",
+    highlight: true,
+  },
+  {
+    name: "Premium",
+    price: 14.99,
+    period: "wk",
+    desc: "Search + category + email",
+    highlight: false,
+  },
+];
+
+/* ---------------- MAIN ---------------- */
+
 function Search() {
-  const { products, openPage, sortBy, minPrice, maxPrice } = useSearchContext();
+  const { products, openPage, setOpenPage, setKeyword } = useSearchContext();
+  const { resolvedTheme } = useTheme();
+  const isDark = resolvedTheme === "dark";
+  const [searchParams] = useSearchParams();
+
   const [visible, setVisible] = useState(false);
 
-  const sortedProducts = useSortedProducts(products, sortBy);
-  const parsePrice = (price?: string, extractedPrice?: number) => {
-    if (typeof extractedPrice === "number") return extractedPrice;
-    if (!price) return null;
-
-    const match = price.match(/(\d+(\.\d+)?)/);
-    return match ? parseFloat(match[0]) : null;
-  };
-
-  const min = minPrice.trim() ? Number(minPrice) : null;
-  const max = maxPrice.trim() ? Number(maxPrice) : null;
-
-  const filteredProducts = sortedProducts.filter((product) => {
-    const parsedPrice = parsePrice(product.price, product.extracted_price);
-
-    if (parsedPrice === null) {
-      return min === null && max === null;
-    }
-
-    if (min !== null && !Number.isNaN(min) && parsedPrice < min) return false;
-    if (max !== null && !Number.isNaN(max) && parsedPrice > max) return false;
-
-    return true;
-  });
-
   const startIndex = openPage * itemsPerPage;
-  const endIndex = startIndex + itemsPerPage;
-  const currentProducts = filteredProducts.slice(startIndex, endIndex);
+  const currentProducts = products.slice(startIndex, startIndex + itemsPerPage);
+  const totalPages = Math.ceil(products.length / itemsPerPage);
+  const hasResults = products.length > 0;
 
   useEffect(() => {
     setTimeout(() => setVisible(true), 50);
   }, []);
 
-  // Pagination
-  const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
+  useEffect(() => {
+    const keywordParam = searchParams.get("keyword")?.trim();
+    if (keywordParam) {
+      setKeyword(keywordParam);
+    }
+  }, [searchParams, setKeyword]);
+
   return (
     <section
-      className="search-page min-h-screen overflow-x-hidden"
-      style={{ background: "#f0f4ff" }}
+      className="min-h-screen overflow-x-hidden transition-colors"
+      style={{
+        background: isDark ? "#0b0f1a" : "#f0f4ff",
+      }}
     >
-      {/* Mesh gradient background orbs */}
       <ApplyGradientOrbs />
 
-      <div className="relative z-10 flex flex-col items-center w-full px-4 sm:px-6 md:px-10 pt-24 pb-16">
-        <SearchHeading visible={visible} />
+      <div className="relative z-10 w-full px-4 sm:px-6 md:px-8 pt-20">
+        <div className="flex gap-5 items-start justify-center max-w-5xl mx-auto">
+          <div className="flex-1 min-w-0 max-w-xl">
+            <SearchHeading visible={visible} />
+            <SearchActions visible={visible} />
+            <SearchSuggestions visible={visible} />
 
-        <DiplaySearchesLeft />
+            {hasResults && (
+              <>
+                <DisplayProducts
+                  key={openPage}
+                  currentProducts={currentProducts}
+                />
 
-        <SearchActions visible={visible} />
+                {products.length > itemsPerPage && (
+                  <div className="flex justify-center gap-2 mt-8 mb-8">
+                    {Array.from({ length: totalPages }).map((_, i) => (
+                      <button
+                        key={i}
+                        onClick={() => setOpenPage(i)}
+                        className="w-9 h-9 rounded-xl text-sm font-semibold cursor-pointer"
+                        style={{
+                          background:
+                            openPage === i
+                              ? "linear-gradient(90deg, #00AAFF, #6B30FF)"
+                              : isDark
+                              ? "rgba(39,39,42,0.8)"
+                              : "rgba(255,255,255,0.7)",
+                          color:
+                            openPage === i
+                              ? "#fff"
+                              : isDark
+                              ? "#d4d4d8"
+                              : "#6B7280",
+                        }}
+                      >
+                        {i + 1}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        </div>
+      </div>
 
-        <SearchSuggestions visible={visible} />
-
-        {products.length > 0 && <DisplayAdvancedSortingButtons visible={visible} />}
-
-        <DisplayProducts key={openPage} currentProducts={currentProducts} />
-
-        {/* Pagination — frosted glass pills */}
-        <PaginationButtons
-          itemsPerPage={itemsPerPage}
-          totalPages={totalPages}
-        />
+      <div
+        className="relative z-10 w-full py-10 mt-auto flex justify-center items-center gap-4 mb-12"
+        style={{ borderTop: "1px solid rgba(0,170,255,0.1)" }}
+      >
+        <p className="text-xs text-gray-400">
+          &copy; {new Date().getFullYear()} Verifind. All rights reserved.
+        </p>
+        <p className="text-gray-400">•</p>
+        <Link to="/privacy-policy" className="text-xs text-gray-400">
+          Privacy Policy
+        </Link>
       </div>
     </section>
   );
