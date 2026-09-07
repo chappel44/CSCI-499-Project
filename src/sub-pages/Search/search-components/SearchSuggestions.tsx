@@ -86,7 +86,7 @@ export default function SearchSuggestions({ visible }: SearchSuggestionsProps) {
               initial={{ height: 0, overflow: "hidden" }}
               animate={{ height: "auto", overflow: "hidden" }}
               exit={{ height: 0, overflow: "hidden" }}
-              transition={{ duration: 0.5, ease: "easeOut" }}
+              transition={{ duration: .4, ease: "easeOut" }}
             >
               <div
                 className={`px-4 pb-4 flex flex-col gap-3 border-t ${

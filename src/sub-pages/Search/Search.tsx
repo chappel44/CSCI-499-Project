@@ -1,12 +1,12 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useSearchContext } from "../../Contexts/useSearchContext";
 import { useTheme } from "../../Contexts/ThemeContext";
 import DisplayProducts from "./search-components/DisplayProducts";
 import SearchHeading from "./search-components/SearchHeading";
 import SearchSuggestions from "./search-components/SearchSuggestions";
-import SearchActions from "./search-components/SearchActions";
 import ApplyGradientOrbs from "../SharedComponents/ApplyGradientOrbs";
 import { Link, useSearchParams } from "react-router-dom";
+import SearchActions from "./search-components/SearchActions";
 
 const itemsPerPage = 10;
 
@@ -48,6 +48,7 @@ function Search() {
   const currentProducts = products.slice(startIndex, startIndex + itemsPerPage);
   const totalPages = Math.ceil(products.length / itemsPerPage);
   const hasResults = products.length > 0;
+  const resultRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setTimeout(() => setVisible(true), 50);
@@ -59,6 +60,18 @@ function Search() {
       setKeyword(keywordParam);
     }
   }, [searchParams, setKeyword]);
+
+  useEffect(() => {
+    if (hasResults && resultRef.current) {
+      resultRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }, [hasResults]);
+
+  useEffect(() => {
+    if(resultRef.current){
+      resultRef.current.scrollIntoView({ behavior: 'auto', block: 'start' });
+    }
+  }, [openPage]);
 
   return (
     <section
@@ -74,10 +87,10 @@ function Search() {
           <div className="flex-1 min-w-0 max-w-xl">
             <SearchHeading visible={visible} />
             <SearchActions visible={visible} />
+            <div ref = {resultRef} className="mb-40"/>
             <SearchSuggestions visible={visible} />
-
             {hasResults && (
-              <>
+              <div>
                 <DisplayProducts
                   key={openPage}
                   currentProducts={currentProducts}
@@ -88,7 +101,10 @@ function Search() {
                     {Array.from({ length: totalPages }).map((_, i) => (
                       <button
                         key={i}
-                        onClick={() => setOpenPage(i)}
+                        onClick={() => {
+                          setOpenPage(i)
+                          resultRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+                        }}
                         className="w-9 h-9 rounded-xl text-sm font-semibold cursor-pointer"
                         style={{
                           background:
@@ -110,7 +126,7 @@ function Search() {
                     ))}
                   </div>
                 )}
-              </>
+              </div>
             )}
           </div>
         </div>

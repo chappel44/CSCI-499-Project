@@ -6,7 +6,7 @@ import pullProductsFromSerp from "../search-hooks/pullProductsFromSerp";
 import type { Product } from "../search-structures/SearchStructure";
 
 export function useSearchProducts() {
-  const { keyword, setProducts, selectedRetailers, setSelectedRetailers } =
+  const { keyword, setProducts, selectedRetailers } =
     useSearchContext();
 
   /* ============ search products is used as the core functionality of the searching mechanism behind verifind ============*/
@@ -72,7 +72,6 @@ export function useSearchProducts() {
       console.log("allProducts before setProducts:", allProducts);
       setProducts([]);
       setProducts((prev) => [...prev, ...allProducts]); // single state update
-      setSelectedRetailers(retailersNeedingFetch);
       setOpenPage(0);
 
       console.log("All products collected:", allProducts);

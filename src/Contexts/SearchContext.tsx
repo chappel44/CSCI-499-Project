@@ -51,7 +51,7 @@ export function SearchProvider({ children }: MyProviderProps) {
   const [sortBy, setSortBy] = useState<SortByType>("none");
   const [minPrice, setMinPrice] = useState("");
   const [maxPrice, setMaxPrice] = useState("");
-  const [selectedRetailers, setSelectedRetailers] = useState<string[]>([]);
+  const [selectedRetailers, setSelectedRetailers] = useState<string[]>(["amazon", "ebay", "walmart", "google-shopping"]);
 
   const { userId } = useUser();
 

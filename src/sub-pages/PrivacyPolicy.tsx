@@ -109,7 +109,7 @@ export default function PrivacyPolicy() {
           className="pp-effective"
           style={{ color: isDark ? "#52525b" : "#aaa" }}
         >
-          Effective Date: May 5, 2025
+          Effective Date: May 5, 2026
         </p>
 
         <p
